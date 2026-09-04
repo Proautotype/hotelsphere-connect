@@ -226,7 +226,22 @@ function HotelPage() {
                       </Button>
                     </div>
                   </div>
+                  {room.images && room.images.length > 0 && (
+                    <ul className="mt-4 grid grid-cols-3 gap-2">
+                      {room.images.slice(0, 3).map((src, i) => (
+                        <li key={src} className="ink overflow-hidden bg-muted">
+                          <img
+                            src={src}
+                            alt={`${room.name} at ${hotel.name} — photo ${i + 1}`}
+                            loading="lazy"
+                            className="aspect-[4/3] size-full object-cover"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </article>
+
               );
             })}
           </div>
