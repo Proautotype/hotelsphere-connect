@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -26,43 +26,56 @@ export const Route = createFileRoute("/_authenticated/payments")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["payments", "list"],
-      queryFn: async () => fetchPayments(),
-    });
-    await context.queryClient.ensureQueryData({
-      queryKey: ["cash-session", "open"],
-      queryFn: async () => fetchOpenCashSession(),
-    });
-  },
+  errorComponent: () => (
+    <DashboardShell title="Payments">
+      <PageHeader title="Payments" description="We couldn't load payments for this hotel." />
+      <p className="ink mt-6 bg-card p-6 text-sm">Try refreshing, or switch hotel from the header.</p>
+    </DashboardShell>
+  ),
   component: PaymentsPage,
 });
 
-async function fetchPayments() {
+async function fetchPayments(hotelId: string) {
   const { data, error } = await supabase
     .from("payments")
     .select("*, bookings(reference), guests(full_name)")
+    .eq("hotel_id", hotelId)
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
-async function fetchOpenCashSession() {
-  const { data, error } = await supabase.from("cash_sessions").select("*").eq("status", "open").maybeSingle();
+async function fetchOpenCashSession(hotelId: string) {
+  const { data, error } = await supabase
+    .from("cash_sessions")
+    .select("*")
+    .eq("hotel_id", hotelId)
+    .eq("status", "open")
+    .order("opened_at", { ascending: false })
+    .limit(1);
   if (error) throw new Error(error.message);
-  return data ?? null;
+  return data?.[0] ?? null;
 }
 
 function PaymentsPage() {
   const { activeHotel } = useAuth();
-  const { data: payments } = useSuspenseQuery({ queryKey: ["payments", "list"], queryFn: fetchPayments });
-  const { data: openSession, refetch } = useSuspenseQuery({ queryKey: ["cash-session", "open"], queryFn: fetchOpenCashSession });
+  const hotelId = activeHotel?.id ?? "";
+  const { data: payments = [] } = useQuery({
+    queryKey: ["payments", "list", hotelId],
+    queryFn: () => fetchPayments(hotelId),
+    enabled: Boolean(hotelId),
+  });
+  const { data: openSession, refetch } = useQuery({
+    queryKey: ["cash-session", "open", hotelId],
+    queryFn: () => fetchOpenCashSession(hotelId),
+    enabled: Boolean(hotelId),
+  });
   const [floatAmount, setFloatAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const open = useServerFn(openCashSession);
   const close = useServerFn(closeCashSession);
+
 
   const handleOpen = async () => {
     if (!activeHotel) return;

@@ -41,6 +41,9 @@ export default function HomePage() {
             CUSTARD<span className="text-primary">.</span>
           </Link>
           <div className="flex items-center gap-4 sm:gap-8">
+            <Link to="/discover" className="text-sm font-medium transition-colors hover:text-primary sm:text-base">
+              Find a hotel
+            </Link>
             <Link to="/auth" className="text-sm font-medium transition-colors hover:text-primary sm:text-base">
               Sign in
             </Link>
