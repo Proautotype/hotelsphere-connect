@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Building2, Users, Settings, Globe, Menu, X } from "lucide-react";
+import { LayoutDashboard, Building2, Users, Settings, Globe, Menu, X, ShieldCheck, CreditCard, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, type ReactNode } from "react";
@@ -11,7 +11,10 @@ import { initials } from "@/lib/format";
 const NAV = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard },
   { to: "/admin/hotels", label: "Hotels", icon: Building2 },
-  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/users", label: "Accounts", icon: Users },
+  { to: "/admin/team", label: "Platform team", icon: ShieldCheck },
+  { to: "/admin/plans", label: "Plans & billing", icon: CreditCard },
+  { to: "/admin/requests", label: "Requests", icon: Inbox },
   { to: "/admin/discovery", label: "Discovery", icon: Globe },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];

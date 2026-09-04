@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SignOutButton } from "./SignOutButton";
+import { Receipt } from "lucide-react";
 import { HotelSwitcher } from "./HotelSwitcher";
 import { HotelGate } from "./HotelGate";
 import { NotificationBell } from "./NotificationBell";
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/guests", label: "Guests", icon: Users },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/staff", label: "Staff", icon: UserCog },
+  { to: "/billing", label: "Plan & billing", icon: Receipt },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
