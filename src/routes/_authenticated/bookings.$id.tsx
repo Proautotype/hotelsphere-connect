@@ -559,17 +559,39 @@ function NewBookingForm() {
               <Label htmlFor="roomId">Room</Label>
               <select
                 id="roomId"
-                required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.roomId}
-                onChange={(e) => setForm((p) => ({ ...p, roomId: e.target.value }))}
+                onChange={(e) => {
+                  const room = rooms.find((r) => r.id === e.target.value);
+                  setForm((p) => ({ ...p, roomId: e.target.value, roomTypeId: room?.room_type_id ?? p.roomTypeId }));
+                }}
               >
-                <option value="">Select a room</option>
+                <option value="">Unassigned (choose room type)</option>
                 {rooms.map((r) => (
                   <option key={r.id} value={r.id}>{r.room_number} · {r.room_types?.name}</option>
                 ))}
               </select>
+              {rooms.length === 0 ? (
+                <p className="mt-1 text-xs text-muted-foreground">No free rooms — pick a room type instead.</p>
+              ) : null}
             </div>
+            <div>
+              <Label htmlFor="roomTypeId">Room type</Label>
+              <select
+                id="roomTypeId"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.roomTypeId}
+                onChange={(e) => setForm((p) => ({ ...p, roomTypeId: e.target.value }))}
+              >
+                <option value="">Select a room type</option>
+                {roomTypes.map((rt) => (
+                  <option key={rt.id} value={rt.id}>
+                    {rt.name} · {money(rt.base_price, activeHotel?.currency)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <Label htmlFor="checkIn">Check in</Label>
               <Input id="checkIn" type="date" required value={form.checkIn} onChange={(e) => setForm((p) => ({ ...p, checkIn: e.target.value }))} />
