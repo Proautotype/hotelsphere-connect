@@ -25,33 +25,43 @@ export const Route = createFileRoute("/_admin/admin/hotels")({
     ],
   }),
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["admin", "hotels"],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("hotels")
-          .select("*, profiles(full_name, email)")
-          .order("created_at", { ascending: false });
-        if (error) throw new Error(error.message);
-        return data ?? [];
-      },
-    });
+    await context.queryClient.ensureQueryData({ queryKey: ["admin", "hotels"], queryFn: fetchAdminHotels });
   },
   component: AdminHotelsPage,
 });
 
+interface AdminHotelRow {
+  id: string;
+  name: string;
+  status: string;
+  city: string | null;
+  country: string | null;
+  hotel_type: string | null;
+  room_count: number | null;
+  created_at: string;
+  owner_id: string | null;
+  owner: { full_name: string; email: string | null } | null;
+}
+
+async function fetchAdminHotels(): Promise<AdminHotelRow[]> {
+  const { data, error } = await supabase
+    .from("hotels")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const hotels = (data ?? []) as unknown as AdminHotelRow[];
+  const ownerIds = Array.from(new Set(hotels.map((h) => h.owner_id).filter(Boolean))) as string[];
+  let owners: Record<string, { full_name: string; email: string | null }> = {};
+  if (ownerIds.length > 0) {
+    const { data: profiles } = await supabase.from("profiles").select("id, full_name, email").in("id", ownerIds);
+    owners = Object.fromEntries((profiles ?? []).map((p) => [p.id, { full_name: p.full_name, email: p.email }]));
+  }
+  return hotels.map((h) => ({ ...h, owner: h.owner_id ? owners[h.owner_id] ?? null : null }));
+}
+
 function AdminHotelsPage() {
-  const { data: hotels } = useSuspenseQuery({
-    queryKey: ["admin", "hotels"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("hotels")
-        .select("*, profiles(full_name, email)")
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    },
-  });
+  const { data: hotels } = useSuspenseQuery({ queryKey: ["admin", "hotels"], queryFn: fetchAdminHotels });
+
 
   const mutateStatus = useServerFn(setHotelStatus);
 
