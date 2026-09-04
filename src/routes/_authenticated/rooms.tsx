@@ -55,7 +55,7 @@ function RoomsPage() {
     maintenance: [],
     out_of_service: [],
   };
-  rooms.forEach((r) => {
+  (rooms as Array<{ id: string; room_number: string; status: string; room_types: unknown }>).forEach((r) => {
     const key = (r.status as keyof typeof statusGroups) ?? "available";
     (statusGroups[key] ??= []).push(r);
   });
