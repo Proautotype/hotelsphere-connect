@@ -55,7 +55,7 @@ function ReceptionPage() {
   const checkIn = useServerFn(checkInBooking);
   const checkOut = useServerFn(checkOutBooking);
 
-  const filtered = bookings.filter((b) => {
+  const filtered = (bookings as Array<{ id: string; reference: string; status: string; total: number; amount_paid: number; check_in: string; check_out: string; guests: unknown; rooms: unknown }>).filter((b) => {
     const q = query.toLowerCase();
     const guest = b.guests as unknown as { full_name: string } | null;
     return (
