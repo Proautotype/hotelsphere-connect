@@ -169,16 +169,24 @@ function DashboardPage() {
                   const guest = b.guests as unknown as { full_name: string } | null;
                   const room = b.rooms as unknown as { room_number: string } | null;
                   return (
-                    <div key={b.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <Link
+                      key={b.id}
+                      to="/bookings/$id"
+                      params={{ id: b.id }}
+                      className="group flex items-center justify-between border-[3px] border-ink bg-card p-3 transition-all hover:-translate-y-0.5 hover:bg-amber hover:text-amber-foreground hover:shadow-hard"
+                    >
                       <div>
-                        <p className="font-medium text-foreground">{b.reference}</p>
-                        <p className="text-sm text-muted-foreground">{guest?.full_name} · Room {room?.room_number}</p>
+                        <p className="font-display font-semibold">{b.reference}</p>
+                        <p className="text-sm opacity-80">{guest?.full_name} · Room {room?.room_number}</p>
                       </div>
-                      <div className="text-right">
-                        <StatusBadge status={b.status} />
-                        <p className="mt-1 text-xs text-muted-foreground">{shortDate(b.check_in)} → {shortDate(b.check_out)}</p>
+                      <div className="flex items-center gap-3 text-right">
+                        <div>
+                          <StatusBadge status={b.status} />
+                          <p className="mt-1 text-xs opacity-80">{shortDate(b.check_in)} → {shortDate(b.check_out)}</p>
+                        </div>
+                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
