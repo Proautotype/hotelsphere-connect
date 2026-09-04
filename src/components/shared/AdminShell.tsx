@@ -49,13 +49,7 @@ export function AdminShell({ children, title }: { children: ReactNode; title?: s
         <LayoutDashboard className="size-5" />
         Hotel Dashboard
       </Link>
-      <button
-        onClick={() => signOut()}
-        className="kinetic-label mt-auto flex items-center gap-3 border-[3px] border-transparent px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:border-ink hover:bg-destructive hover:text-destructive-foreground"
-      >
-        <LogOut className="size-5" />
-        Sign out
-      </button>
+      <SignOutButton className="kinetic-label mt-auto flex items-center gap-3 border-[3px] border-transparent px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:border-ink hover:bg-destructive hover:text-destructive-foreground" />
     </nav>
   );
 
