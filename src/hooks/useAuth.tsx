@@ -59,7 +59,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
 async function fetchRoles(userId: string): Promise<AppRole[]> {
   const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   if (error || !data) return [];
-  return data.map((r) => r.role as AppRole);
+  return (data as { role: string }[]).map((r) => r.role as AppRole);
 }
 
 async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSummary[]> {
