@@ -72,7 +72,7 @@ function BookingsPage() {
             }
           />
         ) : (
-          bookings.map((b) => {
+          (bookings as Array<{ id: string; reference: string; status: string; check_in: string; check_out: string; total: number; amount_paid: number; guests: unknown; rooms: unknown; room_types: unknown }>).map((b) => {
             const guest = b.guests as unknown as { full_name: string } | null;
             const room = b.rooms as unknown as { room_number: string } | null;
             const roomType = b.room_types as unknown as { name: string } | null;
