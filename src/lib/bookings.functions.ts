@@ -17,28 +17,38 @@ function generateRef(prefix: string) {
   return `${prefix}-${ts}${rand}`;
 }
 
+const optionalText = (max: number) =>
+  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().max(max).optional());
+
+const optionalEmail = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.string().email().optional(),
+);
+
 const createBookingSchema = z.object({
   hotelId: z.string().uuid(),
   guest: z.object({
+    id: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
     full_name: z.string().min(2),
-    email: z.string().email().optional(),
-    phone: z.string().max(30).optional(),
+    email: optionalEmail,
+    phone: optionalText(30),
     country: z.string().max(60).default("Ghana"),
-    id_type: z.string().max(40).optional(),
-    id_number: z.string().max(60).optional(),
-    address: z.string().max(200).optional(),
-    city: z.string().max(100).optional(),
-    emergency_contact: z.string().max(100).optional(),
-    notes: z.string().max(1000).optional(),
+    id_type: optionalText(40),
+    id_number: optionalText(60),
+    address: optionalText(200),
+    city: optionalText(100),
+    emergency_contact: optionalText(100),
+    notes: optionalText(1000),
   }),
-  roomTypeId: z.string().uuid().optional(),
-  roomId: z.string().uuid().optional(),
+  roomTypeId: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
+  roomId: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
   checkIn: z.string().date(),
   checkOut: z.string().date(),
   guestsCount: z.number().int().min(1).default(1),
   source: z.enum(["staff", "hotel_website", "discovery", "external"]).default("staff"),
-  notes: z.string().max(2000).optional(),
+  notes: optionalText(2000),
 });
+
 
 export const createBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
