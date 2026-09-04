@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Building2, Users, CalendarDays, CreditCard } from "lucide-react";
 import { money } from "@/lib/format";
 
-export const Route = createFileRoute("/_admin/admin")({
+export const Route = createFileRoute("/_admin/admin/")({
   head: () => ({
     meta: [
       { title: "Platform Overview — Custard Hotels Admin" },
