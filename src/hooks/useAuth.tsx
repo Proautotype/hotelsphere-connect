@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const [p, r, h] = await Promise.all([
         fetchProfile(s.user.id),
         fetchRoles(s.user.id),
-        fetchHotels(s.user.id, false),
+        fetchHotels(s.user.id),
       ]);
       setProfile(p);
       setRoles(r);
@@ -202,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (permission: PermissionKey) => {
       if (isPlatformAdmin) return true;
       if (!activeHotel) return false;
-      if (activeHotel.relation === "owner" || activeHotel.is_demo) return true;
+      if (activeHotel.relation === "owner") return true;
       return activeHotel.permissions.includes(permission);
     },
     [isPlatformAdmin, activeHotel],
