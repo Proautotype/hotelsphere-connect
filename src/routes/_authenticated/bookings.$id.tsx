@@ -146,7 +146,10 @@ function BookingDetail({ id }: { id: string }) {
 
   const submitCash = async () => {
     const amount = parseFloat(paymentAmount);
-    if (!amount || amount <= 0) return toast.error("Enter a payment amount");
+    if (!amount || amount <= 0) {
+      toast.error("Enter a payment amount");
+      return;
+    }
     await run("Payment recorded", async () => {
       await payCash({ data: { bookingId: booking.id, amount, note: "Front desk cash payment" } });
       setPaymentAmount("");
@@ -155,9 +158,15 @@ function BookingDetail({ id }: { id: string }) {
 
   const submitMomo = async () => {
     const amount = parseFloat(paymentAmount);
-    if (!amount || amount <= 0) return toast.error("Enter a payment amount");
+    if (!amount || amount <= 0) {
+      toast.error("Enter a payment amount");
+      return;
+    }
     const email = booking.guests?.email;
-    if (!email) return toast.error("Add an email to the guest profile to charge Mobile Money");
+    if (!email) {
+      toast.error("Add an email to the guest profile to charge Mobile Money");
+      return;
+    }
     setBusy(true);
     try {
       const res = await payMomo({ data: { bookingId: booking.id, email, amount } });
