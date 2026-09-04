@@ -41,7 +41,7 @@ export const recordCashPayment = createServerFn({ method: "POST" })
 
     const { data: booking } = await supabase
       .from("bookings")
-      .select("id, hotel_id, total, amount_paid, guest_id, status, reference, currency")
+      .select("id, hotel_id, total, amount_paid, guest_id, status, reference")
       .eq("id", data.bookingId)
       .single();
     if (!booking) throw new Error("Booking not found");
@@ -62,7 +62,7 @@ export const recordCashPayment = createServerFn({ method: "POST" })
         booking_id: booking.id,
         guest_id: booking.guest_id,
         amount,
-        currency: booking.currency ?? "GHS",
+        currency: "GHS",
         method: "cash",
         provider: "manual",
         status: "successful",
@@ -106,7 +106,7 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
 
     const { data: booking } = await supabase
       .from("bookings")
-      .select("id, hotel_id, total, amount_paid, reference, currency, guests(full_name, phone)")
+      .select("id, hotel_id, total, amount_paid, reference, guests(full_name, phone)")
       .eq("id", data.bookingId)
       .single();
     if (!booking) throw new Error("Booking not found");
@@ -121,7 +121,7 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
         hotel_id: booking.hotel_id,
         booking_id: booking.id,
         amount: data.amount,
-        currency: booking.currency ?? "GHS",
+        currency: "GHS",
         method: "mobile_money",
         provider: "paystack",
         status: "processing",
@@ -145,7 +145,7 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
       body: JSON.stringify({
         email: data.email,
         amount: Math.round(data.amount * 100),
-        currency: (booking.currency ?? "GHS").toUpperCase(),
+        currency: "GHS",
         reference,
         callback_url: typeof process !== "undefined" ? `${process.env["APP_URL"] ?? ""}/payments/verify` : "",
         metadata: {
@@ -216,13 +216,13 @@ export const verifyPaystackPayment = createServerFn({ method: "POST" })
       const { data: booking } = await supabase
         .from("bookings")
         .select("id, amount_paid")
-        .eq("id", payment.booking_id)
+        .eq("id", payment.booking_id as string)
         .single();
       if (booking) {
         await supabaseAdmin
           .from("bookings")
           .update({ amount_paid: round2(Number(booking.amount_paid) + verifiedAmount) })
-          .eq("id", payment.booking_id);
+          .eq("id", payment.booking_id as string);
       }
       await supabaseAdmin.from("audit_logs").insert({
         hotel_id: payment.hotel_id,
@@ -234,7 +234,7 @@ export const verifyPaystackPayment = createServerFn({ method: "POST" })
       return { status: "successful", paymentId: payment.id, amount: verifiedAmount };
     }
 
-    await supabase.from("payments").update({ status: verifiedStatus }).eq("id", payment.id);
+    await supabase.from("payments").update({ status: verifiedStatus as "failed" }).eq("id", payment.id);
     return { status: verifiedStatus, paymentId: payment.id, amount: verifiedAmount };
   });
 
@@ -380,13 +380,13 @@ export const handlePaystackWebhook = createServerFn({ method: "POST" })
     const { data: booking } = await supabaseAdmin
       .from("bookings")
       .select("id, amount_paid")
-      .eq("id", payment.booking_id)
+      .eq("id", payment.booking_id as string)
       .single();
     if (booking) {
       await supabaseAdmin
         .from("bookings")
         .update({ amount_paid: round2(Number(booking.amount_paid) + amount) })
-        .eq("id", payment.booking_id);
+        .eq("id", payment.booking_id as string);
     }
     await supabaseAdmin.from("audit_logs").insert({
       action: "payment.paystack_webhook",
