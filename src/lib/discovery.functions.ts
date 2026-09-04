@@ -267,7 +267,6 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         room_type_id: roomType.id,
         check_in: data.checkIn,
         check_out: data.checkOut,
-        nights,
         guests_count: data.guestsCount,
         room_rate: rate,
         tax_amount: tax,
