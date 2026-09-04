@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGuestsRouteImport } from './routes/_authenticated/guests'
 import { Route as AuthenticatedHousekeepingRouteImport } from './routes/_authenticated/housekeeping'
@@ -65,6 +66,11 @@ const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/guests': typeof AuthenticatedGuestsRoute
   '/housekeeping': typeof AuthenticatedHousekeepingRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/guests': typeof AuthenticatedGuestsRoute
   '/housekeeping': typeof AuthenticatedHousekeepingRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/guests': typeof AuthenticatedGuestsRoute
   '/_authenticated/housekeeping': typeof AuthenticatedHousekeepingRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
+    | '/billing'
     | '/dashboard'
     | '/guests'
     | '/housekeeping'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
+    | '/billing'
     | '/dashboard'
     | '/guests'
     | '/housekeeping'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
+    | '/_authenticated/billing'
     | '/_authenticated/dashboard'
     | '/_authenticated/guests'
     | '/_authenticated/housekeeping'
@@ -411,6 +423,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -594,6 +613,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGuestsRoute: typeof AuthenticatedGuestsRoute
   AuthenticatedHousekeepingRoute: typeof AuthenticatedHousekeepingRoute
@@ -608,6 +628,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGuestsRoute: AuthenticatedGuestsRoute,
   AuthenticatedHousekeepingRoute: AuthenticatedHousekeepingRoute,
