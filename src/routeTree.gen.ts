@@ -15,7 +15,6 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as RegisterRouteImport } from './routes/register'
-import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as AuthenticatedBookingsRouteImport } from './routes/_authenticated/bookings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGuestsRouteImport } from './routes/_authenticated/guests'
@@ -28,6 +27,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as BookingReferenceRouteImport } from './routes/booking.$reference'
 import { Route as HotelsSlugRouteImport } from './routes/hotels.$slug'
+import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
 import { Route as AdminAdminDiscoveryRouteImport } from './routes/_admin/admin.discovery'
 import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
@@ -62,11 +62,6 @@ const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAdminRoute = AdminAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AdminRoute,
 } as any)
 const AuthenticatedBookingsRoute = AuthenticatedBookingsRouteImport.update({
   id: '/bookings',
@@ -129,25 +124,30 @@ const HotelsSlugRoute = HotelsSlugRouteImport.update({
   path: '/hotels/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminDiscoveryRoute = AdminAdminDiscoveryRouteImport.update({
-  id: '/discovery',
-  path: '/discovery',
-  getParentRoute: () => AdminAdminRoute,
+  id: '/admin/discovery',
+  path: '/admin/discovery',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminHotelsRoute = AdminAdminHotelsRouteImport.update({
-  id: '/hotels',
-  path: '/hotels',
-  getParentRoute: () => AdminAdminRoute,
+  id: '/admin/hotels',
+  path: '/admin/hotels',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminAdminRoute,
+  id: '/admin/settings',
+  path: '/admin/settings',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminAdminRoute,
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AuthenticatedBookingsIdRoute = AuthenticatedBookingsIdRouteImport.update({
   id: '/$id',
@@ -166,7 +166,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
-  '/admin': typeof AdminAdminRouteWithChildren
   '/bookings': typeof AuthenticatedBookingsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/guests': typeof AuthenticatedGuestsRoute
@@ -185,13 +184,13 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/admin/': typeof AdminAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
-  '/admin': typeof AdminAdminRouteWithChildren
   '/bookings': typeof AuthenticatedBookingsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/guests': typeof AuthenticatedGuestsRoute
@@ -210,6 +209,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/admin': typeof AdminAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -219,7 +219,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
-  '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_authenticated/bookings': typeof AuthenticatedBookingsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/guests': typeof AuthenticatedGuestsRoute
@@ -238,6 +237,7 @@ export interface FileRoutesById {
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
+  '/_admin/admin/': typeof AdminAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -246,7 +246,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
-    | '/admin'
     | '/bookings'
     | '/dashboard'
     | '/guests'
@@ -265,13 +264,13 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/bookings/$id'
     | '/api/public/paystack-webhook'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/discover'
     | '/register'
-    | '/admin'
     | '/bookings'
     | '/dashboard'
     | '/guests'
@@ -290,6 +289,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/bookings/$id'
     | '/api/public/paystack-webhook'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -298,7 +298,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
-    | '/_admin/admin'
     | '/_authenticated/bookings'
     | '/_authenticated/dashboard'
     | '/_authenticated/guests'
@@ -317,6 +316,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/users'
     | '/_authenticated/bookings/$id'
     | '/api/public/paystack-webhook'
+    | '/_admin/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -374,13 +374,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_admin/admin': {
-      id: '/_admin/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminAdminRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/_authenticated/bookings': {
       id: '/_authenticated/bookings'
@@ -466,33 +459,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HotelsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/admin/': {
+      id: '/_admin/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/discovery': {
       id: '/_admin/admin/discovery'
-      path: '/discovery'
+      path: '/admin/discovery'
       fullPath: '/admin/discovery'
       preLoaderRoute: typeof AdminAdminDiscoveryRouteImport
-      parentRoute: typeof AdminAdminRoute
+      parentRoute: typeof AdminRoute
     }
     '/_admin/admin/hotels': {
       id: '/_admin/admin/hotels'
-      path: '/hotels'
+      path: '/admin/hotels'
       fullPath: '/admin/hotels'
       preLoaderRoute: typeof AdminAdminHotelsRouteImport
-      parentRoute: typeof AdminAdminRoute
+      parentRoute: typeof AdminRoute
     }
     '/_admin/admin/settings': {
       id: '/_admin/admin/settings'
-      path: '/settings'
+      path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminAdminSettingsRouteImport
-      parentRoute: typeof AdminAdminRoute
+      parentRoute: typeof AdminRoute
     }
     '/_admin/admin/users': {
       id: '/_admin/admin/users'
-      path: '/users'
+      path: '/admin/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminAdminUsersRouteImport
-      parentRoute: typeof AdminAdminRoute
+      parentRoute: typeof AdminRoute
     }
     '/_authenticated/bookings/$id': {
       id: '/_authenticated/bookings/$id'
@@ -511,30 +511,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AdminAdminRouteChildren {
+interface AdminRouteChildren {
   AdminAdminDiscoveryRoute: typeof AdminAdminDiscoveryRoute
   AdminAdminHotelsRoute: typeof AdminAdminHotelsRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
+  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
 }
 
-const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminDiscoveryRoute: AdminAdminDiscoveryRoute,
   AdminAdminHotelsRoute: AdminAdminHotelsRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
-}
-
-const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
-  AdminAdminRouteChildren,
-)
-
-interface AdminRouteChildren {
-  AdminAdminRoute: typeof AdminAdminRouteWithChildren
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdminRoute: AdminAdminRouteWithChildren,
+  AdminAdminIndexRoute: AdminAdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
