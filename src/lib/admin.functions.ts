@@ -17,7 +17,7 @@ async function assertPlatformTeam(context: { supabase: unknown }) {
 }
 
 async function logAudit(
-  admin: { from: (t: "audit_logs") => { insert: (v: Record<string, unknown>) => Promise<unknown> } },
+  admin: { from: (t: "audit_logs") => { insert: (v: Record<string, unknown>) => unknown } },
   userId: string,
   action: string,
   resource: string,

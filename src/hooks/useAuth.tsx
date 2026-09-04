@@ -4,7 +4,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import type { PermissionKey, StaffRole } from "@/lib/permissions";
 import { DEFAULT_ROLE_PERMISSIONS } from "@/lib/permissions";
 
-export type AppRole = "platform_admin" | "hotel_owner" | "hotel_staff" | "customer";
+export type AppRole = "platform_admin" | "platform_support" | "hotel_owner" | "hotel_staff" | "customer";
 
 export interface HotelSummary {
   id: string;
