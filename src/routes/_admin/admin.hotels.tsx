@@ -82,8 +82,9 @@ function AdminHotelsPage() {
         {hotels.length === 0 ? (
           <EmptyState icon={Building2} title="No hotels yet" description="Hotels will appear here once owners register." />
         ) : (
-          (hotels as Array<{ id: string; name: string; status: string; city: string | null; country: string | null; hotel_type: string | null; room_count: number | null; created_at: string; profiles: unknown }>).map((hotel) => {
-            const owner = hotel.profiles as unknown as { full_name: string; email: string } | null;
+          hotels.map((hotel) => {
+            const owner = hotel.owner;
+
             return (
               <Card key={hotel.id}>
                 <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
