@@ -72,7 +72,7 @@ function AdminHotelsPage() {
         {hotels.length === 0 ? (
           <EmptyState icon={Building2} title="No hotels yet" description="Hotels will appear here once owners register." />
         ) : (
-          hotels.map((hotel) => {
+          (hotels as Array<{ id: string; name: string; status: string; city: string | null; country: string | null; hotel_type: string | null; room_count: number | null; created_at: string; profiles: unknown }>).map((hotel) => {
             const owner = hotel.profiles as unknown as { full_name: string; email: string } | null;
             return (
               <Card key={hotel.id}>
@@ -83,7 +83,7 @@ function AdminHotelsPage() {
                       <StatusBadge status={hotel.status} />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {hotel.city}, {hotel.country} · {hotel.hotel_type} · {hotel.room_count} rooms
+                      {hotel.city}, {hotel.country} · {hotel.hotel_type} · {hotel.room_count ?? 0} rooms
                     </p>
                     <p className="text-xs text-muted-foreground">Owner: {owner?.full_name ?? "—"} · {owner?.email ?? "—"} · Registered {shortDate(hotel.created_at)}</p>
                   </div>
