@@ -61,7 +61,7 @@ function GuestsPage() {
         {filtered.length === 0 ? (
           <EmptyState icon={Users} title="No guests found" description="Guests are created when you make a booking." />
         ) : (
-          filtered.map((g) => (
+          filtered.map((g: { id: string; full_name: string; email: string | null; phone: string | null; country: string | null; id_type: string | null; id_number: string | null }) => (
             <Card key={g.id}>
               <CardContent className="p-4">
                 <p className="font-medium text-foreground">{g.full_name}</p>
