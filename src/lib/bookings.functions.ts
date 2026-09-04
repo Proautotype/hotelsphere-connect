@@ -4,8 +4,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
-async function assertHotelAccess(supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> }, hotelId: string) {
-  const { data } = await supabase.rpc("has_hotel_access", { _hotel_id: hotelId });
+type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> };
+
+async function assertHotelAccess(supabase: unknown, hotelId: string) {
+  const { data } = await (supabase as RpcClient).rpc("has_hotel_access", { _hotel_id: hotelId });
   if (data !== true) throw new Error("You do not have access to this hotel");
 }
 
