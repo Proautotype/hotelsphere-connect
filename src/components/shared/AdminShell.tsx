@@ -1,9 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Building2, Users, Settings, Globe, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Building2, Users, Settings, Globe, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { SignOutButton } from "./SignOutButton";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
@@ -16,7 +17,7 @@ const NAV = [
 ];
 
 export function AdminShell({ children, title }: { children: ReactNode; title?: string }) {
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -49,13 +50,7 @@ export function AdminShell({ children, title }: { children: ReactNode; title?: s
         <LayoutDashboard className="size-5" />
         Hotel Dashboard
       </Link>
-      <button
-        onClick={() => signOut()}
-        className="kinetic-label mt-auto flex items-center gap-3 border-[3px] border-transparent px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:border-ink hover:bg-destructive hover:text-destructive-foreground"
-      >
-        <LogOut className="size-5" />
-        Sign out
-      </button>
+      <SignOutButton className="kinetic-label mt-auto flex items-center gap-3 border-[3px] border-transparent px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:border-ink hover:bg-destructive hover:text-destructive-foreground" />
     </nav>
   );
 
