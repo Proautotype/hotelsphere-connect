@@ -49,12 +49,13 @@ function HousekeepingPage() {
   const { data: rooms, refetch } = useSuspenseQuery({ queryKey: ["rooms", "housekeeping"], queryFn: fetchRooms });
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("rooms").update({ status }).eq("id", id);
+    const { error } = await supabase.from("rooms").update({ status: status as "dirty" }).eq("id", id);
     if (error) return;
     await refetch();
   };
 
-  const groups: Record<string, typeof rooms> = { dirty: [], cleaning: [], inspected: [], available: [], occupied: [], maintenance: [], out_of_service: [], reserved: [] };
+  type RoomRow = { id: string; room_number: string; status: string; room_types: unknown };
+  const groups: Record<string, RoomRow[]> = { dirty: [], cleaning: [], inspected: [], available: [], occupied: [], maintenance: [], out_of_service: [], reserved: [] };
   (rooms as Array<{ id: string; room_number: string; status: string; room_types: unknown }>).forEach((r) => {
     const key = (r.status as keyof typeof groups) ?? "available";
     (groups[key] ??= []).push(r);

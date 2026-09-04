@@ -23,8 +23,10 @@ const registerSchema = z.object({
   amenities: z.array(z.string()).default([]),
 });
 
-async function assertHotelAccess(supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> }, hotelId: string) {
-  const { data } = await supabase.rpc("has_hotel_access", { _hotel_id: hotelId });
+type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> };
+
+async function assertHotelAccess(supabase: unknown, hotelId: string) {
+  const { data } = await (supabase as RpcClient).rpc("has_hotel_access", { _hotel_id: hotelId });
   if (data !== true) throw new Error("You do not have access to this hotel");
 }
 
@@ -126,7 +128,7 @@ export const setHotelStatus = createServerFn({ method: "POST" })
       update["onboarding_step"] = 6;
     }
 
-    const { error } = await supabaseAdmin.from("hotels").update(update).eq("id", data.hotelId);
+    const { error } = await supabaseAdmin.from("hotels").update(update as never).eq("id", data.hotelId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -135,7 +137,7 @@ export const setHotelStatus = createServerFn({ method: "POST" })
       action: "hotel.status_changed",
       resource: "hotel",
       resource_id: data.hotelId,
-      new_value: update,
+      new_value: update as Record<string, never>,
     });
 
     return { ok: true };
