@@ -9,7 +9,6 @@ import {
   CreditCard,
   Settings,
   UserCog,
-  LogOut,
   Menu,
   X,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { SignOutButton } from "./SignOutButton";
 import { HotelSwitcher } from "./HotelSwitcher";
 import { HotelGate } from "./HotelGate";
 import { NotificationBell } from "./NotificationBell";
@@ -36,7 +36,7 @@ const NAV = [
 ];
 
 export function DashboardShell({ children, title }: { children: ReactNode; title?: string }) {
-  const { profile, signOut, isPlatformAdmin } = useAuth();
+  const { profile, isPlatformAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
