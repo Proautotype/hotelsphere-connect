@@ -106,6 +106,15 @@ function RegisterPage() {
           <p className="mt-2 text-sm text-muted-foreground">Tell us about your property. You can complete the rest after registration.</p>
         </div>
 
+        <ol className="mb-8 grid gap-3 border border-border bg-sand/60 p-4 text-xs text-muted-foreground sm:grid-cols-4">
+          <li><span className="font-semibold text-foreground">1. Register</span><br />Submit your property details.</li>
+          <li><span className="font-semibold text-foreground">2. Review</span><br />Custard Hotels approves or rejects it.</li>
+          <li><span className="font-semibold text-foreground">3. Set up</span><br />Add rooms, rates and payment methods.</li>
+          <li><span className="font-semibold text-foreground">4. Operate</span><br />Invite staff, take bookings, go public.</li>
+        </ol>
+
+
+
         <div className="mb-6 flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <span className={step === 1 ? "text-primary" : ""}>1. Property</span>
           <span>/</span>

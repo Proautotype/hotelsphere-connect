@@ -62,11 +62,10 @@ async function fetchRoles(userId: string): Promise<AppRole[]> {
   return (data as { role: string }[]).map((r) => r.role as AppRole);
 }
 
-async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSummary[]> {
-  const [owned, memberships, demos] = await Promise.all([
+async function fetchHotels(userId: string): Promise<HotelSummary[]> {
+  const [owned, memberships] = await Promise.all([
     supabase.from("hotels").select("*").eq("owner_id", userId),
     supabase.from("hotel_members").select("*, hotels(*)").eq("user_id", userId).eq("is_active", true),
-    isAdmin ? { data: [] as Record<string, unknown>[], error: null } : supabase.from("hotels").select("*").eq("is_demo", true),
   ]);
 
   const map: Record<string, HotelSummary> = {};
@@ -90,18 +89,6 @@ async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSumma
       staff_role: member.staff_role,
       permissions: member.permissions ?? DEFAULT_ROLE_PERMISSIONS[member.staff_role] ?? [],
     };
-  });
-
-  (demos.data ?? []).forEach((h: Record<string, unknown>) => {
-    const hotel = h as unknown as HotelSummaryRaw;
-    if (!map[hotel.id]) {
-      map[hotel.id] = {
-        ...mapHotel(hotel),
-        relation: "demo",
-        staff_role: null,
-        permissions: [],
-      };
-    }
   });
 
   return Object.values(map).sort((a, b) => {
@@ -163,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const [p, r, h] = await Promise.all([
         fetchProfile(s.user.id),
         fetchRoles(s.user.id),
-        fetchHotels(s.user.id, false),
+        fetchHotels(s.user.id),
       ]);
       setProfile(p);
       setRoles(r);
@@ -215,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (permission: PermissionKey) => {
       if (isPlatformAdmin) return true;
       if (!activeHotel) return false;
-      if (activeHotel.relation === "owner" || activeHotel.is_demo) return true;
+      if (activeHotel.relation === "owner") return true;
       return activeHotel.permissions.includes(permission);
     },
     [isPlatformAdmin, activeHotel],

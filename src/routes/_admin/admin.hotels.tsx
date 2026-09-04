@@ -84,7 +84,10 @@ function AdminHotelsPage() {
 
   return (
     <AdminShell title="Hotels">
-      <PageHeader title="Hotel registrations" description="Approve, suspend, or reject hotel registrations." />
+      <PageHeader
+        title="Hotel registrations"
+        description="Every hotel that applies to join Custard Hotels lands here as Pending. Approving one gives its owner a live hotel workspace; rejecting or suspending one shuts operations down."
+      />
 
       <div className="mt-6 space-y-4">
         {hotels.length === 0 ? (

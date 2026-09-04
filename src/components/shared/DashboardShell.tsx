@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { HotelSwitcher } from "./HotelSwitcher";
+import { HotelGate } from "./HotelGate";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
@@ -134,7 +135,11 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <HotelGate allow={location.pathname === "/settings" || location.pathname === "/onboarding"}>
+            {children}
+          </HotelGate>
+        </main>
       </div>
     </div>
   );
