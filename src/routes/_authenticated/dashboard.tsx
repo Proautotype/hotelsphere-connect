@@ -162,10 +162,10 @@ function DashboardPage() {
           </CardHeader>
           <CardContent>
             {stats.upcoming.length === 0 ? (
-              <EmptyState title="No upcoming bookings" description="Create a booking to see it here." />
+              <EmptyState icon={CalendarDays} title="No upcoming bookings" description="Create a booking to see it here." />
             ) : (
               <div className="space-y-3">
-                {stats.upcoming.map((b) => {
+                {(stats.upcoming as Array<{ id: string; reference: string; check_in: string; check_out: string; status: string; guests: unknown; rooms: unknown }>).map((b) => {
                   const guest = b.guests as unknown as { full_name: string } | null;
                   const room = b.rooms as unknown as { room_number: string } | null;
                   return (
