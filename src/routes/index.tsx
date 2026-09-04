@@ -90,7 +90,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-5">
             <div className="ink kinetic-tilt shadow-hard animate-rise bg-card p-6 [animation-delay:120ms]">
               <div className="ink mb-4 size-12 bg-amber" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight">Hotel operations</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">Hotel operations</h3>
               <p className="text-sm text-muted-foreground">
                 Room inventory, room types, availability and pricing in one dashboard.
               </p>
@@ -98,7 +98,7 @@ export default function HomePage() {
 
             <div className="ink kinetic-tilt-right shadow-hard-teal animate-rise bg-card p-6 sm:translate-y-8 [animation-delay:200ms]">
               <div className="ink mb-4 size-12 bg-primary" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight">Bookings &amp; reception</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">Bookings &amp; reception</h3>
               <p className="text-sm text-muted-foreground">
                 Check in, check out and settle folios for walk-ins and online stays.
               </p>
@@ -106,7 +106,7 @@ export default function HomePage() {
 
             <div className="ink kinetic-tilt-right shadow-hard-amber animate-rise bg-card p-6 [animation-delay:280ms]">
               <div className="ink mb-4 size-12 bg-ink" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight">Payments &amp; cash</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">Payments &amp; cash</h3>
               <p className="text-sm text-muted-foreground">
                 Mobile money, card and cash with audited cashier sessions.
               </p>
@@ -114,7 +114,7 @@ export default function HomePage() {
 
             <div className="ink kinetic-tilt shadow-hard animate-rise bg-ink p-6 sm:translate-y-8 [animation-delay:360ms]">
               <div className="mb-4 size-12 border-[3px] border-background bg-background" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight text-background">Tenant isolation</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal text-background">Tenant isolation</h3>
               <p className="text-sm text-background/70">
                 Every hotel's data stays private. Platform admins handle approvals.
               </p>
