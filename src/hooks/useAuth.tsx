@@ -158,7 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const saved = typeof window !== "undefined" ? window.localStorage.getItem(ACTIVE_HOTEL_KEY) : null;
       const hotelIds = new Set(h.map((hotel) => hotel.id));
-      const selected = saved && hotelIds.has(saved) ? saved : h[0]?.id ?? null;
+      // With several workplaces we ask the person to choose instead of guessing.
+      const selected = saved && hotelIds.has(saved) ? saved : h.length === 1 ? h[0]!.id : null;
       setActiveHotelId(selected);
     } else {
       setProfile(null);
@@ -187,7 +188,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, [load]);
 
-  const activeHotel = useMemo(() => hotels.find((h) => h.id === activeHotelId) ?? hotels[0] ?? null, [hotels, activeHotelId]);
+  const activeHotel = useMemo(
+    () => hotels.find((h) => h.id === activeHotelId) ?? (hotels.length === 1 ? hotels[0]! : null),
+    [hotels, activeHotelId],
+  );
 
   const selectHotel = useCallback((id: string | null) => {
     setActiveHotelId(id);
