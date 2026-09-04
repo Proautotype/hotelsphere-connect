@@ -259,10 +259,18 @@ export const createPublicBooking = createServerFn({ method: "POST" })
       await supabaseAdmin.from("guests").update({ full_name: data.fullName, phone: data.phone }).eq("id", guestId);
     }
 
+    // Lock in the commission rate that applies right now, so later rate
+    // changes never rewrite history.
+    const { data: commissionPercent } = await supabaseAdmin.rpc("hotel_commission_percent", { _hotel_id: hotel.id });
+    const commissionRate = Number(commissionPercent ?? 0);
+    const commissionAmount = round2((total * commissionRate) / 100);
+
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .insert({
         hotel_id: hotel.id,
+        commission_percent: commissionRate,
+        commission_amount: commissionAmount,
         guest_id: guestId,
         room_type_id: roomType.id,
         check_in: data.checkIn,

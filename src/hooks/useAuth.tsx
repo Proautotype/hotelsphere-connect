@@ -4,7 +4,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import type { PermissionKey, StaffRole } from "@/lib/permissions";
 import { DEFAULT_ROLE_PERMISSIONS } from "@/lib/permissions";
 
-export type AppRole = "platform_admin" | "hotel_owner" | "hotel_staff" | "customer";
+export type AppRole = "platform_admin" | "platform_support" | "hotel_owner" | "hotel_staff" | "customer";
 
 export interface HotelSummary {
   id: string;
@@ -41,6 +41,8 @@ interface AuthContextValue {
   activeHotel: HotelSummary | null;
   selectHotel: (id: string | null) => void;
   isPlatformAdmin: boolean;
+  isPlatformSupport: boolean;
+  isPlatformTeam: boolean;
   can: (permission: PermissionKey) => boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -137,6 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeHotelId, setActiveHotelId] = useState<string | null>(null);
 
   const isPlatformAdmin = roles.includes("platform_admin");
+  const isPlatformSupport = roles.includes("platform_support");
+  const isPlatformTeam = isPlatformAdmin || isPlatformSupport;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -204,12 +208,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const can = useCallback(
     (permission: PermissionKey) => {
-      if (isPlatformAdmin) return true;
+      // Platform staff never gain hotel powers — the two worlds stay separate.
       if (!activeHotel) return false;
       if (activeHotel.relation === "owner") return true;
+      if (activeHotel.staff_role === "hotel_admin") return true;
       return activeHotel.permissions.includes(permission);
     },
-    [isPlatformAdmin, activeHotel],
+    [activeHotel],
   );
 
   const signOut = useCallback(async () => {
@@ -237,6 +242,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeHotel,
         selectHotel,
         isPlatformAdmin,
+        isPlatformSupport,
+        isPlatformTeam,
         can,
         refresh: load,
         signOut,
