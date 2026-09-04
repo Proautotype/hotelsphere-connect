@@ -78,7 +78,7 @@ function BookingDetailPage() {
   return <NewBookingForm onCreated={(b) => setBooking(b)} />;
 }
 
-function NewBookingForm({ onCreated }: { onCreated: (b: { id: string; reference: string; total: number }) => void }) {
+function NewBookingForm({ onCreated }: { onCreated: (b: { bookingId: string; reference: string; total: number }) => void }) {
   const { activeHotel } = useAuth();
   const create = useServerFn(createBooking);
   const [rooms, setRooms] = useState<{ id: string; room_number: string; room_type_id: string; room_types: { name: string } | null }[]>([]);
@@ -107,9 +107,9 @@ function NewBookingForm({ onCreated }: { onCreated: (b: { id: string; reference:
     setGuests((guestsRes.data ?? []) as typeof guests);
   };
 
-  useState(() => {
+  useEffect(() => {
     void loadLookups();
-  });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
