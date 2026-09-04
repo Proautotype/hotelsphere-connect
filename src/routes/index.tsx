@@ -59,7 +59,7 @@ export default function HomePage() {
             <div className="ink inline-block -rotate-1 bg-primary px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary-foreground sm:text-sm">
               Now serving Accra, Kumasi &amp; Cape Coast
             </div>
-            <h1 className="font-display text-5xl font-extrabold uppercase leading-[0.85] tracking-tighter sm:text-7xl lg:text-8xl">
+            <h1 className="font-display text-5xl font-extrabold uppercase leading-[0.85] tracking-tighter sm:text-6xl lg:text-7xl">
               <span className="animate-swipe block [animation-delay:60ms]">Run your hotel</span>
               <span className="animate-swipe block text-primary underline decoration-[8px] underline-offset-[10px] [animation-delay:180ms]">
                 without
