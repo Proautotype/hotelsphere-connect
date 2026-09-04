@@ -25,35 +25,41 @@ export const Route = createFileRoute("/_admin/admin/users")({
     ],
   }),
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["admin", "users"],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*, user_roles(role)")
-          .order("created_at", { ascending: false })
-          .limit(200);
-        if (error) throw new Error(error.message);
-        return data ?? [];
-      },
-    });
+    await context.queryClient.ensureQueryData({ queryKey: ["admin", "users"], queryFn: fetchAdminUsers });
   },
   component: AdminUsersPage,
 });
 
+interface AdminUserRow {
+  id: string;
+  full_name: string;
+  email: string | null;
+  created_at: string;
+  roles: string[];
+}
+
+async function fetchAdminUsers(): Promise<AdminUserRow[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  const profiles = data ?? [];
+  const ids = profiles.map((p) => p.id);
+  const byUser = new Map<string, string[]>();
+  if (ids.length > 0) {
+    const { data: roles } = await supabase.from("user_roles").select("user_id, role").in("user_id", ids);
+    for (const r of roles ?? []) {
+      byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r.role as string]);
+    }
+  }
+  return profiles.map((p) => ({ ...p, roles: byUser.get(p.id) ?? [] }));
+}
+
 function AdminUsersPage() {
-  const { data: users, refetch } = useSuspenseQuery({
-    queryKey: ["admin", "users"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*, user_roles(role)")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    },
-  });
+  const { data: users, refetch } = useSuspenseQuery({ queryKey: ["admin", "users"], queryFn: fetchAdminUsers });
+
   const changeRole = useServerFn(setPlatformAdmin);
   const [busy, setBusy] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
