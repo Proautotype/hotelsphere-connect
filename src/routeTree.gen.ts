@@ -30,6 +30,7 @@ import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index
 import { Route as AdminAdminDiscoveryRouteImport } from './routes/_admin/admin.discovery'
 import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
 import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
+import { Route as AdminAdminRequestsRouteImport } from './routes/_admin/admin.requests'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
 import { Route as AdminAdminTeamRouteImport } from './routes/_admin/admin.team'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
@@ -141,6 +142,11 @@ const AdminAdminPlansRoute = AdminAdminPlansRouteImport.update({
   path: '/admin/plans',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminRequestsRoute = AdminAdminRequestsRouteImport.update({
+  id: '/admin/requests',
+  path: '/admin/requests',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/plans': typeof AdminAdminPlansRoute
+  '/admin/requests': typeof AdminAdminRequestsRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/plans': typeof AdminAdminPlansRoute
+  '/admin/requests': typeof AdminAdminRequestsRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/_admin/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/_admin/admin/hotels': typeof AdminAdminHotelsRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
+  '/_admin/admin/requests': typeof AdminAdminRequestsRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
   '/_admin/admin/team': typeof AdminAdminTeamRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/admin/discovery'
     | '/admin/hotels'
     | '/admin/plans'
+    | '/admin/requests'
     | '/admin/settings'
     | '/admin/team'
     | '/admin/users'
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin/discovery'
     | '/admin/hotels'
     | '/admin/plans'
+    | '/admin/requests'
     | '/admin/settings'
     | '/admin/team'
     | '/admin/users'
@@ -335,6 +346,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/discovery'
     | '/_admin/admin/hotels'
     | '/_admin/admin/plans'
+    | '/_admin/admin/requests'
     | '/_admin/admin/settings'
     | '/_admin/admin/team'
     | '/_admin/admin/users'
@@ -505,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminPlansRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/requests': {
+      id: '/_admin/admin/requests'
+      path: '/admin/requests'
+      fullPath: '/admin/requests'
+      preLoaderRoute: typeof AdminAdminRequestsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/settings': {
       id: '/_admin/admin/settings'
       path: '/admin/settings'
@@ -554,6 +573,7 @@ interface AdminRouteChildren {
   AdminAdminDiscoveryRoute: typeof AdminAdminDiscoveryRoute
   AdminAdminHotelsRoute: typeof AdminAdminHotelsRoute
   AdminAdminPlansRoute: typeof AdminAdminPlansRoute
+  AdminAdminRequestsRoute: typeof AdminAdminRequestsRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
   AdminAdminTeamRoute: typeof AdminAdminTeamRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
@@ -564,6 +584,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminDiscoveryRoute: AdminAdminDiscoveryRoute,
   AdminAdminHotelsRoute: AdminAdminHotelsRoute,
   AdminAdminPlansRoute: AdminAdminPlansRoute,
+  AdminAdminRequestsRoute: AdminAdminRequestsRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
   AdminAdminTeamRoute: AdminAdminTeamRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
