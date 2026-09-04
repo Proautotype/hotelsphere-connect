@@ -93,11 +93,26 @@ export function NotificationBell() {
             <p className="p-4 text-sm text-muted-foreground">Nothing here yet.</p>
           ) : (
             items.map((n) => (
-              <div key={n.id} className={cn("border-b border-border px-3 py-2.5", !n.is_read && "bg-muted")}>
-                <p className="text-sm font-semibold text-foreground">{n.title}</p>
-                <p className="text-sm text-muted-foreground">{n.body}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{dateTime(n.created_at)}</p>
-              </div>
+              <button
+                key={n.id}
+                onClick={() => void openItem(n)}
+                className={cn(
+                  "group flex w-full items-start gap-2 border-b border-border px-3 py-2.5 text-left transition-colors hover:bg-amber hover:text-amber-foreground",
+                  !n.is_read && "bg-muted",
+                )}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    {!n.is_read ? <span className="size-2 shrink-0 bg-primary" /> : null}
+                    <span className="truncate text-sm font-semibold">{n.title}</span>
+                  </span>
+                  <span className="block text-sm opacity-80">{n.body}</span>
+                  <span className="mt-1 block text-[11px] uppercase tracking-wide opacity-70">
+                    {dateTime(n.created_at)} · View
+                  </span>
+                </span>
+                <ChevronRight className="mt-1 size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+              </button>
             ))
           )}
         </div>
