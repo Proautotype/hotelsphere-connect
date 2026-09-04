@@ -20,8 +20,9 @@ function toneFor(status: string): Tone {
 
 export function StatusBadge({ status }: StatusBadgeProps) {
   const tone = toneFor(status ?? "");
+  const base = "border-[2px] border-ink font-display text-[10px] font-extrabold uppercase tracking-widest";
   if (tone === "warning") {
-    return <Badge variant="outline" className="border-amber-700/20 bg-amber-700/10 text-amber-700">{titleCase(status)}</Badge>;
+    return <Badge variant="outline" className={cn(base, "bg-amber text-amber-foreground")}>{titleCase(status)}</Badge>;
   }
-  return <Badge variant={tone}>{titleCase(status)}</Badge>;
+  return <Badge variant={tone} className={base}>{titleCase(status)}</Badge>;
 }
