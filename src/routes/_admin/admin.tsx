@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_admin/admin")({
           supabase.from("bookings").select("id", { count: "exact", head: true }),
           supabase.from("payments").select("amount", { count: "exact" }).eq("status", "successful"),
         ]);
-        const revenue = (payments.data ?? []).reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+        const revenue = (payments.data ?? []).reduce((sum: number, p: { amount: number }) => sum + Number(p.amount ?? 0), 0);
         return {
           hotels: hotels.count ?? 0,
           users: users.count ?? 0,
