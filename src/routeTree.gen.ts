@@ -26,6 +26,7 @@ import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
+import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AuthenticatedBookingsIdRouteImport } from './routes/_authenticated/bookings.$id'
 import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
@@ -114,6 +115,11 @@ const AdminAdminHotelsRoute = AdminAdminHotelsRouteImport.update({
   path: '/hotels',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
+  '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
+  '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_admin/admin/hotels': typeof AdminAdminHotelsRoute
+  '/_admin/admin/settings': typeof AdminAdminSettingsRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/admin/hotels'
+    | '/admin/settings'
     | '/admin/users'
     | '/bookings/$id'
     | '/api/public/paystack-webhook'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/admin/hotels'
+    | '/admin/settings'
     | '/admin/users'
     | '/bookings/$id'
     | '/api/public/paystack-webhook'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_admin/admin/hotels'
+    | '/_admin/admin/settings'
     | '/_admin/admin/users'
     | '/_authenticated/bookings/$id'
     | '/api/public/paystack-webhook'
@@ -389,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminHotelsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/settings': {
+      id: '/_admin/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminAdminSettingsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/users': {
       id: '/_admin/admin/users'
       path: '/users'
@@ -415,11 +434,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminAdminRouteChildren {
   AdminAdminHotelsRoute: typeof AdminAdminHotelsRoute
+  AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
 }
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminHotelsRoute: AdminAdminHotelsRoute,
+  AdminAdminSettingsRoute: AdminAdminSettingsRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
 }
 

@@ -165,3 +165,76 @@ export const togglePlatformSetting = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+const hotelSettingsSchema = z.object({
+  hotelId: z.string().uuid(),
+  name: z.string().min(2).max(120).optional(),
+  description: z.string().max(2000).optional(),
+  phone: z.string().max(30).optional(),
+  email: z.string().email().max(160).optional(),
+  website: z.string().max(200).optional(),
+  address: z.string().max(200).optional(),
+  city: z.string().max(100).optional(),
+  region: z.string().max(100).optional(),
+  currency: z.string().length(3).optional(),
+  checkInTime: z.string().max(10).optional(),
+  checkOutTime: z.string().max(10).optional(),
+  taxPercent: z.number().min(0).max(100).optional(),
+  serviceChargePercent: z.number().min(0).max(100).optional(),
+  cancellationPolicy: z.string().max(2000).optional(),
+  isPublicListed: z.boolean().optional(),
+  acceptOnlineBookings: z.boolean().optional(),
+  showPrices: z.boolean().optional(),
+  showAvailability: z.boolean().optional(),
+});
+
+export const updateHotelSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => hotelSettingsSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertHotelAccess(supabase, data.hotelId);
+
+    const map: Record<string, string> = {
+      name: "name",
+      description: "description",
+      phone: "phone",
+      email: "email",
+      website: "website",
+      address: "address",
+      city: "city",
+      region: "region",
+      currency: "currency",
+      checkInTime: "check_in_time",
+      checkOutTime: "check_out_time",
+      taxPercent: "tax_percent",
+      serviceChargePercent: "service_charge_percent",
+      cancellationPolicy: "cancellation_policy",
+      isPublicListed: "is_public_listed",
+      acceptOnlineBookings: "accept_online_bookings",
+      showPrices: "show_prices",
+      showAvailability: "show_availability",
+    };
+
+    const update: Record<string, unknown> = {};
+    for (const [key, column] of Object.entries(map)) {
+      const value = (data as Record<string, unknown>)[key];
+      if (value !== undefined) update[column] = value;
+    }
+    if (Object.keys(update).length === 0) return { ok: true };
+
+    const { error } = await supabase.from("hotels").update(update as never).eq("id", data.hotelId);
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: data.hotelId,
+      user_id: userId,
+      action: "hotel.settings_updated",
+      resource: "hotel",
+      resource_id: data.hotelId,
+      new_value: update as Record<string, never>,
+    });
+
+    return { ok: true };
+  });
