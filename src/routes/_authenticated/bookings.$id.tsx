@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
