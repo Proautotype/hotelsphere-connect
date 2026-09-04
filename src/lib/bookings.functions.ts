@@ -123,7 +123,7 @@ export const createBooking = createServerFn({ method: "POST" })
       .from("bookings")
       .insert({
         hotel_id: data.hotelId,
-        guest_id: guest.id,
+        guest_id: guestId,
         room_type_id: roomTypeId,
         room_id: roomId,
         check_in: data.checkIn,
