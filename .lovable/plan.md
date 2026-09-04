@@ -1,78 +1,58 @@
-# Custard Hotels — Phase 1: Foundation & Core Operations
+# Who's who on Custard Hotels — and fixing the demo-hotel confusion
 
-A multi-tenant hotel platform: hotels run their business in private dashboards, and the platform company oversees every hotel from a separate admin dashboard.
+## The two "sides" of the product
 
-Phase 1 delivers the foundation plus day-to-day hotel operations. Public discovery, promotions, reviews, subscriptions billing, and full reporting come in later phases on top of this same schema.
+Think of it as a marketplace with a landlord:
 
-## What Phase 1 includes
+1. **The platform** = Custard Hotels itself, the company running the site. Its staff are **platform admins**. They don't run any hotel. They approve or reject hotels that apply to join, suspend bad actors, decide which hotels appear on the public search page, and see totals across all hotels.
+2. **A hotel** = an independent business with its own private workspace. Its **owner** registers it, and invites **staff** (manager, receptionist, cashier, accountant, housekeeping, restaurant) who only ever see that one hotel.
+3. **A customer** = a guest browsing the public search page and booking a room. No dashboard.
 
-**Accounts & roles**
-- Email/password sign-up and login, plus Google sign-in.
-- Four audiences: platform admin, hotel owner, hotel staff (Manager, Receptionist, Cashier, Accountant, Housekeeping, Restaurant), and customer.
-- Roles live in a dedicated roles table, never on profiles, so permissions can't be self-escalated.
-- Staff invitations by the hotel owner with per-role permission toggles (view/create/modify/cancel bookings, payments, refunds, guests, rooms, services, reports, staff, settings).
+## The intended flow
 
-**Hotel registration & approval**
-- Public "Register your hotel" flow: owner account details, hotel details (name, description, type, address, city, region, country, contacts, website, logo, cover, room count), and business configuration (currency, timezone, check-in/out times, tax, service charge, cancellation policy).
-- New hotels land in Pending. Platform admin approves, rejects, suspends, reactivates, or archives. A platform setting switches between auto-approval and manual review.
+```text
+person signs up            -> customer (no hotel)
+customer registers a hotel -> hotel is "Pending", owner sees a waiting screen
+platform admin reviews it  -> Approve / Reject
+approved                   -> owner gets the hotel dashboard, runs onboarding,
+                              can invite staff, can be listed on public search
+```
 
-**Onboarding wizard**
-- Guided steps with a saved progress bar: hotel info → logo/cover → currency → tax → room types → rooms → pricing → amenities → payment methods → staff → public listing → done. Owners can leave and resume.
+Approval is done by a platform admin on the Platform > Hotels page. There is also a platform setting "auto-approve hotels" (currently off) that skips manual review.
 
-**Hotel dashboard**
-- Today's bookings, check-ins, check-outs, in-house guests, room status counts (available/reserved/occupied/cleaning/maintenance/out of service), today's and monthly revenue, outstanding balances, occupancy rate, recent and upcoming bookings.
-- Charts: revenue trend, occupancy trend, bookings, payment-method mix, room performance.
+## What is actually wrong today
 
-**Rooms**
-- Room types (name, description, max guests, beds, bed type, base price, amenities, images) and individual rooms (number, type, floor, status, notes).
+Confirmed by checking the accounts and hotel records:
 
-**Bookings**
-- Create/edit/cancel, change dates, change room, extend stay, add guests and services, record payments.
-- Statuses: pending, confirmed, checked in, checked out, cancelled, no-show. Unique booking reference per booking.
-- Server-side overlap check makes double-booking impossible; totals, taxes, and service charges are always computed server-side from the hotel's configuration.
+- The three sample hotels (Custard Bay, Ashanti Palm, Cape Coast) are flagged as demo hotels, and **every signed-in person who is not a platform admin is automatically given access to all three** — both in the app and in the database access rules. That is why a brand-new account appears to "own" hotels. This is the main source of confusion.
+- The very first person who ever signs up is silently made a platform admin. Two platform admin accounts exist now, so this rule is no longer needed and is a security risk.
+- A new owner whose hotel is still Pending has no clear "waiting for approval" screen explaining what happens next.
 
-**Guests**
-- Profile with contacts, address, country, ID details, emergency contact, notes, plus booking and payment history. Fast search for returning guests.
+## What I'll change
 
-**Reception**
-- Check-in: find booking → verify guest → confirm room → record details → take deposit → check in (room becomes occupied), with a printable confirmation.
-- Check-out: room charges + services + tax − discounts → balance → final payment → receipt → room becomes cleaning.
+**1. Stop handing hotels to new users**
+- Remove the demo-hotel grant from the app and from the database access rules, so access to a hotel comes only from owning it or being invited as staff.
+- Keep the three sample hotels alive as public listings for the search page (they stay bookable by guests); they simply stop appearing in anyone's private dashboard.
 
-**Folio, invoices, receipts**
-- Line-item folio per booking (room, food, drinks, laundry, transport, room service, extra bed, conference, spa, other).
-- Printable/downloadable invoices and receipts with hotel branding and unique numbers.
+**2. Make new accounts plain customers**
+- New signups always become customers. Platform admin can only be granted by an existing platform admin from Platform > Users.
 
-**Payments (Paystack + cash)**
-- Provider-abstraction layer so more providers slot in later; per-hotel toggles for Mobile Money, Cash, Card, Bank Transfer.
-- Paystack integration for Ghana Mobile Money (MTN, Telecel, AirtelTigo) and cards: initialize charge → customer approves on phone → webhook + server-side verification marks the payment successful → folio and booking update → receipt. Duplicate callbacks can never create duplicate payments.
-- Cash sessions: open with a float, record payments/refunds/adjustments, close with expected vs actual and the difference recorded. Completed financial records are never silently edited — corrections are new, audited entries.
+**3. Make the state of an account obvious**
+- Signed in with no hotel: a clear screen — "You don't manage a hotel yet" with "Register your hotel" and "Browse hotels".
+- Hotel pending: a waiting screen showing submitted details and "Awaiting approval from Custard Hotels", with no operational menus.
+- Hotel rejected or suspended: the reason plus what to do next.
 
-**Housekeeping**
-- Mobile-first room status board (dirty → cleaning → clean → inspected → maintenance) with manager progress view.
-
-**Platform admin dashboard**
-- Separate area: platform overview stats, hotel list with search and approve/reject/suspend/reactivate actions, hotel performance, user management, platform settings (including the auto-approval switch).
-
-**Notifications & audit**
-- In-app notifications for registration, approval/rejection, new booking, cancellation, payment received/failed, upcoming check-in/out. Email-ready, SMS-ready.
-- Audit log capturing user, hotel, action, resource, timestamp, previous and new values for payments, refunds, cash, booking changes, permissions, and settings changes.
-
-**Demo data**
-- Seeded platform admin, 3 hotels with owners and staff, multiple room types, 20+ rooms, 20+ guests, 20+ bookings across statuses, and payment records. Registration also stays open for new hotels and customers.
-
-## Design
-
-Teal hospitality: deep teal (#0F4C46) primary, sand (#E8DCC8) surfaces, warm amber (#D98A3C) accent, white cards. Sidebar dashboards, dense responsive tables, cards, charts, filters, pagination, modals, confirmation dialogs, toasts, and proper loading/empty/error states. Everything works on phone, tablet, and desktop; housekeeping and reception screens are designed phone-first.
+**4. Explain the roles in the product itself**
+- Short "how this works" panel on the registration page (register -> review -> approved -> onboard -> invite staff).
+- The Platform area gets a one-line description at the top of Hotels so admins know approval is their job.
 
 ## Technical notes
 
-- Lovable Cloud (Postgres + auth + storage + server functions) is enabled for this project.
-- Tenant isolation is enforced in the database with row-level security: every hotel-scoped table carries `hotel_id`, and policies grant access only through a membership check against the signed-in user's hotel. Platform admins are allowed through a separate security-definer role check. No hotel can read another hotel's rows even if the UI is bypassed.
-- All money, availability, tax, and status logic runs in server functions — never in the browser.
-- Paystack webhooks land on a public API route with signature verification and idempotency keys on transaction references.
-- Paystack requires your secret and public keys; I'll request them securely when the payment module is wired, and cash-only flows work until then.
-- Modules are built in order: auth & tenancy → hotel registration/approval → onboarding → rooms → bookings/guests → reception → folio/payments → housekeeping → platform admin.
+- Drop `is_demo_hotel` from `has_hotel_access` and remove the `is_demo` fetch in `fetchHotels` (`src/hooks/useAuth.tsx`); leave the public-listing policies untouched so `/discover` keeps working.
+- Rewrite `handle_new_user` to always insert `customer` (keep the pending-staff-invite claim logic).
+- Add gating in `src/routes/_authenticated.tsx` / `DashboardShell` for the no-hotel, pending, rejected and suspended states.
+- No schema changes beyond the two function replacements.
 
-## Not in Phase 1
+## Question left open
 
-Public hotel discovery and search, public hotel profile pages, customer-facing booking and account area, promotions/featured hotels, reviews, subscription plans and platform billing, and the deep reports/analytics suite. The schema and permissions are built so these attach without rework.
+Should the three sample hotels also be assigned to a real owner account so you can demo the owner dashboard, or stay owner-less public listings only? I'll assume owner-less unless you say otherwise.
