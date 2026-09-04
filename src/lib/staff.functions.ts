@@ -2,20 +2,37 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const STAFF_ROLES = ["manager", "receptionist", "cashier", "accountant", "housekeeping", "restaurant", "other"] as const;
+const STAFF_ROLES = ["hotel_admin", "manager", "receptionist", "cashier", "accountant", "housekeeping", "restaurant", "other"] as const;
 
 type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> };
 
-async function assertHotelOwner(supabase: unknown, hotelId: string) {
+/**
+ * Only the hotel's own people can manage its team: the owner, or an active
+ * hotel admin / member holding "staff:manage". Platform staff are excluded on
+ * purpose — running the platform is not the same as running a hotel.
+ */
+async function assertCanManageTeam(supabase: unknown, hotelId: string, userId: string) {
   const client = supabase as RpcClient;
-  const [{ data: owns }, { data: isAdmin }, { data: isDemo }] = await Promise.all([
-    client.rpc("owns_hotel", { _hotel_id: hotelId }),
-    client.rpc("is_platform_admin", {}),
-    client.rpc("is_demo_hotel", { _hotel_id: hotelId }),
-  ]);
-  if (owns !== true && isAdmin !== true && isDemo !== true) {
-    throw new Error("Only the hotel owner can manage staff");
-  }
+  const { data: owns } = await client.rpc("owns_hotel", { _hotel_id: hotelId });
+  if (owns === true) return;
+
+  const db = supabase as unknown as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (c: string, v: unknown) => { eq: (c: string, v: unknown) => { eq: (c: string, v: unknown) => { maybeSingle: () => Promise<{ data: { staff_role: string; permissions: string[] } | null }> } } };
+      };
+    };
+  };
+  const { data: member } = await db
+    .from("hotel_members")
+    .select("staff_role, permissions")
+    .eq("hotel_id", hotelId)
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  const allowed = member && (member.staff_role === "hotel_admin" || (member.permissions ?? []).includes("staff:manage"));
+  if (!allowed) throw new Error("Only the hotel owner or a hotel admin can manage the team");
 }
 
 const inviteSchema = z.object({
@@ -32,7 +49,7 @@ export const inviteStaffMember = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await assertHotelOwner(supabase, data.hotelId);
+    await assertCanManageTeam(supabase, data.hotelId, userId);
 
     const email = data.email.trim().toLowerCase();
 
@@ -106,7 +123,7 @@ export const updateStaffMember = createServerFn({ method: "POST" })
       .eq("id", data.memberId)
       .single();
     if (!member) throw new Error("Staff member not found");
-    await assertHotelOwner(supabase, member.hotel_id);
+    await assertCanManageTeam(supabase, member.hotel_id, userId);
 
     const update: Record<string, unknown> = {};
     if (data.staffRole) update["staff_role"] = data.staffRole;
@@ -139,7 +156,7 @@ export const removeStaffMember = createServerFn({ method: "POST" })
 
     const { data: member } = await supabase.from("hotel_members").select("id, hotel_id, full_name").eq("id", data.memberId).single();
     if (!member) throw new Error("Staff member not found");
-    await assertHotelOwner(supabase, member.hotel_id);
+    await assertCanManageTeam(supabase, member.hotel_id, userId);
 
     const { error } = await supabase.from("hotel_members").delete().eq("id", data.memberId);
     if (error) throw new Error(error.message);

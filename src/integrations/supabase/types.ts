@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_requests: {
+        Row: {
+          created_at: string
+          decision_reason: string
+          end_date: string
+          hotel_id: string
+          id: string
+          is_paid: boolean
+          message: string
+          placement: string
+          quoted_price: number
+          requested_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision_reason?: string
+          end_date: string
+          hotel_id: string
+          id?: string
+          is_paid?: boolean
+          message?: string
+          placement: string
+          quoted_price?: number
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision_reason?: string
+          end_date?: string
+          hotel_id?: string
+          id?: string
+          is_paid?: boolean
+          message?: string
+          placement?: string
+          quoted_price?: number
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_requests_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -69,6 +131,8 @@ export type Database = {
           check_out: string
           checked_in_at: string | null
           checked_out_at: string | null
+          commission_amount: number
+          commission_percent: number
           created_at: string
           created_by: string | null
           customer_user_id: string | null
@@ -98,6 +162,8 @@ export type Database = {
           check_out: string
           checked_in_at?: string | null
           checked_out_at?: string | null
+          commission_amount?: number
+          commission_percent?: number
           created_at?: string
           created_by?: string | null
           customer_user_id?: string | null
@@ -127,6 +193,8 @@ export type Database = {
           check_out?: string
           checked_in_at?: string | null
           checked_out_at?: string | null
+          commission_amount?: number
+          commission_percent?: number
           created_at?: string
           created_by?: string | null
           customer_user_id?: string | null
@@ -226,6 +294,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cash_sessions_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          hotel_id: string
+          id: string
+          kind: string
+          note: string
+          requested_by: string | null
+          response_note: string
+          scope: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          hotel_id: string
+          id?: string
+          kind: string
+          note?: string
+          requested_by?: string | null
+          response_note?: string
+          scope?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          hotel_id?: string
+          id?: string
+          kind?: string
+          note?: string
+          requested_by?: string | null
+          response_note?: string
+          scope?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_requests_hotel_id_fkey"
             columns: ["hotel_id"]
             isOneToOne: false
             referencedRelation: "hotels"
@@ -431,6 +552,63 @@ export type Database = {
           },
         ]
       }
+      hotel_subscriptions: {
+        Row: {
+          commission_percent_override: number | null
+          created_at: string
+          current_period_end: string | null
+          hotel_id: string
+          id: string
+          notes: string
+          plan_id: string | null
+          registration_fee_paid: boolean
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commission_percent_override?: number | null
+          created_at?: string
+          current_period_end?: string | null
+          hotel_id: string
+          id?: string
+          notes?: string
+          plan_id?: string | null
+          registration_fee_paid?: boolean
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commission_percent_override?: number | null
+          created_at?: string
+          current_period_end?: string | null
+          hotel_id?: string
+          id?: string
+          notes?: string
+          plan_id?: string | null
+          registration_fee_paid?: boolean
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_subscriptions_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: true
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotels: {
         Row: {
           accept_online_bookings: boolean
@@ -556,6 +734,65 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string
+          due_date: string | null
+          hotel_id: string
+          id: string
+          kind: string
+          number: string
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string | null
+          hotel_id: string
+          id?: string
+          kind: string
+          number: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string | null
+          hotel_id?: string
+          id?: string
+          kind?: string
+          number?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -696,28 +933,91 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          billing_period: string
+          commission_percent: number
+          created_at: string
+          description: string
+          features: string[]
+          id: string
+          is_active: boolean
+          max_rooms: number | null
+          name: string
+          price: number
+          registration_fee: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          commission_percent?: number
+          created_at?: string
+          description?: string
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          max_rooms?: number | null
+          name: string
+          price?: number
+          registration_fee?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          commission_percent?: number
+          created_at?: string
+          description?: string
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          max_rooms?: number | null
+          name?: string
+          price?: number
+          registration_fee?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
+          ad_price_banner: number
+          ad_price_home_featured: number
+          ad_price_search_top: number
           auto_approve_hotels: boolean
           commission_percent: number
           id: boolean
           platform_name: string
+          registration_fee: number
           support_email: string
           updated_at: string
         }
         Insert: {
+          ad_price_banner?: number
+          ad_price_home_featured?: number
+          ad_price_search_top?: number
           auto_approve_hotels?: boolean
           commission_percent?: number
           id?: boolean
           platform_name?: string
+          registration_fee?: number
           support_email?: string
           updated_at?: string
         }
         Update: {
+          ad_price_banner?: number
+          ad_price_home_featured?: number
+          ad_price_search_top?: number
           auto_approve_hotels?: boolean
           commission_percent?: number
           id?: boolean
           platform_name?: string
+          registration_fee?: number
           support_email?: string
           updated_at?: string
         }
@@ -938,17 +1238,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      hotel_commission_percent: { Args: { _hotel_id: string }; Returns: number }
       hotel_is_public: { Args: { _hotel_id: string }; Returns: boolean }
       is_demo_hotel: { Args: { _hotel_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_platform_team: { Args: never; Returns: boolean }
       owns_hotel: { Args: { _hotel_id: string }; Returns: boolean }
       seed_platform_admin: {
         Args: { target_email: string }
         Returns: undefined
       }
+      user_is_hotel_person: { Args: { _user_id: string }; Returns: boolean }
+      user_is_platform_team: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "platform_admin" | "hotel_owner" | "hotel_staff" | "customer"
+      app_role:
+        | "platform_admin"
+        | "hotel_owner"
+        | "hotel_staff"
+        | "customer"
+        | "platform_support"
       booking_source: "staff" | "hotel_website" | "discovery" | "external"
       booking_status:
         | "pending"
@@ -985,6 +1294,7 @@ export type Database = {
         | "housekeeping"
         | "restaurant"
         | "other"
+        | "hotel_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1112,7 +1422,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["platform_admin", "hotel_owner", "hotel_staff", "customer"],
+      app_role: [
+        "platform_admin",
+        "hotel_owner",
+        "hotel_staff",
+        "customer",
+        "platform_support",
+      ],
       booking_source: ["staff", "hotel_website", "discovery", "external"],
       booking_status: [
         "pending",
@@ -1152,6 +1468,7 @@ export const Constants = {
         "housekeeping",
         "restaurant",
         "other",
+        "hotel_admin",
       ],
     },
   },
