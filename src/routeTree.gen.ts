@@ -10,33 +10,262 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/_admin'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
+import { Route as AuthenticatedBookingsRouteImport } from './routes/_authenticated/bookings'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedGuestsRouteImport } from './routes/_authenticated/guests'
+import { Route as AuthenticatedHousekeepingRouteImport } from './routes/_authenticated/housekeeping'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
+import { Route as AuthenticatedReceptionRouteImport } from './routes/_authenticated/reception'
+import { Route as AuthenticatedRoomsRouteImport } from './routes/_authenticated/rooms'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
+import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
+import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
+import { Route as AuthenticatedBookingsIdRouteImport } from './routes/_authenticated/bookings.$id'
+import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AuthenticatedBookingsRoute = AuthenticatedBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedGuestsRoute = AuthenticatedGuestsRouteImport.update({
+  id: '/guests',
+  path: '/guests',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedHousekeepingRoute =
+  AuthenticatedHousekeepingRouteImport.update({
+    id: '/housekeeping',
+    path: '/housekeeping',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedReceptionRoute = AuthenticatedReceptionRouteImport.update({
+  id: '/reception',
+  path: '/reception',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRoomsRoute = AuthenticatedRoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AdminAdminHotelsRoute = AdminAdminHotelsRouteImport.update({
+  id: '/hotels',
+  path: '/hotels',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AuthenticatedBookingsIdRoute = AuthenticatedBookingsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedBookingsRoute,
+} as any)
+const ApiPublicPaystackWebhookRoute =
+  ApiPublicPaystackWebhookRouteImport.update({
+    id: '/api/public/paystack-webhook',
+    path: '/api/public/paystack-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/register': typeof RegisterRoute
+  '/admin': typeof AdminAdminRouteWithChildren
+  '/bookings': typeof AuthenticatedBookingsRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/guests': typeof AuthenticatedGuestsRoute
+  '/housekeeping': typeof AuthenticatedHousekeepingRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
+  '/reception': typeof AuthenticatedReceptionRoute
+  '/rooms': typeof AuthenticatedRoomsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/staff': typeof AuthenticatedStaffRoute
+  '/admin/hotels': typeof AdminAdminHotelsRoute
+  '/admin/users': typeof AdminAdminUsersRoute
+  '/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/register': typeof RegisterRoute
+  '/admin': typeof AdminAdminRouteWithChildren
+  '/bookings': typeof AuthenticatedBookingsRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/guests': typeof AuthenticatedGuestsRoute
+  '/housekeeping': typeof AuthenticatedHousekeepingRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
+  '/reception': typeof AuthenticatedReceptionRoute
+  '/rooms': typeof AuthenticatedRoomsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/staff': typeof AuthenticatedStaffRoute
+  '/admin/hotels': typeof AdminAdminHotelsRoute
+  '/admin/users': typeof AdminAdminUsersRoute
+  '/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_admin': typeof AdminRouteWithChildren
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/register': typeof RegisterRoute
+  '/_admin/admin': typeof AdminAdminRouteWithChildren
+  '/_authenticated/bookings': typeof AuthenticatedBookingsRouteWithChildren
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/guests': typeof AuthenticatedGuestsRoute
+  '/_authenticated/housekeeping': typeof AuthenticatedHousekeepingRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
+  '/_authenticated/reception': typeof AuthenticatedReceptionRoute
+  '/_authenticated/rooms': typeof AuthenticatedRoomsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/staff': typeof AuthenticatedStaffRoute
+  '/_admin/admin/hotels': typeof AdminAdminHotelsRoute
+  '/_admin/admin/users': typeof AdminAdminUsersRoute
+  '/_authenticated/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/register'
+    | '/admin'
+    | '/bookings'
+    | '/dashboard'
+    | '/guests'
+    | '/housekeeping'
+    | '/onboarding'
+    | '/payments'
+    | '/reception'
+    | '/rooms'
+    | '/settings'
+    | '/staff'
+    | '/admin/hotels'
+    | '/admin/users'
+    | '/bookings/$id'
+    | '/api/public/paystack-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/register'
+    | '/admin'
+    | '/bookings'
+    | '/dashboard'
+    | '/guests'
+    | '/housekeeping'
+    | '/onboarding'
+    | '/payments'
+    | '/reception'
+    | '/rooms'
+    | '/settings'
+    | '/staff'
+    | '/admin/hotels'
+    | '/admin/users'
+    | '/bookings/$id'
+    | '/api/public/paystack-webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/_admin'
+    | '/_authenticated'
+    | '/auth'
+    | '/register'
+    | '/_admin/admin'
+    | '/_authenticated/bookings'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/guests'
+    | '/_authenticated/housekeeping'
+    | '/_authenticated/onboarding'
+    | '/_authenticated/payments'
+    | '/_authenticated/reception'
+    | '/_authenticated/rooms'
+    | '/_authenticated/settings'
+    | '/_authenticated/staff'
+    | '/_admin/admin/hotels'
+    | '/_admin/admin/users'
+    | '/_authenticated/bookings/$id'
+    | '/api/public/paystack-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  RegisterRoute: typeof RegisterRoute
+  ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +277,216 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin/admin': {
+      id: '/_admin/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAdminRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_authenticated/bookings': {
+      id: '/_authenticated/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AuthenticatedBookingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/guests': {
+      id: '/_authenticated/guests'
+      path: '/guests'
+      fullPath: '/guests'
+      preLoaderRoute: typeof AuthenticatedGuestsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/housekeeping': {
+      id: '/_authenticated/housekeeping'
+      path: '/housekeeping'
+      fullPath: '/housekeeping'
+      preLoaderRoute: typeof AuthenticatedHousekeepingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/payments': {
+      id: '/_authenticated/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof AuthenticatedPaymentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/reception': {
+      id: '/_authenticated/reception'
+      path: '/reception'
+      fullPath: '/reception'
+      preLoaderRoute: typeof AuthenticatedReceptionRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/rooms': {
+      id: '/_authenticated/rooms'
+      path: '/rooms'
+      fullPath: '/rooms'
+      preLoaderRoute: typeof AuthenticatedRoomsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/staff': {
+      id: '/_authenticated/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof AuthenticatedStaffRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_admin/admin/hotels': {
+      id: '/_admin/admin/hotels'
+      path: '/hotels'
+      fullPath: '/admin/hotels'
+      preLoaderRoute: typeof AdminAdminHotelsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/_admin/admin/users': {
+      id: '/_admin/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminAdminUsersRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/_authenticated/bookings/$id': {
+      id: '/_authenticated/bookings/$id'
+      path: '/$id'
+      fullPath: '/bookings/$id'
+      preLoaderRoute: typeof AuthenticatedBookingsIdRouteImport
+      parentRoute: typeof AuthenticatedBookingsRoute
+    }
+    '/api/public/paystack-webhook': {
+      id: '/api/public/paystack-webhook'
+      path: '/api/public/paystack-webhook'
+      fullPath: '/api/public/paystack-webhook'
+      preLoaderRoute: typeof ApiPublicPaystackWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AdminAdminRouteChildren {
+  AdminAdminHotelsRoute: typeof AdminAdminHotelsRoute
+  AdminAdminUsersRoute: typeof AdminAdminUsersRoute
+}
+
+const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminHotelsRoute: AdminAdminHotelsRoute,
+  AdminAdminUsersRoute: AdminAdminUsersRoute,
+}
+
+const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
+  AdminAdminRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminAdminRoute: typeof AdminAdminRouteWithChildren
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminRoute: AdminAdminRouteWithChildren,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface AuthenticatedBookingsRouteChildren {
+  AuthenticatedBookingsIdRoute: typeof AuthenticatedBookingsIdRoute
+}
+
+const AuthenticatedBookingsRouteChildren: AuthenticatedBookingsRouteChildren = {
+  AuthenticatedBookingsIdRoute: AuthenticatedBookingsIdRoute,
+}
+
+const AuthenticatedBookingsRouteWithChildren =
+  AuthenticatedBookingsRoute._addFileChildren(
+    AuthenticatedBookingsRouteChildren,
+  )
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedBookingsRoute: typeof AuthenticatedBookingsRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGuestsRoute: typeof AuthenticatedGuestsRoute
+  AuthenticatedHousekeepingRoute: typeof AuthenticatedHousekeepingRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
+  AuthenticatedReceptionRoute: typeof AuthenticatedReceptionRoute
+  AuthenticatedRoomsRoute: typeof AuthenticatedRoomsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBookingsRoute: AuthenticatedBookingsRouteWithChildren,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGuestsRoute: AuthenticatedGuestsRoute,
+  AuthenticatedHousekeepingRoute: AuthenticatedHousekeepingRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
+  AuthenticatedReceptionRoute: AuthenticatedReceptionRoute,
+  AuthenticatedRoomsRoute: AuthenticatedRoomsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedStaffRoute: AuthenticatedStaffRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
+  RegisterRoute: RegisterRoute,
+  ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
