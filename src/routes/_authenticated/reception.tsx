@@ -101,7 +101,7 @@ function ReceptionPage() {
         {filtered.length === 0 ? (
           <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No bookings found.</CardContent></Card>
         ) : (
-          filtered.map((b) => {
+          (filtered as Array<{ id: string; reference: string; status: string; total: number; amount_paid: number; check_in: string; check_out: string; guests: unknown; rooms: unknown }>).map((b) => {
             const guest = b.guests as unknown as { full_name: string } | null;
             const room = b.rooms as unknown as { room_number: string } | null;
             const balance = Number(b.total) - Number(b.amount_paid);
