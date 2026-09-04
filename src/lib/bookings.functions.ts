@@ -171,11 +171,11 @@ export const changeBooking = createServerFn({ method: "POST" })
     if (["checked_out", "cancelled"].includes(booking.status)) throw new Error("Booking is closed");
 
     const update: Record<string, unknown> = {};
-    if (data.checkIn) update.check_in = data.checkIn;
-    if (data.checkOut) update.check_out = data.checkOut;
-    if (data.roomId) update.room_id = data.roomId;
-    if (data.roomTypeId) update.room_type_id = data.roomTypeId;
-    if (data.notes !== undefined) update.notes = data.notes;
+    if (data.checkIn) update["check_in"] = data.checkIn;
+    if (data.checkOut) update["check_out"] = data.checkOut;
+    if (data.roomId) update["room_id"] = data.roomId;
+    if (data.roomTypeId) update["room_type_id"] = data.roomTypeId;
+    if (data.notes !== undefined) update["notes"] = data.notes;
 
     const { error } = await supabase.from("bookings").update(update).eq("id", data.bookingId);
     if (error) throw new Error(error.message);
