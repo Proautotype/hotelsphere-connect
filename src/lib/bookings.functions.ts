@@ -128,7 +128,6 @@ export const createBooking = createServerFn({ method: "POST" })
         room_id: roomId,
         check_in: data.checkIn,
         check_out: data.checkOut,
-        nights,
         guests_count: data.guestsCount,
         room_rate: roomRate,
         tax_amount: tax,
