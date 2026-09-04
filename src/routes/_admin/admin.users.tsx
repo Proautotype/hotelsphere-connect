@@ -58,7 +58,7 @@ function AdminUsersPage() {
         {users.length === 0 ? (
           <EmptyState icon={Users} title="No users yet" description="User accounts will appear here." />
         ) : (
-          users.map((user) => {
+          (users as Array<{ id: string; full_name: string; email: string | null; created_at: string; user_roles: unknown }>).map((user) => {
             const roles = (user.user_roles as { role: string }[] | null)?.map((r) => r.role).join(", ") ?? "customer";
             return (
               <Card key={user.id}>
