@@ -133,7 +133,7 @@ function PaymentsPage() {
               <EmptyState icon={CreditCard} title="No payments yet" description="Payments appear once bookings are settled." />
             ) : (
               <div className="mt-3 space-y-2">
-                {payments.map((p) => {
+                {(payments as Array<{ id: string; amount: number; method: string; status: string; bookings: unknown; guests: unknown }>).map((p) => {
                   const booking = p.bookings as unknown as { reference: string } | null;
                   const guest = p.guests as unknown as { full_name: string } | null;
                   return (
