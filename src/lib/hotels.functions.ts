@@ -119,11 +119,11 @@ export const setHotelStatus = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Only platform admins can update hotel status");
 
     const update: Record<string, unknown> = { status: data.status };
-    if (typeof data.isPublicListed === "boolean") update.is_public_listed = data.isPublicListed;
+    if (typeof data.isPublicListed === "boolean") update["is_public_listed"] = data.isPublicListed;
     if (data.status === "active") {
-      update.accept_online_bookings = true;
-      update.onboarding_completed = true;
-      update.onboarding_step = 6;
+      update["accept_online_bookings"] = true;
+      update["onboarding_completed"] = true;
+      update["onboarding_step"] = 6;
     }
 
     const { error } = await supabaseAdmin.from("hotels").update(update).eq("id", data.hotelId);
