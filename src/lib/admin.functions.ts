@@ -57,13 +57,13 @@ export const setHotelDiscovery = createServerFn({ method: "POST" })
     await assertPlatformAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const update: Record<string, unknown> = {};
+    const update: Record<string, boolean> = {};
     if (data.isFeatured !== undefined) update["is_featured"] = data.isFeatured;
     if (data.isPublicListed !== undefined) update["is_public_listed"] = data.isPublicListed;
     if (data.acceptOnlineBookings !== undefined) update["accept_online_bookings"] = data.acceptOnlineBookings;
     if (Object.keys(update).length === 0) return { updated: false };
 
-    const { error } = await supabaseAdmin.from("hotels").update(update).eq("id", data.hotelId);
+    const { error } = await supabaseAdmin.from("hotels").update(update as Record<string, never>).eq("id", data.hotelId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({

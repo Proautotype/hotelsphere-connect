@@ -7,7 +7,7 @@ import { z } from "zod";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
-const ACTIVE_BOOKING_STATUSES = ["pending", "confirmed", "checked_in"] as const;
+const ACTIVE_BOOKING_STATUSES: ("pending" | "confirmed" | "checked_in")[] = ["pending", "confirmed", "checked_in"];
 
 export interface DiscoveryHotel {
   id: string;
@@ -151,7 +151,7 @@ export const getPublicHotel = createServerFn({ method: "GET" })
         .from("bookings")
         .select("room_type_id, check_in, check_out, status")
         .eq("hotel_id", hotel.id)
-        .in("status", ACTIVE_BOOKING_STATUSES as unknown as string[])
+        .in("status", ACTIVE_BOOKING_STATUSES)
         .lt("check_in", data.checkOut)
         .gt("check_out", data.checkIn);
       (overlapping ?? []).forEach((b) => {
@@ -225,7 +225,7 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         .select("id")
         .eq("hotel_id", hotel.id)
         .eq("room_type_id", roomType.id)
-        .in("status", ACTIVE_BOOKING_STATUSES as unknown as string[])
+        .in("status", ACTIVE_BOOKING_STATUSES)
         .lt("check_in", data.checkOut)
         .gt("check_out", data.checkIn),
     ]);
