@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, Plus } from "lucide-react";
+import { ArrowRight, CalendarDays, Plus } from "lucide-react";
 import { money, shortDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/bookings")({
@@ -78,26 +78,30 @@ function BookingsPage() {
             const roomType = b.room_types as unknown as { name: string } | null;
             const balance = Number(b.total) - Number(b.amount_paid);
             return (
-              <Card key={b.id}>
-                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Link to="/bookings/$id" params={{ id: b.id }} className="font-display font-semibold text-foreground hover:text-primary">
-                        {b.reference}
-                      </Link>
-                      <StatusBadge status={b.status} />
+              <Link key={b.id} to="/bookings/$id" params={{ id: b.id }} className="block">
+                <Card className="group transition-all hover:-translate-y-0.5 hover:bg-amber hover:text-amber-foreground hover:shadow-hard">
+                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display font-semibold">{b.reference}</span>
+                        <StatusBadge status={b.status} />
+                      </div>
+                      <p className="mt-1 text-sm opacity-80">
+                        {guest?.full_name} · {roomType?.name} {room?.room_number ? `· Room ${room.room_number}` : ""}
+                      </p>
+                      <p className="text-xs opacity-70">{shortDate(b.check_in)} → {shortDate(b.check_out)}</p>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {guest?.full_name} · {roomType?.name} {room?.room_number ? `· Room ${room.room_number}` : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{shortDate(b.check_in)} → {shortDate(b.check_out)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-foreground">{money(b.total, activeHotel?.currency)}</p>
-                    {balance > 0.009 && <p className="text-xs text-destructive">Balance {money(balance, activeHotel?.currency)}</p>}
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex items-center gap-3 sm:text-right">
+                      <div>
+                        <p className="font-medium">{money(b.total, activeHotel?.currency)}</p>
+                        {balance > 0.009 && <p className="text-xs font-semibold">Balance {money(balance, activeHotel?.currency)}</p>}
+                        <p className="kinetic-label mt-1 text-[10px] opacity-70">Open booking</p>
+                      </div>
+                      <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })
         )}
