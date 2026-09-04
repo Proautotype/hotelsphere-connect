@@ -62,11 +62,10 @@ async function fetchRoles(userId: string): Promise<AppRole[]> {
   return (data as { role: string }[]).map((r) => r.role as AppRole);
 }
 
-async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSummary[]> {
-  const [owned, memberships, demos] = await Promise.all([
+async function fetchHotels(userId: string): Promise<HotelSummary[]> {
+  const [owned, memberships] = await Promise.all([
     supabase.from("hotels").select("*").eq("owner_id", userId),
     supabase.from("hotel_members").select("*, hotels(*)").eq("user_id", userId).eq("is_active", true),
-    isAdmin ? { data: [] as Record<string, unknown>[], error: null } : supabase.from("hotels").select("*").eq("is_demo", true),
   ]);
 
   const map: Record<string, HotelSummary> = {};
