@@ -65,14 +65,16 @@ function RegisterPage() {
     }
     setLoading(true);
     try {
-      const result = await register({ data: form as unknown as Parameters<typeof register>[0]["data"] });
+      const payload = {
+        ...form,
+        slug: slugify(form.name),
+        amenities: [] as string[],
+        description: form.description || "",
+      };
+      const result = await register({ data: payload });
       toast.success("Hotel registered successfully.");
       await refresh();
-      if (result.autoApprove) {
-        navigate({ to: "/dashboard" });
-      } else {
-        navigate({ to: "/dashboard" });
-      }
+      navigate({ to: "/onboarding", search: { hotelId: result.hotelId } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
