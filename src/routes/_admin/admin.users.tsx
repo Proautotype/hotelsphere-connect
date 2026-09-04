@@ -27,6 +27,14 @@ export const Route = createFileRoute("/_admin/admin/users")({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData({ queryKey: ["admin", "users"], queryFn: fetchAdminUsers });
   },
+  errorComponent: ({ error }) => (
+    <AdminShell title="Users">
+      <div className="mt-6 border-[3px] border-ink bg-card p-6">
+        <h2 className="font-display text-xl font-semibold">Could not load users</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    </AdminShell>
+  ),
   component: AdminUsersPage,
 });
 

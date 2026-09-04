@@ -27,6 +27,14 @@ export const Route = createFileRoute("/_admin/admin/hotels")({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData({ queryKey: ["admin", "hotels"], queryFn: fetchAdminHotels });
   },
+  errorComponent: ({ error }) => (
+    <AdminShell title="Hotels">
+      <div className="mt-6 border-[3px] border-ink bg-card p-6">
+        <h2 className="font-display text-xl font-semibold">Could not load hotels</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    </AdminShell>
+  ),
   component: AdminHotelsPage,
 });
 
