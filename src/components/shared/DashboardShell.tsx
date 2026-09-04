@@ -8,6 +8,7 @@ import {
   Users,
   CreditCard,
   Settings,
+  UserCog,
   LogOut,
   Menu,
   X,
@@ -17,6 +18,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { HotelSwitcher } from "./HotelSwitcher";
+import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
@@ -28,6 +30,7 @@ const NAV = [
   { to: "/housekeeping", label: "Housekeeping", icon: Sparkles },
   { to: "/guests", label: "Guests", icon: Users },
   { to: "/payments", label: "Payments", icon: CreditCard },
+  { to: "/staff", label: "Staff", icon: UserCog },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -119,6 +122,7 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
 
           <div className="flex items-center gap-2 sm:gap-4">
             <HotelSwitcher />
+            <NotificationBell />
             <div className="flex items-center gap-2 border-l-[3px] border-ink pl-2 sm:pl-4">
               <span className="ink flex size-8 items-center justify-center bg-amber text-[11px] font-extrabold text-amber-foreground">
                 {initials(profile?.full_name ?? "")}
