@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
   label: string;
-  value: string;
+  value: string | number;
   hint?: string;
   icon?: LucideIcon;
   tone?: "default" | "primary" | "accent" | "success" | "warning" | "destructive";
