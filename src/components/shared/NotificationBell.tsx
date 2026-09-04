@@ -18,8 +18,17 @@ interface NotificationRow {
   link: string | null;
 }
 
+const FALLBACK: Record<string, string> = {
+  booking: "/bookings",
+  payment: "/payments",
+  housekeeping: "/housekeeping",
+  staff: "/staff",
+  room: "/rooms",
+};
+
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -27,7 +36,7 @@ export function NotificationBell() {
     if (!user) return;
     const { data } = await supabase
       .from("notifications")
-      .select("id, title, body, type, is_read, created_at")
+      .select("id, title, body, type, is_read, created_at, link")
       .order("created_at", { ascending: false })
       .limit(20);
     setItems((data ?? []) as unknown as NotificationRow[]);
@@ -45,6 +54,17 @@ export function NotificationBell() {
     await supabase.from("notifications").update({ is_read: true }).in("id", ids);
     setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
+
+  const openItem = async (n: NotificationRow) => {
+    setOpen(false);
+    if (!n.is_read) {
+      setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+      await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
+    }
+    const to = n.link ?? FALLBACK[n.type] ?? "/dashboard";
+    void navigate({ to } as never);
+  };
+
 
   return (
     <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) void load(); }}>
