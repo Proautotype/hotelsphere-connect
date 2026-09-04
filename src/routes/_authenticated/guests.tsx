@@ -39,7 +39,7 @@ function GuestsPage() {
   const { data: guests } = useSuspenseQuery({ queryKey: ["guests", "list"], queryFn: fetchGuests });
   const [query, setQuery] = useState("");
 
-  const filtered = guests.filter((g) =>
+  const filtered = (guests as Array<{ id: string; full_name: string; email: string | null; phone: string | null; country: string | null; id_type: string | null; id_number: string | null }>).filter((g) =>
     g.full_name.toLowerCase().includes(query.toLowerCase()) ||
     (g.email ?? "").toLowerCase().includes(query.toLowerCase()) ||
     (g.phone ?? "").includes(query),
