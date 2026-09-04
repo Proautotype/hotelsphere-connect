@@ -942,6 +942,10 @@ export type Database = {
       is_demo_hotel: { Args: { _hotel_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       owns_hotel: { Args: { _hotel_id: string }; Returns: boolean }
+      seed_platform_admin: {
+        Args: { target_email: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "platform_admin" | "hotel_owner" | "hotel_staff" | "customer"
