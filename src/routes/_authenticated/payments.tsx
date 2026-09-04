@@ -99,7 +99,7 @@ function PaymentsPage() {
             {openSession ? (
               <div className="mt-3 space-y-3">
                 <p className="text-sm text-muted-foreground">Opened at {shortDate(openSession.opened_at)}</p>
-                <p className="text-sm">Float: {money(openSession.opened_float, activeHotel?.currency)}</p>
+                <p className="text-sm">Float: {money(openSession.opening_balance, activeHotel?.currency)}</p>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
