@@ -9,6 +9,7 @@ import { registerHotel } from "@/lib/hotels.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { slugify } from "@/lib/format";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
