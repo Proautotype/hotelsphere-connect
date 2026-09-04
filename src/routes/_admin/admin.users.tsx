@@ -25,35 +25,49 @@ export const Route = createFileRoute("/_admin/admin/users")({
     ],
   }),
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["admin", "users"],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*, user_roles(role)")
-          .order("created_at", { ascending: false })
-          .limit(200);
-        if (error) throw new Error(error.message);
-        return data ?? [];
-      },
-    });
+    await context.queryClient.ensureQueryData({ queryKey: ["admin", "users"], queryFn: fetchAdminUsers });
   },
+  errorComponent: ({ error }) => (
+    <AdminShell title="Users">
+      <div className="mt-6 border-[3px] border-ink bg-card p-6">
+        <h2 className="font-display text-xl font-semibold">Could not load users</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    </AdminShell>
+  ),
   component: AdminUsersPage,
 });
 
+interface AdminUserRow {
+  id: string;
+  full_name: string;
+  email: string | null;
+  created_at: string;
+  roles: string[];
+}
+
+async function fetchAdminUsers(): Promise<AdminUserRow[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  const profiles = data ?? [];
+  const ids = profiles.map((p) => p.id);
+  const byUser = new Map<string, string[]>();
+  if (ids.length > 0) {
+    const { data: roles } = await supabase.from("user_roles").select("user_id, role").in("user_id", ids);
+    for (const r of roles ?? []) {
+      byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r.role as string]);
+    }
+  }
+  return profiles.map((p) => ({ ...p, roles: byUser.get(p.id) ?? [] }));
+}
+
 function AdminUsersPage() {
-  const { data: users, refetch } = useSuspenseQuery({
-    queryKey: ["admin", "users"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*, user_roles(role)")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    },
-  });
+  const { data: users, refetch } = useSuspenseQuery({ queryKey: ["admin", "users"], queryFn: fetchAdminUsers });
+
   const changeRole = useServerFn(setPlatformAdmin);
   const [busy, setBusy] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -103,8 +117,9 @@ function AdminUsersPage() {
         {users.length === 0 ? (
           <EmptyState icon={Users} title="No users yet" description="User accounts will appear here." />
         ) : (
-          (users as Array<{ id: string; full_name: string; email: string | null; created_at: string; user_roles: unknown }>).map((user) => {
-            const roles = (user.user_roles as { role: string }[] | null)?.map((r) => r.role).join(", ") ?? "customer";
+          users.map((user) => {
+            const roles = user.roles.length > 0 ? user.roles.join(", ") : "customer";
+
             return (
               <Card key={user.id}>
                 <CardContent className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">

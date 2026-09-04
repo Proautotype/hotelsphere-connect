@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, CalendarDays, Plus } from "lucide-react";
 import { money, shortDate } from "@/lib/format";
 
-export const Route = createFileRoute("/_authenticated/bookings")({
+export const Route = createFileRoute("/_authenticated/bookings/")({
   head: () => ({
     meta: [
       { title: "Bookings — Custard Hotels" },

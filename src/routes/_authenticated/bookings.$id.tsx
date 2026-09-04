@@ -29,7 +29,16 @@ export const Route = createFileRoute("/_authenticated/bookings/$id")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  errorComponent: ({ error }) => (
+    <DashboardShell title="Booking">
+      <div className="mt-6 border-[3px] border-ink bg-card p-6">
+        <h2 className="font-display text-xl font-semibold">Could not open this booking</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    </DashboardShell>
+  ),
   component: BookingDetailPage,
+
 });
 
 interface FolioItem {
