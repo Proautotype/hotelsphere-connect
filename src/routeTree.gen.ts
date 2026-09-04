@@ -30,6 +30,7 @@ import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index
 import { Route as AdminAdminDiscoveryRouteImport } from './routes/_admin/admin.discovery'
 import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
+import { Route as AdminAdminTeamRouteImport } from './routes/_admin/admin.team'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AuthenticatedBookingsIndexRouteImport } from './routes/_authenticated/bookings.index'
 import { Route as AuthenticatedBookingsIdRouteImport } from './routes/_authenticated/bookings.$id'
@@ -139,6 +140,11 @@ const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
   path: '/admin/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminTeamRoute = AdminAdminTeamRouteImport.update({
+  id: '/admin/team',
+  path: '/admin/team',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/_admin/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/_admin/admin/hotels': typeof AdminAdminHotelsRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
+  '/_admin/admin/team': typeof AdminAdminTeamRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/bookings/$id': typeof AuthenticatedBookingsIdRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/discovery'
     | '/admin/hotels'
     | '/admin/settings'
+    | '/admin/team'
     | '/admin/users'
     | '/bookings/$id'
     | '/api/public/paystack-webhook'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin/discovery'
     | '/admin/hotels'
     | '/admin/settings'
+    | '/admin/team'
     | '/admin/users'
     | '/bookings/$id'
     | '/api/public/paystack-webhook'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/discovery'
     | '/_admin/admin/hotels'
     | '/_admin/admin/settings'
+    | '/_admin/admin/team'
     | '/_admin/admin/users'
     | '/_authenticated/bookings/$id'
     | '/api/public/paystack-webhook'
@@ -481,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/team': {
+      id: '/_admin/admin/team'
+      path: '/admin/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AdminAdminTeamRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/users': {
       id: '/_admin/admin/users'
       path: '/admin/users'
@@ -516,6 +535,7 @@ interface AdminRouteChildren {
   AdminAdminDiscoveryRoute: typeof AdminAdminDiscoveryRoute
   AdminAdminHotelsRoute: typeof AdminAdminHotelsRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
+  AdminAdminTeamRoute: typeof AdminAdminTeamRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
 }
@@ -524,6 +544,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminDiscoveryRoute: AdminAdminDiscoveryRoute,
   AdminAdminHotelsRoute: AdminAdminHotelsRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
+  AdminAdminTeamRoute: AdminAdminTeamRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminIndexRoute: AdminAdminIndexRoute,
 }
