@@ -73,7 +73,7 @@ function HousekeepingPage() {
                 <span className="text-lg font-semibold text-foreground">{groups[status]?.length ?? 0}</span>
               </div>
               <div className="space-y-2">
-                {(groups[status] ?? []).map((room) => {
+                {((groups[status] ?? []) as Array<{ id: string; room_number: string; room_types: unknown }>).map((room) => {
                   const rt = room.room_types as unknown as { name: string } | null;
                   const next = WORKFLOW[status];
                   return (
