@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_admin")({
     if (error || !data.user) {
       throw redirect({ to: "/auth", search: { redirect: location.href } });
     }
-    const { data: isAdmin } = await supabase.rpc("is_platform_admin");
-    if (!isAdmin) {
+    const { data: isTeam } = await supabase.rpc("is_platform_team");
+    if (!isTeam) {
       throw redirect({ to: "/dashboard" });
     }
     return { user: data.user };
