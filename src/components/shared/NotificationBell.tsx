@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ interface NotificationRow {
   type: string;
   is_read: boolean;
   created_at: string;
+  link: string | null;
 }
 
 export function NotificationBell() {

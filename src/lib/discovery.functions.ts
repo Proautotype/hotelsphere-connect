@@ -295,6 +295,7 @@ export const createPublicBooking = createServerFn({ method: "POST" })
       title: "New online booking",
       body: `${data.fullName} booked ${roomType.name} (${booking.reference}) for ${nights} night${nights === 1 ? "" : "s"}.`,
       type: "booking",
+      link: `/bookings/${booking.id}`,
     });
 
     return {
