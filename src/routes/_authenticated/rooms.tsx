@@ -45,7 +45,8 @@ function RoomsPage() {
   const { activeHotel } = useAuth();
   const { data: rooms } = useSuspenseQuery({ queryKey: ["rooms", "list"], queryFn: fetchRooms });
 
-  const statusGroups: Record<string, typeof rooms> = {
+  type RoomRow = { id: string; room_number: string; status: string; room_types: unknown };
+  const statusGroups: Record<string, RoomRow[]> = {
     available: [],
     reserved: [],
     occupied: [],
