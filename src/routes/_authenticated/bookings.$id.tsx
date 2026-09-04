@@ -434,8 +434,10 @@ function Row({ label, value }: { label: string; value: string }) {
 function NewBookingForm() {
   const { activeHotel } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const create = useServerFn(createBooking);
-  const [rooms, setRooms] = useState<{ id: string; room_number: string; room_type_id: string; room_types: { name: string } | null }[]>([]);
+  const [rooms, setRooms] = useState<{ id: string; room_number: string; room_type_id: string | null; room_types: { name: string } | null }[]>([]);
+  const [roomTypes, setRoomTypes] = useState<{ id: string; name: string; base_price: number }[]>([]);
   const [guests, setGuests] = useState<{ id: string; full_name: string; phone: string | null; email: string | null }[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -445,6 +447,7 @@ function NewBookingForm() {
     phone: "",
     email: "",
     roomId: "",
+    roomTypeId: "",
     checkIn: today(),
     checkOut: "",
     guestsCount: 1,
@@ -454,19 +457,33 @@ function NewBookingForm() {
   useEffect(() => {
     const loadLookups = async () => {
       if (!activeHotel) return;
-      const [roomsRes, guestsRes] = await Promise.all([
-        supabase.from("rooms").select("id, room_number, room_type_id, room_types(name)").eq("hotel_id", activeHotel.id).eq("status", "available"),
-        supabase.from("guests").select("id, full_name, phone, email").eq("hotel_id", activeHotel.id).limit(50),
+      const [roomsRes, guestsRes, typesRes] = await Promise.all([
+        supabase
+          .from("rooms")
+          .select("id, room_number, room_type_id, room_types(name)")
+          .eq("hotel_id", activeHotel.id)
+          .in("status", ["available", "inspected", "cleaning"])
+          .order("room_number"),
+        supabase.from("guests").select("id, full_name, phone, email").eq("hotel_id", activeHotel.id).order("full_name").limit(100),
+        supabase.from("room_types").select("id, name, base_price").eq("hotel_id", activeHotel.id).eq("is_active", true).order("name"),
       ]);
-      setRooms((roomsRes.data ?? []) as typeof rooms);
-      setGuests((guestsRes.data ?? []) as typeof guests);
+      setRooms((roomsRes.data ?? []) as unknown as typeof rooms);
+      setGuests((guestsRes.data ?? []) as unknown as typeof guests);
+      setRoomTypes((typesRes.data ?? []) as unknown as typeof roomTypes);
     };
     void loadLookups();
   }, [activeHotel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeHotel) return;
+    if (!activeHotel) {
+      toast.error("Select a hotel first");
+      return;
+    }
+    if (!form.roomId && !form.roomTypeId) {
+      toast.error("Select a room or a room type");
+      return;
+    }
     setLoading(true);
     try {
       const result = await create({
@@ -474,18 +491,21 @@ function NewBookingForm() {
           hotelId: activeHotel.id,
           guest: {
             id: form.guestId || undefined,
-            full_name: form.fullName,
-            phone: form.phone,
-            email: form.email,
+            full_name: form.fullName.trim(),
+            phone: form.phone.trim() || undefined,
+            email: form.email.trim() || undefined,
           },
-          roomId: form.roomId,
+          roomId: form.roomId || undefined,
+          roomTypeId: form.roomTypeId || undefined,
           checkIn: form.checkIn,
           checkOut: form.checkOut,
           guestsCount: form.guestsCount,
-          notes: form.note,
+          notes: form.note.trim() || undefined,
         },
       });
       toast.success(`Booking ${result.reference} created`);
+      await queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      await queryClient.invalidateQueries({ queryKey: ["rooms"] });
       navigate({ to: "/bookings/$id", params: { id: result.bookingId } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Booking failed");
@@ -493,6 +513,7 @@ function NewBookingForm() {
       setLoading(false);
     }
   };
+
 
   return (
     <DashboardShell title="New booking">
