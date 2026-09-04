@@ -76,7 +76,7 @@ function RoomsPage() {
                 {list.length === 0 ? (
                   <p className="text-xs text-muted-foreground">No rooms</p>
                 ) : (
-                  list.map((room) => {
+                  (list as Array<{ id: string; room_number: string; room_types: unknown }>).map((room) => {
                     const rt = room.room_types as unknown as { name: string; base_price: number; max_guests: number } | null;
                     return (
                       <div key={room.id} className="flex items-center justify-between rounded-md border border-border px-2 py-1.5">
