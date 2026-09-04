@@ -55,16 +55,16 @@ async function fetchDashboardStats() {
   ]);
 
   const roomCounts = (rooms.data ?? []).reduce(
-    (acc, r) => {
+    (acc: Record<string, number>, r: { status: string }) => {
       acc[r.status] = (acc[r.status] ?? 0) + 1;
       return acc;
     },
     {} as Record<string, number>,
   );
 
-  const balance = (outstanding.data ?? []).reduce((sum, b) => sum + Math.max(0, Number(b.total) - Number(b.amount_paid)), 0);
-  const todayRevenue = (payments.data ?? []).reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
-  const monthlyRevenue = (monthly.data ?? []).reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+  const balance = (outstanding.data ?? []).reduce((sum: number, b: { total: number; amount_paid: number }) => sum + Math.max(0, Number(b.total) - Number(b.amount_paid)), 0);
+  const todayRevenue = (payments.data ?? []).reduce((sum: number, p: { amount: number }) => sum + Number(p.amount ?? 0), 0);
+  const monthlyRevenue = (monthly.data ?? []).reduce((sum: number, p: { amount: number }) => sum + Number(p.amount ?? 0), 0);
 
   return {
     checkIns: checkIns.count ?? 0,
