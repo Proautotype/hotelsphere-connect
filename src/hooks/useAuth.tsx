@@ -91,18 +91,6 @@ async function fetchHotels(userId: string): Promise<HotelSummary[]> {
     };
   });
 
-  (demos.data ?? []).forEach((h: Record<string, unknown>) => {
-    const hotel = h as unknown as HotelSummaryRaw;
-    if (!map[hotel.id]) {
-      map[hotel.id] = {
-        ...mapHotel(hotel),
-        relation: "demo",
-        staff_role: null,
-        permissions: [],
-      };
-    }
-  });
-
   return Object.values(map).sort((a, b) => {
     const order = { owner: 0, staff: 1, demo: 2 };
     return order[a.relation] - order[b.relation];
