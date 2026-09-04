@@ -71,7 +71,7 @@ async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSumma
 
   const map: Record<string, HotelSummary> = {};
 
-  (owned.data ?? []).forEach((h) => {
+  (owned.data ?? []).forEach((h: Record<string, unknown>) => {
     const hotel = h as unknown as HotelSummaryRaw;
     map[hotel.id] = {
       ...mapHotel(hotel),
@@ -81,7 +81,7 @@ async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSumma
     };
   });
 
-  (memberships.data ?? []).forEach((m) => {
+  (memberships.data ?? []).forEach((m: Record<string, unknown>) => {
     const member = m as unknown as { staff_role: StaffRole; permissions: PermissionKey[]; hotels: HotelSummaryRaw };
     const hotel = member.hotels;
     map[hotel.id] = {
@@ -92,7 +92,7 @@ async function fetchHotels(userId: string, isAdmin: boolean): Promise<HotelSumma
     };
   });
 
-  (demos.data ?? []).forEach((h) => {
+  (demos.data ?? []).forEach((h: Record<string, unknown>) => {
     const hotel = h as unknown as HotelSummaryRaw;
     if (!map[hotel.id]) {
       map[hotel.id] = {
