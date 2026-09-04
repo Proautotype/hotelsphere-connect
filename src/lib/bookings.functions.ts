@@ -17,28 +17,38 @@ function generateRef(prefix: string) {
   return `${prefix}-${ts}${rand}`;
 }
 
+const optionalText = (max: number) =>
+  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().max(max).optional());
+
+const optionalEmail = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.string().email().optional(),
+);
+
 const createBookingSchema = z.object({
   hotelId: z.string().uuid(),
   guest: z.object({
+    id: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
     full_name: z.string().min(2),
-    email: z.string().email().optional(),
-    phone: z.string().max(30).optional(),
+    email: optionalEmail,
+    phone: optionalText(30),
     country: z.string().max(60).default("Ghana"),
-    id_type: z.string().max(40).optional(),
-    id_number: z.string().max(60).optional(),
-    address: z.string().max(200).optional(),
-    city: z.string().max(100).optional(),
-    emergency_contact: z.string().max(100).optional(),
-    notes: z.string().max(1000).optional(),
+    id_type: optionalText(40),
+    id_number: optionalText(60),
+    address: optionalText(200),
+    city: optionalText(100),
+    emergency_contact: optionalText(100),
+    notes: optionalText(1000),
   }),
-  roomTypeId: z.string().uuid().optional(),
-  roomId: z.string().uuid().optional(),
+  roomTypeId: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
+  roomId: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
   checkIn: z.string().date(),
   checkOut: z.string().date(),
   guestsCount: z.number().int().min(1).default(1),
   source: z.enum(["staff", "hotel_website", "discovery", "external"]).default("staff"),
-  notes: z.string().max(2000).optional(),
+  notes: optionalText(2000),
 });
+
 
 export const createBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -53,6 +63,7 @@ export const createBooking = createServerFn({ method: "POST" })
 
     const checkIn = new Date(data.checkIn);
     const checkOut = new Date(data.checkOut);
+    if (checkOut.getTime() <= checkIn.getTime()) throw new Error("Check-out must be after check-in");
     const nights = Math.max(1, Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
 
     let roomRate = 0;
@@ -66,42 +77,53 @@ export const createBooking = createServerFn({ method: "POST" })
       roomId = room.id;
     }
 
+    if (!roomId && !roomTypeId) throw new Error("Select a room or room type");
+
     if (roomTypeId) {
       const { data: rt } = await supabase.from("room_types").select("base_price").eq("id", roomTypeId).single();
-      roomRate = rt?.base_price ?? 0;
+      roomRate = Number(rt?.base_price ?? 0);
     }
-    if (!roomRate) throw new Error("Could not determine room rate");
+    if (!roomRate) throw new Error("Could not determine room rate — set a base price on the room type");
 
     const subtotal = round2(roomRate * nights);
     const tax = round2(subtotal * (Number(hotel.tax_percent) / 100));
     const serviceCharge = round2(subtotal * (Number(hotel.service_charge_percent) / 100));
     const total = round2(subtotal + tax + serviceCharge);
 
-    const { data: guest, error: guestError } = await supabase
-      .from("guests")
-      .insert({
-        hotel_id: data.hotelId,
-        full_name: data.guest.full_name,
-        email: data.guest.email ?? null,
-        phone: data.guest.phone ?? null,
-        country: data.guest.country,
-        id_type: data.guest.id_type ?? null,
-        id_number: data.guest.id_number ?? null,
-        address: data.guest.address ?? null,
-        city: data.guest.city ?? null,
-        emergency_contact: data.guest.emergency_contact ?? null,
-        notes: data.guest.notes ?? "",
-      })
-      .select("id")
-      .single();
-    if (guestError || !guest) throw new Error(guestError?.message ?? "Guest creation failed");
+    let guestId = data.guest.id ?? null;
+    if (guestId) {
+      const { data: existing } = await supabase.from("guests").select("id").eq("id", guestId).eq("hotel_id", data.hotelId).maybeSingle();
+      if (!existing) guestId = null;
+    }
+    if (!guestId) {
+      const { data: guest, error: guestError } = await supabase
+        .from("guests")
+        .insert({
+          hotel_id: data.hotelId,
+          full_name: data.guest.full_name,
+          email: data.guest.email ?? null,
+          phone: data.guest.phone ?? null,
+          country: data.guest.country,
+          id_type: data.guest.id_type ?? null,
+          id_number: data.guest.id_number ?? null,
+          address: data.guest.address ?? null,
+          city: data.guest.city ?? null,
+          emergency_contact: data.guest.emergency_contact ?? null,
+          notes: data.guest.notes ?? "",
+        })
+        .select("id")
+        .single();
+      if (guestError || !guest) throw new Error(guestError?.message ?? "Guest creation failed");
+      guestId = guest.id;
+    }
+
 
     const reference = generateRef("RES");
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
         hotel_id: data.hotelId,
-        guest_id: guest.id,
+        guest_id: guestId,
         room_type_id: roomTypeId,
         room_id: roomId,
         check_in: data.checkIn,

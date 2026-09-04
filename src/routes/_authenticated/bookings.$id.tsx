@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -434,8 +434,10 @@ function Row({ label, value }: { label: string; value: string }) {
 function NewBookingForm() {
   const { activeHotel } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const create = useServerFn(createBooking);
-  const [rooms, setRooms] = useState<{ id: string; room_number: string; room_type_id: string; room_types: { name: string } | null }[]>([]);
+  const [rooms, setRooms] = useState<{ id: string; room_number: string; room_type_id: string | null; room_types: { name: string } | null }[]>([]);
+  const [roomTypes, setRoomTypes] = useState<{ id: string; name: string; base_price: number }[]>([]);
   const [guests, setGuests] = useState<{ id: string; full_name: string; phone: string | null; email: string | null }[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -445,6 +447,7 @@ function NewBookingForm() {
     phone: "",
     email: "",
     roomId: "",
+    roomTypeId: "",
     checkIn: today(),
     checkOut: "",
     guestsCount: 1,
@@ -454,19 +457,33 @@ function NewBookingForm() {
   useEffect(() => {
     const loadLookups = async () => {
       if (!activeHotel) return;
-      const [roomsRes, guestsRes] = await Promise.all([
-        supabase.from("rooms").select("id, room_number, room_type_id, room_types(name)").eq("hotel_id", activeHotel.id).eq("status", "available"),
-        supabase.from("guests").select("id, full_name, phone, email").eq("hotel_id", activeHotel.id).limit(50),
+      const [roomsRes, guestsRes, typesRes] = await Promise.all([
+        supabase
+          .from("rooms")
+          .select("id, room_number, room_type_id, room_types(name)")
+          .eq("hotel_id", activeHotel.id)
+          .in("status", ["available", "inspected", "cleaning"])
+          .order("room_number"),
+        supabase.from("guests").select("id, full_name, phone, email").eq("hotel_id", activeHotel.id).order("full_name").limit(100),
+        supabase.from("room_types").select("id, name, base_price").eq("hotel_id", activeHotel.id).eq("is_active", true).order("name"),
       ]);
-      setRooms((roomsRes.data ?? []) as typeof rooms);
-      setGuests((guestsRes.data ?? []) as typeof guests);
+      setRooms((roomsRes.data ?? []) as unknown as typeof rooms);
+      setGuests((guestsRes.data ?? []) as unknown as typeof guests);
+      setRoomTypes((typesRes.data ?? []) as unknown as typeof roomTypes);
     };
     void loadLookups();
   }, [activeHotel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeHotel) return;
+    if (!activeHotel) {
+      toast.error("Select a hotel first");
+      return;
+    }
+    if (!form.roomId && !form.roomTypeId) {
+      toast.error("Select a room or a room type");
+      return;
+    }
     setLoading(true);
     try {
       const result = await create({
@@ -474,18 +491,21 @@ function NewBookingForm() {
           hotelId: activeHotel.id,
           guest: {
             id: form.guestId || undefined,
-            full_name: form.fullName,
-            phone: form.phone,
-            email: form.email,
+            full_name: form.fullName.trim(),
+            phone: form.phone.trim() || undefined,
+            email: form.email.trim() || undefined,
           },
-          roomId: form.roomId,
+          roomId: form.roomId || undefined,
+          roomTypeId: form.roomTypeId || undefined,
           checkIn: form.checkIn,
           checkOut: form.checkOut,
           guestsCount: form.guestsCount,
-          notes: form.note,
+          notes: form.note.trim() || undefined,
         },
       });
       toast.success(`Booking ${result.reference} created`);
+      await queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      await queryClient.invalidateQueries({ queryKey: ["rooms"] });
       navigate({ to: "/bookings/$id", params: { id: result.bookingId } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Booking failed");
@@ -493,6 +513,7 @@ function NewBookingForm() {
       setLoading(false);
     }
   };
+
 
   return (
     <DashboardShell title="New booking">
@@ -538,17 +559,39 @@ function NewBookingForm() {
               <Label htmlFor="roomId">Room</Label>
               <select
                 id="roomId"
-                required
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.roomId}
-                onChange={(e) => setForm((p) => ({ ...p, roomId: e.target.value }))}
+                onChange={(e) => {
+                  const room = rooms.find((r) => r.id === e.target.value);
+                  setForm((p) => ({ ...p, roomId: e.target.value, roomTypeId: room?.room_type_id ?? p.roomTypeId }));
+                }}
               >
-                <option value="">Select a room</option>
+                <option value="">Unassigned (choose room type)</option>
                 {rooms.map((r) => (
                   <option key={r.id} value={r.id}>{r.room_number} · {r.room_types?.name}</option>
                 ))}
               </select>
+              {rooms.length === 0 ? (
+                <p className="mt-1 text-xs text-muted-foreground">No free rooms — pick a room type instead.</p>
+              ) : null}
             </div>
+            <div>
+              <Label htmlFor="roomTypeId">Room type</Label>
+              <select
+                id="roomTypeId"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.roomTypeId}
+                onChange={(e) => setForm((p) => ({ ...p, roomTypeId: e.target.value }))}
+              >
+                <option value="">Select a room type</option>
+                {roomTypes.map((rt) => (
+                  <option key={rt.id} value={rt.id}>
+                    {rt.name} · {money(rt.base_price, activeHotel?.currency)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <Label htmlFor="checkIn">Check in</Label>
               <Input id="checkIn" type="date" required value={form.checkIn} onChange={(e) => setForm((p) => ({ ...p, checkIn: e.target.value }))} />
