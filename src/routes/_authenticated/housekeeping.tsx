@@ -55,7 +55,7 @@ function HousekeepingPage() {
   };
 
   const groups: Record<string, typeof rooms> = { dirty: [], cleaning: [], inspected: [], available: [], occupied: [], maintenance: [], out_of_service: [], reserved: [] };
-  rooms.forEach((r) => {
+  (rooms as Array<{ id: string; room_number: string; status: string; room_types: unknown }>).forEach((r) => {
     const key = (r.status as keyof typeof groups) ?? "available";
     (groups[key] ??= []).push(r);
   });
