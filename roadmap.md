@@ -1,4 +1,9 @@
+# Custard Hotels — roadmap
 
 ## Design
-- [ ] Redesign UI in a kinetic style (bold motion, energetic layouts) — user rejected current look as boring
-- [ ] Remove dark mode entirely (light-only theme)
+- [x] Kinetic redesign ("Bold Kinetic Blocks"): Syne/Space Grotesk, sharp corners, 3px ink borders, hard offset shadows, ops ticker, kinetic hover/entry motion
+- [x] Remove dark mode entirely (light-only theme)
+
+## Next (Phase 2 candidates)
+- [ ] Public hotel discovery, promotions, reviews
+- [ ] Subscriptions and deep analytics
