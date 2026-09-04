@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, Clock, Search, ShieldAlert, XCircle } from "lucide-react";
+import { ArrowRight, Building2, Clock, Search, ShieldAlert, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,7 +27,7 @@ function Panel({
 
 /** Blocks hotel operations until the signed-in person actually runs an approved hotel. */
 export function HotelGate({ children, allow = false }: { children: ReactNode; allow?: boolean }) {
-  const { loading, hotels, activeHotel, isPlatformAdmin } = useAuth();
+  const { loading, hotels, activeHotel, isPlatformAdmin, selectHotel, profile } = useAuth();
 
   if (loading) return <>{children}</>;
   if (isPlatformAdmin && !activeHotel) {
@@ -65,6 +65,46 @@ export function HotelGate({ children, allow = false }: { children: ReactNode; al
           </>
         }
       />
+    );
+  }
+
+  if (hotels.length > 1 && !activeHotel) {
+    return (
+      <div className="ink mx-auto flex max-w-2xl flex-col gap-5 bg-card p-8 shadow-hard">
+        <div>
+          <h2 className="font-display text-3xl font-extrabold italic tracking-tighter text-foreground">
+            Choose a workplace
+          </h2>
+          <p className="pt-2 text-sm text-muted-foreground">
+            {profile?.full_name ? `Welcome back, ${profile.full_name.split(" ")[0]}. ` : ""}
+            You work with more than one hotel. Pick the one you&apos;re working on — you can switch any time from the
+            hotel name at the top of the screen.
+          </p>
+        </div>
+        <ul className="flex flex-col gap-3">
+          {hotels.map((hotel) => (
+            <li key={hotel.id}>
+              <button
+                type="button"
+                onClick={() => selectHotel(hotel.id)}
+                className="ink flex w-full items-center gap-4 bg-background p-4 text-left transition-all hover:bg-amber hover:text-amber-foreground hover:shadow-hard"
+              >
+                <span className="ink flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+                  <Building2 className="size-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-display text-lg font-extrabold tracking-tight">{hotel.name}</span>
+                  <span className="kinetic-label block pt-1 text-[10px] opacity-70">
+                    {hotel.relation === "owner" ? "Owner" : (hotel.staff_role ?? "Staff").replace("_", " ")}
+                    {hotel.status !== "active" ? ` · ${hotel.status}` : ""}
+                  </span>
+                </span>
+                <ArrowRight className="size-5 shrink-0" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     );
   }
 
