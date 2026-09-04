@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     load();
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, s: Session | null) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
