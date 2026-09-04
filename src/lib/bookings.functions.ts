@@ -179,7 +179,7 @@ export const changeBooking = createServerFn({ method: "POST" })
     if (data.roomTypeId) update["room_type_id"] = data.roomTypeId;
     if (data.notes !== undefined) update["notes"] = data.notes;
 
-    const { error } = await supabase.from("bookings").update(update).eq("id", data.bookingId);
+    const { error } = await supabase.from("bookings").update(update as never).eq("id", data.bookingId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -188,7 +188,7 @@ export const changeBooking = createServerFn({ method: "POST" })
       action: "booking.changed",
       resource: "booking",
       resource_id: booking.id,
-      new_value: update,
+      new_value: update as Record<string, never>,
     });
 
     return { ok: true };

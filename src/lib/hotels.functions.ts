@@ -128,7 +128,7 @@ export const setHotelStatus = createServerFn({ method: "POST" })
       update["onboarding_step"] = 6;
     }
 
-    const { error } = await supabaseAdmin.from("hotels").update(update).eq("id", data.hotelId);
+    const { error } = await supabaseAdmin.from("hotels").update(update as never).eq("id", data.hotelId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -137,7 +137,7 @@ export const setHotelStatus = createServerFn({ method: "POST" })
       action: "hotel.status_changed",
       resource: "hotel",
       resource_id: data.hotelId,
-      new_value: update,
+      new_value: update as Record<string, never>,
     });
 
     return { ok: true };
