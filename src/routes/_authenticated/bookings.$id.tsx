@@ -28,10 +28,11 @@ export const Route = createFileRoute("/_authenticated/bookings/$id")({
   }),
   loader: async ({ context, params }) => {
     if (params.id === "new") return { booking: null };
-    await context.queryClient.ensureQueryData({
+    const booking = await context.queryClient.ensureQueryData({
       queryKey: ["booking", params.id],
       queryFn: async () => fetchBooking(params.id),
     });
+    return { booking };
   },
   component: BookingDetailPage,
 });
