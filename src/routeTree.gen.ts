@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HotelSlugRouteImport } from './routes/$hotelSlug'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -42,6 +43,11 @@ import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/publi
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HotelSlugRoute = HotelSlugRouteImport.update({
+  id: '/$hotelSlug',
+  path: '/$hotelSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -188,6 +194,7 @@ const ApiPublicPaystackWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$hotelSlug': typeof HotelSlugRoute
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$hotelSlug': typeof HotelSlugRoute
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
@@ -247,6 +255,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$hotelSlug': typeof HotelSlugRoute
   '/_admin': typeof AdminRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$hotelSlug'
     | '/auth'
     | '/discover'
     | '/register'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$hotelSlug'
     | '/auth'
     | '/discover'
     | '/register'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$hotelSlug'
     | '/_admin'
     | '/_authenticated'
     | '/auth'
@@ -370,6 +382,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HotelSlugRoute: typeof HotelSlugRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
@@ -387,6 +400,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$hotelSlug': {
+      id: '/$hotelSlug'
+      path: '/$hotelSlug'
+      fullPath: '/$hotelSlug'
+      preLoaderRoute: typeof HotelSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin': {
@@ -648,6 +668,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HotelSlugRoute: HotelSlugRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
