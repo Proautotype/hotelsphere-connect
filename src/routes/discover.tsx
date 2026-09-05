@@ -122,8 +122,8 @@ function DiscoverPage() {
           {filtered.map((hotel: DiscoveryHotel) => (
             <Link
               key={hotel.id}
-              to="/hotels/$slug"
-              params={{ slug: hotel.slug }}
+              to="/$hotelSlug"
+              params={{ hotelSlug: hotel.slug }}
               className="ink kinetic-tilt shadow-hard flex flex-col bg-card"
             >
               <div className="relative h-44 border-b-[3px] border-ink bg-sand">
