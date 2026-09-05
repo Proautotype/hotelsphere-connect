@@ -167,7 +167,7 @@ function BookingPage() {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link to="/hotels/$slug" params={{ slug: hotel.slug }} className="ink kinetic-press shadow-hard bg-card px-4 py-2 text-sm font-bold">
+          <Link to="/$hotelSlug" params={{ hotelSlug: hotel.slug }} className="ink kinetic-press shadow-hard bg-card px-4 py-2 text-sm font-bold">
             Back to hotel
           </Link>
           <Link to="/discover" className="ink kinetic-press shadow-hard bg-amber px-4 py-2 text-sm font-bold text-amber-foreground">

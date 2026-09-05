@@ -1,7 +1,35 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { HotelSite } from "@/components/discovery/HotelSite";
+import { resolveHotelHost } from "@/lib/hotel-host.functions";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
+  // When the request arrives on a hotel subdomain we serve that hotel's own site here.
+  loader: async () => resolveHotelHost(),
+  head: ({ loaderData }) => {
+    if (loaderData) {
+      const name = loaderData.data.hotel.name;
+      const city = loaderData.data.hotel.city ?? "Ghana";
+      const title = `${name}, ${city} — Book direct`;
+      const description = `Rooms, rates and instant booking at ${name} in ${city}. Pay with Mobile Money or at the front desk.`;
+      const cover = loaderData.data.hotel.cover_url ?? null;
+      return {
+        meta: [
+          { title },
+          { name: "description", content: description },
+          { property: "og:title", content: title },
+          { property: "og:description", content: description },
+          { property: "og:type", content: "website" },
+          { name: "twitter:card", content: "summary_large_image" },
+          ...(cover && cover.startsWith("https://")
+            ? [
+                { property: "og:image", content: cover },
+                { name: "twitter:image", content: cover },
+              ]
+            : []),
+        ],
+      };
+    }
+    return {
     meta: [
       { title: "Custard Hotels — Run Your Hotel Without The Chaos" },
       {
@@ -18,9 +46,16 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-  }),
-  component: HomePage,
+    };
+  },
+  component: HomeOrHotelPage,
 });
+
+function HomeOrHotelPage() {
+  const hotelHost = Route.useLoaderData();
+  if (hotelHost) return <HotelSite initial={hotelHost.data} slug={hotelHost.slug} />;
+  return <HomePage />;
+}
 
 const TICKER = [
   "ROOM 204 CHECKED IN",
@@ -31,7 +66,7 @@ const TICKER = [
   "ROOM 118 INSPECTED",
 ];
 
-export default function HomePage() {
+function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-7xl px-5 pt-6 sm:px-8 lg:px-12">

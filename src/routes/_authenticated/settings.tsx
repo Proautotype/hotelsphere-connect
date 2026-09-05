@@ -202,6 +202,40 @@ function SettingsPage() {
           </Card>
 
           <Card>
+            <CardContent className="space-y-3 p-6">
+              <h3 className="kinetic-label text-xs text-foreground">Your web address</h3>
+              <p className="text-sm text-muted-foreground">
+                Share this link on cards, WhatsApp and Instagram — it opens your own hotel page.
+              </p>
+              <p className="ink break-all bg-sand p-3 text-sm font-bold">
+                {typeof window !== "undefined" ? window.location.origin : ""}/{activeHotel?.slug}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    if (typeof window === "undefined" || !activeHotel) return;
+                    void navigator.clipboard.writeText(`${window.location.origin}/${activeHotel.slug}`);
+                    toast.success("Link copied");
+                  }}
+                >
+                  Copy link
+                </Button>
+                {activeHotel && (
+                  <Button asChild type="button" variant="outline" size="sm">
+                    <a href={`/${activeHotel.slug}`} target="_blank" rel="noreferrer">
+                      Open page
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+
             <CardContent className="space-y-4 p-6">
               <h3 className="kinetic-label text-xs text-foreground">Your account</h3>
               <dl className="space-y-2 text-sm">
