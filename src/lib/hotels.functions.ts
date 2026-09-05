@@ -1,27 +1,52 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { friendlyValidationMessage } from "@/lib/validation";
 
 const registerSchema = z.object({
-  name: z.string().min(2).max(120),
-  slug: z.string().min(2).max(80).regex(/^[a-z0-9-]+$/),
-  hotel_type: z.string().min(1),
+  name: z.string().min(2, "Hotel name must be at least 2 characters").max(120),
+  slug: z
+    .string()
+    .min(2, "Slug must be at least 2 characters")
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers and dashes"),
+  hotel_type: z.string().min(1, "Choose a property type"),
   description: z.string().max(2000).default(""),
-  address: z.string().min(3).max(200),
-  city: z.string().min(2).max(100),
-  region: z.string().min(2).max(100),
-  country: z.string().min(2).max(100).default("Ghana"),
+  address: z.string().min(3, "Address must be at least 3 characters").max(200),
+  city: z.string().min(2, "City must be at least 2 characters").max(100),
+  region: z.string().min(2, "Region must be at least 2 characters").max(100),
+  country: z.string().min(2, "Country must be at least 2 characters").max(100).default("Ghana"),
   phone: z.string().max(30).default(""),
-  email: z.string().email().max(120).optional(),
-  website: z.string().url().max(200).optional(),
-  currency: z.string().length(3).default("GHS"),
+  email: z
+    .union([
+      z.string().trim().length(0, "Email is optional"),
+      z.string().email("Enter a valid email address").max(120),
+    ])
+    .optional(),
+  website: z
+    .union([
+      z.string().trim().length(0, "Website is optional"),
+      z.string().url("Enter a valid URL, e.g. https://…").max(200),
+    ])
+    .optional(),
+  currency: z.string().length(3, "Currency must be 3 letters").default("GHS"),
   timezone: z.string().max(80).default("Africa/Accra"),
   check_in_time: z.string().max(10).default("14:00"),
   check_out_time: z.string().max(10).default("11:00"),
-  tax_percent: z.number().min(0).max(100).default(0),
-  service_charge_percent: z.number().min(0).max(100).default(0),
+  tax_percent: z.coerce
+    .number()
+    .min(0, "Tax % cannot be negative")
+    .max(100, "Tax % cannot exceed 100")
+    .default(0),
+  service_charge_percent: z.coerce
+    .number()
+    .min(0, "Service charge % cannot be negative")
+    .max(100, "Service charge % cannot exceed 100")
+    .default(0),
   amenities: z.array(z.string()).default([]),
 });
+
+export const registerHotelSchema = registerSchema;
 
 type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> };
 
@@ -32,16 +57,36 @@ async function assertHotelAccess(supabase: unknown, hotelId: string) {
 
 export const registerHotel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => registerSchema.parse(data))
+  .validator((data: unknown) => {
+    const parsed = registerSchema.safeParse(data);
+    if (!parsed.success) {
+      const fieldLabel: Record<string, string> = {
+        name: "Hotel name",
+        address: "Address",
+        city: "City",
+        region: "Region",
+        email: "Email",
+        website: "Website",
+        hotel_type: "Property type",
+        slug: "URL slug",
+      };
+      throw new Error(friendlyValidationMessage(parsed.error, (key) => fieldLabel[key] ?? key));
+    }
+    return parsed.data;
+  })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: existing, error: slugError } = await supabase.from("hotels").select("id").eq("slug", data.slug).maybeSingle();
+    const { data: existing, error: slugError } = await supabaseAdmin
+      .from("hotels")
+      .select("id")
+      .eq("slug", data.slug)
+      .maybeSingle();
     if (slugError) throw new Error(slugError.message);
     if (existing) throw new Error("A hotel with this URL slug already exists.");
 
-    const { data: hotel, error } = await supabase
+    const { data: hotel, error } = await supabaseAdmin
       .from("hotels")
       .insert({
         name: data.name,
@@ -111,7 +156,13 @@ export const registerHotel = createServerFn({ method: "POST" })
 export const setHotelStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ hotelId: z.string().uuid(), status: z.enum(["pending", "active", "suspended", "rejected", "archived"]), isPublicListed: z.boolean().optional() }).parse(data),
+    z
+      .object({
+        hotelId: z.string().uuid(),
+        status: z.enum(["pending", "active", "suspended", "rejected", "archived"]),
+        isPublicListed: z.boolean().optional(),
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -128,7 +179,10 @@ export const setHotelStatus = createServerFn({ method: "POST" })
       update["onboarding_step"] = 6;
     }
 
-    const { error } = await supabaseAdmin.from("hotels").update(update as never).eq("id", data.hotelId);
+    const { error } = await supabaseAdmin
+      .from("hotels")
+      .update(update as never)
+      .eq("id", data.hotelId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -153,7 +207,10 @@ export const togglePlatformSetting = createServerFn({ method: "POST" })
     const { data: isAdmin } = await supabase.rpc("is_platform_admin");
     if (!isAdmin) throw new Error("Only platform admins can change platform settings");
 
-    const { error } = await supabaseAdmin.from("platform_settings").update({ auto_approve_hotels: data.autoApproveHotels }).eq("id", true);
+    const { error } = await supabaseAdmin
+      .from("platform_settings")
+      .update({ auto_approve_hotels: data.autoApproveHotels })
+      .eq("id", true);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -224,7 +281,10 @@ export const updateHotelSettings = createServerFn({ method: "POST" })
     }
     if (Object.keys(update).length === 0) return { ok: true };
 
-    const { error } = await supabase.from("hotels").update(update as never).eq("id", data.hotelId);
+    const { error } = await supabase
+      .from("hotels")
+      .update(update as never)
+      .eq("id", data.hotelId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
