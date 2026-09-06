@@ -349,12 +349,16 @@ export const checkOutBooking = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const addFolioChargeSchema = z.object({
-  bookingId: z.string().uuid(),
+const folioChargeItemSchema = z.object({
   description: z.string().min(2).max(200),
   category: z.string().min(1).max(40),
   quantity: z.number().int().min(1).default(1),
   unitPrice: z.number().nonnegative().default(0),
+});
+
+const addFolioChargeSchema = z.object({
+  bookingId: z.string().uuid(),
+  items: z.array(folioChargeItemSchema).min(1).max(50),
 });
 
 export const addFolioCharge = createServerFn({ method: "POST" })
@@ -364,28 +368,37 @@ export const addFolioCharge = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: booking } = await supabase.from("bookings").select("id, hotel_id, status, total, services_total").eq("id", data.bookingId).single();
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, status, total, services_total")
+      .eq("id", data.bookingId)
+      .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
     if (["checked_out", "cancelled"].includes(booking.status)) throw new Error("Booking is closed");
 
-    const amount = round2(data.quantity * data.unitPrice);
-
-    await supabase.from("folio_items").insert({
+    const rows = data.items.map((item) => ({
       hotel_id: booking.hotel_id,
       booking_id: booking.id,
-      category: data.category,
-      description: data.description,
-      quantity: data.quantity,
-      unit_price: data.unitPrice,
-      amount,
+      category: item.category,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      amount: round2(item.quantity * item.unitPrice),
       created_by: userId,
-    });
+    }));
+    const totalAmount = round2(rows.reduce((sum, row) => sum + row.amount, 0));
 
-    const newServicesTotal = round2(Number(booking.services_total) + amount);
-    const newTotal = round2(Number(booking.total) + amount);
+    const { error: insertError } = await supabase.from("folio_items").insert(rows);
+    if (insertError) throw new Error(insertError.message);
 
-    await supabase.from("bookings").update({ services_total: newServicesTotal, total: newTotal }).eq("id", data.bookingId);
+    const newServicesTotal = round2(Number(booking.services_total) + totalAmount);
+    const newTotal = round2(Number(booking.total) + totalAmount);
+
+    await supabase
+      .from("bookings")
+      .update({ services_total: newServicesTotal, total: newTotal })
+      .eq("id", data.bookingId);
 
     await supabaseAdmin.from("audit_logs").insert({
       hotel_id: booking.hotel_id,
@@ -393,8 +406,12 @@ export const addFolioCharge = createServerFn({ method: "POST" })
       action: "folio.charge_added",
       resource: "booking",
       resource_id: booking.id,
-      new_value: { amount, category: data.category },
+      new_value: {
+        amount: totalAmount,
+        count: rows.length,
+        items: data.items.map((i) => ({ description: i.description, category: i.category, amount: round2(i.quantity * i.unitPrice) })),
+      },
     });
 
-    return { ok: true, amount, newTotal };
+    return { ok: true, amount: totalAmount, newTotal };
   });

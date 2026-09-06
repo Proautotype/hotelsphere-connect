@@ -7,7 +7,9 @@ const round2 = (value: number) => Math.round(value * 100) / 100;
 
 function createPaymentRef(prefix: string, id: string) {
   const short = id.replace(/-/g, "").slice(0, 8).toUpperCase();
-  return `${prefix}-${short}`;
+  const stamp = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${prefix}-${short}-${stamp}${rand}`;
 }
 
 type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> };
@@ -131,7 +133,14 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
     if (error || !inserted) throw new Error(error?.message ?? "Could not create payment");
 
     const reference = createPaymentRef("PAY", inserted.id);
-    await supabase.from("payments").update({ provider_reference: reference }).eq("id", inserted.id);
+    await supabase
+      .from("payments")
+      .update({
+        provider_reference: reference,
+        reference,
+        receipt_number: createPaymentRef("RCP", inserted.id),
+      })
+      .eq("id", inserted.id);
 
     const { data: hotel } = await supabase.from("hotels").select("name").eq("id", booking.hotel_id).single();
     const guest = booking.guests as unknown as { full_name: string; phone?: string } | null;

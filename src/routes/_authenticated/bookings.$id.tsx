@@ -119,11 +119,18 @@ function BookingDetail({ id }: { id: string }) {
   const payMomo = useServerFn(initializePaystackPayment);
 
   const [busy, setBusy] = useState(false);
-  const [charge, setCharge] = useState({ category: "food", description: "", quantity: 1, unitPrice: 0 });
+  const [charges, setCharges] = useState([
+    { id: "charge-1", category: "food", description: "", quantity: 1, unitPrice: 0 },
+  ]);
   const [paymentAmount, setPaymentAmount] = useState("");
 
   const balance = Number(booking.total) - Number(booking.amount_paid);
   const closed = ["checked_out", "cancelled"].includes(booking.status);
+  const fullyPaid = balance <= 0.009;
+  const balanceText = fullyPaid
+    ? "Fully paid — no outstanding balance"
+    : `Outstanding ${money(balance, currency)}`;
+  const chargeLabel = charges.length === 1 ? "Post charge" : `Post ${charges.length} charges`;
 
   const run = async (label: string, fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -138,19 +145,50 @@ function BookingDetail({ id }: { id: string }) {
     }
   };
 
+  const addChargeItem = () =>
+    setCharges((prev) => [
+      ...prev,
+      {
+        id: `charge-${Date.now()}-${prev.length}`,
+        category: "food",
+        description: "",
+        quantity: 1,
+        unitPrice: 0,
+      },
+    ]);
+
+  const removeChargeItem = (id: string) => setCharges((prev) => prev.filter((c) => c.id !== id));
+
+  const updateChargeItem = (
+    id: string,
+    patch: Partial<{ category: string; description: string; quantity: number; unitPrice: number }>,
+  ) => setCharges((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+
   const submitCharge = async (e: React.FormEvent) => {
     e.preventDefault();
-    await run("Charge posted to folio", async () => {
-      await addCharge({
-        data: {
-          bookingId: booking.id,
-          category: charge.category,
-          description: charge.description,
-          quantity: charge.quantity,
-          unitPrice: charge.unitPrice,
+    const items = charges
+      .filter((c) => c.description.trim().length > 0)
+      .map((c) => ({
+        category: c.category,
+        description: c.description.trim(),
+        quantity: c.quantity,
+        unitPrice: c.unitPrice,
+      }));
+    if (items.length === 0) {
+      toast.error("Add at least one charge line before posting");
+      return;
+    }
+    await run("Charges posted to folio", async () => {
+      await addCharge({ data: { bookingId: booking.id, items } });
+      setCharges([
+        {
+          id: `charge-${Date.now()}`,
+          category: "food",
+          description: "",
+          quantity: 1,
+          unitPrice: 0,
         },
-      });
-      setCharge({ category: "food", description: "", quantity: 1, unitPrice: 0 });
+      ]);
     });
   };
 
@@ -353,7 +391,7 @@ function BookingDetail({ id }: { id: string }) {
             <Card>
               <CardContent className="p-5">
                 <h3 className="kinetic-label text-xs text-foreground">Take payment</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Outstanding {money(balance, currency)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{balanceText}</p>
                 <div className="mt-3 space-y-3">
                   <Input
                     type="number"
@@ -362,13 +400,22 @@ function BookingDetail({ id }: { id: string }) {
                     placeholder="Amount"
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
-                    disabled={closed}
+                    disabled={closed || fullyPaid}
                   />
                   <div className="flex gap-2">
-                    <Button className="flex-1" disabled={busy || closed} onClick={submitCash}>
+                    <Button
+                      className="flex-1"
+                      disabled={busy || closed || fullyPaid}
+                      onClick={submitCash}
+                    >
                       <Wallet className="mr-1 size-4" /> Cash
                     </Button>
-                    <Button className="flex-1" variant="outline" disabled={busy || closed} onClick={submitMomo}>
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      disabled={busy || closed || fullyPaid}
+                      onClick={submitMomo}
+                    >
                       <Smartphone className="mr-1 size-4" /> Mobile Money
                     </Button>
                   </div>
@@ -381,48 +428,84 @@ function BookingDetail({ id }: { id: string }) {
             <CardContent className="p-5">
               <h3 className="kinetic-label text-xs text-foreground">Post a charge</h3>
               <form onSubmit={submitCharge} className="mt-3 space-y-3">
-                <div>
-                  <Label htmlFor="charge-category">Category</Label>
-                  <select
-                    id="charge-category"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={charge.category}
-                    onChange={(e) => setCharge((p) => ({ ...p, category: e.target.value }))}
-                  >
-                    {FOLIO_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{titleCase(c)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="charge-desc">Description</Label>
-                  <Input id="charge-desc" required value={charge.description} onChange={(e) => setCharge((p) => ({ ...p, description: e.target.value }))} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="charge-qty">Qty</Label>
-                    <Input
-                      id="charge-qty"
-                      type="number"
-                      min={1}
-                      value={charge.quantity}
-                      onChange={(e) => setCharge((p) => ({ ...p, quantity: parseInt(e.target.value || "1", 10) }))}
-                    />
+                {charges.map((c, idx) => (
+                  <div key={c.id} className="rounded-md border border-border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-foreground">Item {idx + 1}</p>
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground underline hover:text-destructive"
+                        onClick={() => removeChargeItem(c.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="mt-2">
+                      <Label htmlFor={`charge-category-${c.id}`}>Category</Label>
+                      <select
+                        id={`charge-category-${c.id}`}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={c.category}
+                        onChange={(e) => updateChargeItem(c.id, { category: e.target.value })}
+                      >
+                        {FOLIO_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {titleCase(cat)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mt-2">
+                      <Label htmlFor={`charge-desc-${c.id}`}>Description</Label>
+                      <Input
+                        id={`charge-desc-${c.id}`}
+                        required
+                        value={c.description}
+                        onChange={(e) => updateChargeItem(c.id, { description: e.target.value })}
+                      />
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor={`charge-qty-${c.id}`}>Qty</Label>
+                        <Input
+                          id={`charge-qty-${c.id}`}
+                          type="number"
+                          min={1}
+                          value={c.quantity}
+                          onChange={(e) =>
+                            updateChargeItem(c.id, {
+                              quantity: parseInt(e.target.value || "1", 10),
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`charge-price-${c.id}`}>Unit price</Label>
+                        <Input
+                          id={`charge-price-${c.id}`}
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={c.unitPrice}
+                          onChange={(e) =>
+                            updateChargeItem(c.id, { unitPrice: parseFloat(e.target.value || "0") })
+                          }
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="charge-price">Unit price</Label>
-                    <Input
-                      id="charge-price"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={charge.unitPrice}
-                      onChange={(e) => setCharge((p) => ({ ...p, unitPrice: parseFloat(e.target.value || "0") }))}
-                    />
-                  </div>
-                </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={busy || closed}
+                  onClick={addChargeItem}
+                >
+                  <Plus className="mr-1 size-4" /> Add item
+                </Button>
                 <Button type="submit" className="w-full" disabled={busy || closed}>
-                  <Plus className="mr-1 size-4" /> Post charge
+                  <Plus className="mr-1 size-4" /> {chargeLabel}
                 </Button>
               </form>
             </CardContent>
