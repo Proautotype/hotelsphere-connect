@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -22,19 +22,14 @@ export const Route = createFileRoute("/_authenticated/bookings/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["bookings", "list"],
-      queryFn: async () => fetchBookings(),
-    });
-  },
   component: BookingsPage,
 });
 
-async function fetchBookings() {
+async function fetchBookings(hotelId: string) {
   const { data, error } = await supabase
     .from("bookings")
     .select("id, reference, status, check_in, check_out, total, amount_paid, guests(full_name), rooms(room_number), room_types(name)")
+    .eq("hotel_id", hotelId)
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw new Error(error.message);
@@ -43,7 +38,12 @@ async function fetchBookings() {
 
 function BookingsPage() {
   const { activeHotel } = useAuth();
-  const { data: bookings } = useSuspenseQuery({ queryKey: ["bookings", "list"], queryFn: fetchBookings });
+  const hotelId = activeHotel?.id ?? "";
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["bookings", "list", hotelId],
+    queryFn: () => fetchBookings(hotelId),
+    enabled: Boolean(hotelId),
+  });
 
   return (
     <DashboardShell title="Bookings">

@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/housekeeping")({
@@ -19,17 +20,16 @@ export const Route = createFileRoute("/_authenticated/housekeeping")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["rooms", "housekeeping"],
-      queryFn: async () => fetchRooms(),
-    });
-  },
   component: HousekeepingPage,
 });
 
-async function fetchRooms() {
-  const { data, error } = await supabase.from("rooms").select("*, room_types(name)").order("room_number", { ascending: true }).limit(300);
+async function fetchRooms(hotelId: string) {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("*, room_types(name)")
+    .eq("hotel_id", hotelId)
+    .order("room_number", { ascending: true })
+    .limit(300);
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -46,10 +46,20 @@ const WORKFLOW: Record<string, string> = {
 };
 
 function HousekeepingPage() {
-  const { data: rooms, refetch } = useSuspenseQuery({ queryKey: ["rooms", "housekeeping"], queryFn: fetchRooms });
+  const { activeHotel } = useAuth();
+  const hotelId = activeHotel?.id ?? "";
+  const { data: rooms = [], refetch } = useQuery({
+    queryKey: ["rooms", "housekeeping", hotelId],
+    queryFn: () => fetchRooms(hotelId),
+    enabled: Boolean(hotelId),
+  });
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("rooms").update({ status: status as "dirty" }).eq("id", id);
+    const { error } = await supabase
+      .from("rooms")
+      .update({ status: status as "dirty" })
+      .eq("id", id)
+      .eq("hotel_id", hotelId);
     if (error) return;
     await refetch();
   };

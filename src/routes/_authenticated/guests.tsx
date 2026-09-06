@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Users } from "lucide-react";
 
@@ -20,23 +21,28 @@ export const Route = createFileRoute("/_authenticated/guests")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["guests", "list"],
-      queryFn: async () => fetchGuests(),
-    });
-  },
   component: GuestsPage,
 });
 
-async function fetchGuests() {
-  const { data, error } = await supabase.from("guests").select("*").order("created_at", { ascending: false }).limit(200);
+async function fetchGuests(hotelId: string) {
+  const { data, error } = await supabase
+    .from("guests")
+    .select("*")
+    .eq("hotel_id", hotelId)
+    .order("created_at", { ascending: false })
+    .limit(200);
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 function GuestsPage() {
-  const { data: guests } = useSuspenseQuery({ queryKey: ["guests", "list"], queryFn: fetchGuests });
+  const { activeHotel } = useAuth();
+  const hotelId = activeHotel?.id ?? "";
+  const { data: guests = [] } = useQuery({
+    queryKey: ["guests", "list", hotelId],
+    queryFn: () => fetchGuests(hotelId),
+    enabled: Boolean(hotelId),
+  });
   const [query, setQuery] = useState("");
 
   const filtered = (guests as Array<{ id: string; full_name: string; email: string | null; phone: string | null; country: string | null; id_type: string | null; id_number: string | null }>).filter((g) =>

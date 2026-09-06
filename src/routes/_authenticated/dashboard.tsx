@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
@@ -30,28 +30,22 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["dashboard", "stats"],
-      queryFn: async () => fetchDashboardStats(),
-    });
-  },
   component: DashboardPage,
 });
 
-async function fetchDashboardStats() {
+async function fetchDashboardStats(hotelId: string) {
   const todayStr = today();
   const startOfMonth = `${todayStr.slice(0, 7)}-01`;
 
   const [checkIns, checkOuts, inHouse, rooms, payments, upcoming, outstanding, monthly] = await Promise.all([
-    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("check_in", todayStr).not("status", "in", "(cancelled,no_show,checked_out)"),
-    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("check_out", todayStr).eq("status", "checked_in"),
-    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("status", "checked_in"),
-    supabase.from("rooms").select("status", { count: "exact" }),
-    supabase.from("payments").select("amount", { count: "exact" }).eq("status", "successful").gte("created_at", todayStr),
-    supabase.from("bookings").select("id, reference, check_in, check_out, guests(full_name), rooms(room_number), status").gte("check_in", todayStr).order("check_in", { ascending: true }).limit(5),
-    supabase.from("bookings").select("total, amount_paid").not("status", "in", "(cancelled,checked_out)"),
-    supabase.from("payments").select("amount", { count: "exact" }).eq("status", "successful").gte("created_at", startOfMonth),
+    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("hotel_id", hotelId).eq("check_in", todayStr).not("status", "in", "(cancelled,no_show,checked_out)"),
+    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("hotel_id", hotelId).eq("check_out", todayStr).eq("status", "checked_in"),
+    supabase.from("bookings").select("id", { count: "exact", head: true }).eq("hotel_id", hotelId).eq("status", "checked_in"),
+    supabase.from("rooms").select("status", { count: "exact" }).eq("hotel_id", hotelId),
+    supabase.from("payments").select("amount", { count: "exact" }).eq("hotel_id", hotelId).eq("status", "successful").gte("created_at", todayStr),
+    supabase.from("bookings").select("id, reference, check_in, check_out, guests(full_name), rooms(room_number), status").eq("hotel_id", hotelId).gte("check_in", todayStr).order("check_in", { ascending: true }).limit(5),
+    supabase.from("bookings").select("total, amount_paid").eq("hotel_id", hotelId).not("status", "in", "(cancelled,checked_out)"),
+    supabase.from("payments").select("amount", { count: "exact" }).eq("hotel_id", hotelId).eq("status", "successful").gte("created_at", startOfMonth),
   ]);
 
   const roomCounts = (rooms.data ?? []).reduce(
@@ -84,9 +78,11 @@ async function fetchDashboardStats() {
 
 function DashboardPage() {
   const { activeHotel, isPlatformAdmin, hotels } = useAuth();
-  const { data: stats } = useSuspenseQuery({
-    queryKey: ["dashboard", "stats"],
-    queryFn: fetchDashboardStats,
+  const hotelId = activeHotel?.id ?? "";
+  const { data: stats } = useQuery({
+    queryKey: ["dashboard", "stats", hotelId],
+    queryFn: () => fetchDashboardStats(hotelId),
+    enabled: Boolean(hotelId),
   });
 
   if (!activeHotel) {
@@ -106,6 +102,14 @@ function DashboardPage() {
             <Link to="/admin">Go to platform admin</Link>
           </Button>
         )}
+      </DashboardShell>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <DashboardShell title="Dashboard">
+        <PageHeader title={activeHotel.name} description="Loading today's numbers…" />
       </DashboardShell>
     );
   }
