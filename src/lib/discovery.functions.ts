@@ -299,6 +299,11 @@ export const createPublicBooking = createServerFn({ method: "POST" })
       .single();
     if (bookingError || !booking) throw new Error(bookingError?.message ?? "Could not create booking");
 
+    if (assignedRoom && (assignedRoom.status === "available" || assignedRoom.status === "inspected")) {
+      await supabaseAdmin.from("rooms").update({ status: "reserved" }).eq("id", assignedRoom.id);
+    }
+
+
     await supabaseAdmin.from("folio_items").insert({
       hotel_id: hotel.id,
       booking_id: booking.id,
