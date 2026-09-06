@@ -282,6 +282,8 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         commission_amount: commissionAmount,
         guest_id: guestId,
         room_type_id: roomType.id,
+        room_id: assignedRoom?.id ?? null,
+
         check_in: data.checkIn,
         check_out: data.checkOut,
         guests_count: data.guestsCount,
