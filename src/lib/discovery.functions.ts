@@ -219,18 +219,27 @@ export const createPublicBooking = createServerFn({ method: "POST" })
 
     // Availability check (server-side, authoritative)
     const [{ data: rooms }, { data: overlapping }] = await Promise.all([
-      supabaseAdmin.from("rooms").select("id, status").eq("room_type_id", roomType.id),
+      supabaseAdmin
+        .from("rooms")
+        .select("id, status, room_number")
+        .eq("room_type_id", roomType.id)
+        .order("room_number", { ascending: true }),
       supabaseAdmin
         .from("bookings")
-        .select("id")
+        .select("id, room_id")
         .eq("hotel_id", hotel.id)
         .eq("room_type_id", roomType.id)
         .in("status", ACTIVE_BOOKING_STATUSES)
         .lt("check_in", data.checkOut)
         .gt("check_out", data.checkIn),
     ]);
-    const usable = (rooms ?? []).filter((r) => r.status !== "out_of_service" && r.status !== "maintenance").length;
-    if (usable - (overlapping?.length ?? 0) <= 0) throw new Error("No rooms of this type are free for those dates");
+    const usableRooms = (rooms ?? []).filter((r) => r.status !== "out_of_service" && r.status !== "maintenance");
+    if (usableRooms.length - (overlapping?.length ?? 0) <= 0) throw new Error("No rooms of this type are free for those dates");
+
+    // Pin the booking to a concrete room so the hotel's room board reflects it.
+    const takenRoomIds = new Set((overlapping ?? []).map((b) => b.room_id).filter(Boolean) as string[]);
+    const assignedRoom = usableRooms.find((r) => !takenRoomIds.has(r.id)) ?? null;
+
 
     const nights = nightsBetween(data.checkIn, data.checkOut);
     const rate = Number(roomType.base_price);
