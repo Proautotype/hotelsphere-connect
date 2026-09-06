@@ -87,15 +87,17 @@ interface BookingDetail {
   hotels: { name: string; address: string; city: string; phone: string | null; email: string | null; currency: string } | null;
 }
 
-async function fetchBooking(id: string): Promise<BookingDetail> {
+async function fetchBooking(id: string, hotelId: string): Promise<BookingDetail> {
   const { data, error } = await supabase
     .from("bookings")
     .select(
       "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), hotels(name, address, city, phone, email, currency)",
     )
     .eq("id", id)
-    .single();
+    .eq("hotel_id", hotelId)
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("This booking belongs to another hotel. Switch workspace at the top of the screen to open it.");
   return data as unknown as BookingDetail;
 }
 
@@ -107,7 +109,11 @@ function BookingDetailPage() {
 
 function BookingDetail({ id }: { id: string }) {
   const { activeHotel, can } = useAuth();
-  const { data: booking, refetch } = useSuspenseQuery({ queryKey: ["booking", id], queryFn: () => fetchBooking(id) });
+  const hotelId = activeHotel?.id ?? "";
+  const { data: booking, refetch } = useSuspenseQuery({
+    queryKey: ["booking", id, hotelId],
+    queryFn: () => fetchBooking(id, hotelId),
+  });
   const currency = booking.hotels?.currency ?? activeHotel?.currency ?? "GHS";
 
   const confirm = useServerFn(confirmBooking);
