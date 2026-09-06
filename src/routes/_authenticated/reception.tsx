@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -26,20 +26,15 @@ export const Route = createFileRoute("/_authenticated/reception")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData({
-      queryKey: ["reception", "today"],
-      queryFn: async () => fetchTodayBookings(),
-    });
-  },
   component: ReceptionPage,
 });
 
-async function fetchTodayBookings() {
+async function fetchTodayBookings(hotelId: string) {
   const todayStr = today();
   const { data, error } = await supabase
     .from("bookings")
     .select("id, reference, status, check_in, check_out, total, amount_paid, guests(full_name), rooms(room_number)")
+    .eq("hotel_id", hotelId)
     .or(`check_in.eq.${todayStr},check_out.eq.${todayStr},status.eq.checked_in`)
     .not("status", "in", "(cancelled,no_show)")
     .order("check_in", { ascending: true })
@@ -50,7 +45,12 @@ async function fetchTodayBookings() {
 
 function ReceptionPage() {
   const { activeHotel } = useAuth();
-  const { data: bookings, refetch } = useSuspenseQuery({ queryKey: ["reception", "today"], queryFn: fetchTodayBookings });
+  const hotelId = activeHotel?.id ?? "";
+  const { data: bookings = [], refetch } = useQuery({
+    queryKey: ["reception", "today", hotelId],
+    queryFn: () => fetchTodayBookings(hotelId),
+    enabled: Boolean(hotelId),
+  });
   const [query, setQuery] = useState("");
   const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
