@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { checkInBooking, checkOutBooking } from "@/lib/bookings.functions";
+import { confirmBooking, checkInBooking, checkOutBooking } from "@/lib/bookings.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { DoorOpen, Search } from "lucide-react";
@@ -50,8 +50,9 @@ async function fetchTodayBookings() {
 
 function ReceptionPage() {
   const { activeHotel } = useAuth();
-  const { data: bookings } = useSuspenseQuery({ queryKey: ["reception", "today"], queryFn: fetchTodayBookings });
+  const { data: bookings, refetch } = useSuspenseQuery({ queryKey: ["reception", "today"], queryFn: fetchTodayBookings });
   const [query, setQuery] = useState("");
+  const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
   const checkOut = useServerFn(checkOutBooking);
 
@@ -65,10 +66,21 @@ function ReceptionPage() {
     );
   });
 
+  const runConfirm = async (id: string) => {
+    try {
+      await confirm({ data: { bookingId: id } });
+      toast.success("Booking confirmed");
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Confirmation failed");
+    }
+  };
+
   const runCheckIn = async (id: string) => {
     try {
       await checkIn({ data: { bookingId: id } });
       toast.success("Guest checked in");
+      await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Check-in failed");
     }
@@ -120,6 +132,11 @@ function ReceptionPage() {
                     <p className="font-medium text-foreground">{money(b.total, activeHotel?.currency)}</p>
                     {balance > 0.009 && <p className="text-xs text-destructive">Balance {money(balance, activeHotel?.currency)}</p>}
                     <div className="flex gap-2">
+                      {b.status === "pending" && (
+                        <Button size="sm" variant="outline" onClick={() => runConfirm(b.id)}>
+                          Confirm
+                        </Button>
+                      )}
                       {b.status === "confirmed" && <Button size="sm" onClick={() => runCheckIn(b.id)}><DoorOpen className="mr-1 size-4" /> Check in</Button>}
                       {b.status === "checked_in" && <Button size="sm" variant="outline" onClick={() => runCheckOut(b.id)}>Check out</Button>}
                     </div>

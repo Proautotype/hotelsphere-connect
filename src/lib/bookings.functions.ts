@@ -215,6 +215,36 @@ export const changeBooking = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const confirmBookingSchema = z.object({ bookingId: z.string().uuid() });
+export const confirmBooking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => confirmBookingSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, status")
+      .eq("id", data.bookingId)
+      .single();
+    if (!booking) throw new Error("Booking not found");
+    await assertHotelAccess(supabase, booking.hotel_id);
+    if (booking.status !== "pending") throw new Error("Only pending bookings can be confirmed");
+
+    await supabase.from("bookings").update({ status: "confirmed" }).eq("id", data.bookingId);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: booking.hotel_id,
+      user_id: userId,
+      action: "booking.confirmed",
+      resource: "booking",
+      resource_id: booking.id,
+    });
+
+    return { ok: true };
+  });
+
 const cancelBookingSchema = z.object({ bookingId: z.string().uuid(), reason: z.string().max(500).default("") });
 
 export const cancelBooking = createServerFn({ method: "POST" })

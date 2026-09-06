@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { createBooking, checkInBooking, checkOutBooking, cancelBooking, addFolioCharge } from "@/lib/bookings.functions";
+import { createBooking, confirmBooking, checkInBooking, checkOutBooking, cancelBooking, addFolioCharge } from "@/lib/bookings.functions";
 import { recordCashPayment, initializePaystackPayment } from "@/lib/payments.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +110,7 @@ function BookingDetail({ id }: { id: string }) {
   const { data: booking, refetch } = useSuspenseQuery({ queryKey: ["booking", id], queryFn: () => fetchBooking(id) });
   const currency = booking.hotels?.currency ?? activeHotel?.currency ?? "GHS";
 
+  const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
   const checkOut = useServerFn(checkOutBooking);
   const cancel = useServerFn(cancelBooking);
@@ -198,7 +199,17 @@ function BookingDetail({ id }: { id: string }) {
             <Button variant="outline" onClick={() => window.print()}>
               <Printer className="mr-1 size-4" /> Invoice
             </Button>
-            {booking.status === "confirmed" || booking.status === "pending" ? (
+            {booking.status === "pending" ? (
+              <Button
+                disabled={busy}
+                onClick={() =>
+                  run("Booking confirmed", () => confirm({ data: { bookingId: booking.id } }))
+                }
+              >
+                Confirm booking
+              </Button>
+            ) : null}
+            {booking.status === "confirmed" ? (
               <Button disabled={busy} onClick={() => run("Guest checked in", () => checkIn({ data: { bookingId: booking.id } }))}>
                 Check in
               </Button>
