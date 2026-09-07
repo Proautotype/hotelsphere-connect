@@ -354,6 +354,72 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          amount: number
+          cash_session_id: string | null
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at: string
+          created_by: string | null
+          description: string
+          hotel_id: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          note: string
+          reference: string
+          spent_on: string
+          updated_at: string
+          vendor: string
+        }
+        Insert: {
+          amount: number
+          cash_session_id?: string | null
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          description: string
+          hotel_id: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          note?: string
+          reference?: string
+          spent_on?: string
+          updated_at?: string
+          vendor?: string
+        }
+        Update: {
+          amount?: number
+          cash_session_id?: string | null
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          hotel_id?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          note?: string
+          reference?: string
+          spent_on?: string
+          updated_at?: string
+          vendor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folio_items: {
         Row: {
           amount: number
@@ -1267,6 +1333,17 @@ export type Database = {
         | "cancelled"
         | "no_show"
       cash_session_status: "open" | "closed"
+      expense_category:
+        | "utilities"
+        | "supplies"
+        | "salaries"
+        | "maintenance"
+        | "food_drink"
+        | "transport"
+        | "marketing"
+        | "rent"
+        | "taxes_fees"
+        | "other"
       hotel_status: "pending" | "active" | "suspended" | "rejected" | "archived"
       payment_method: "mobile_money" | "cash" | "bank_transfer" | "card"
       payment_status:
@@ -1439,6 +1516,18 @@ export const Constants = {
         "no_show",
       ],
       cash_session_status: ["open", "closed"],
+      expense_category: [
+        "utilities",
+        "supplies",
+        "salaries",
+        "maintenance",
+        "food_drink",
+        "transport",
+        "marketing",
+        "rent",
+        "taxes_fees",
+        "other",
+      ],
       hotel_status: ["pending", "active", "suspended", "rejected", "archived"],
       payment_method: ["mobile_money", "cash", "bank_transfer", "card"],
       payment_status: [
