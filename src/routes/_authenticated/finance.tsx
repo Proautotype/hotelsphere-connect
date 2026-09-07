@@ -100,15 +100,38 @@ interface FinanceHotel {
   currency: string;
 }
 
+interface ExpenseRow {
+  id: string;
+  spent_on: string;
+  category: string;
+  vendor: string;
+  description: string;
+  amount: number;
+  method: string;
+  reference: string;
+  note: string;
+  created_at: string;
+}
+
 interface FinanceData {
   hotel: FinanceHotel | null;
   currency: string;
   payments: PaymentRow[];
-  totals: { received: number; today: number; outstanding: number; count: number };
+  totals: {
+    received: number;
+    today: number;
+    outstanding: number;
+    count: number;
+    expenses: number;
+    net: number;
+  };
   openSession: CashSession | null;
   purchases: PurchaseRow[];
   purchasesTotal: number;
   bookings: BookingOption[];
+  expenses: ExpenseRow[];
+  expensesTotal: number;
+  expensesByCategory: { category: string; amount: number }[];
 }
 
 const METHOD_LABELS: Record<string, string> = {
