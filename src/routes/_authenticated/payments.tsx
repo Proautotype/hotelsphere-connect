@@ -71,6 +71,7 @@ function PaymentsPage() {
     queryFn: () => fetchOpenCashSession(hotelId),
     enabled: Boolean(hotelId),
   });
+  const [busy, setBusy] = useState<"open" | "close" | null>(null);
   const [floatAmount, setFloatAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const open = useServerFn(openCashSession);
@@ -78,7 +79,8 @@ function PaymentsPage() {
 
 
   const handleOpen = async () => {
-    if (!activeHotel) return;
+    if (!activeHotel || busy) return;
+    setBusy("open");
     try {
       await open({ data: { hotelId: activeHotel.id, openingBalance: parseFloat(floatAmount) || 0 } });
       toast.success("Cash session opened");
@@ -86,11 +88,14 @@ function PaymentsPage() {
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to open session");
+    } finally {
+      setBusy(null);
     }
   };
 
   const handleClose = async () => {
-    if (!openSession) return;
+    if (!openSession || busy) return;
+    setBusy("close");
     try {
         await close({ data: { sessionId: openSession.id, actualCash: parseFloat(closeAmount) || 0 } });
       toast.success("Cash session closed");
@@ -98,6 +103,8 @@ function PaymentsPage() {
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to close session");
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -121,7 +128,7 @@ function PaymentsPage() {
                     value={closeAmount}
                     onChange={(e) => setCloseAmount(e.target.value)}
                   />
-                  <Button size="sm" onClick={handleClose}>Close session</Button>
+                  <Button size="sm" disabled={busy !== null} onClick={handleClose}>{busy === "close" ? "Closing…" : "Close session"}</Button>
                 </div>
               </div>
             ) : (
@@ -133,7 +140,7 @@ function PaymentsPage() {
                   value={floatAmount}
                   onChange={(e) => setFloatAmount(e.target.value)}
                 />
-                <Button size="sm" onClick={handleOpen}>Open session</Button>
+                <Button size="sm" disabled={busy !== null} onClick={handleOpen}>{busy === "open" ? "Opening…" : "Open session"}</Button>
               </div>
             )}
           </CardContent>

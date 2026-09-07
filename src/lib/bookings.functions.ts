@@ -265,7 +265,7 @@ export const cancelBooking = createServerFn({ method: "POST" })
       .eq("id", data.bookingId);
 
     if (booking.room_id) {
-      await supabase.from("rooms").update({ status: "dirty" }).eq("id", booking.room_id);
+      await supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id);
     }
 
     await supabaseAdmin.from("audit_logs").insert({
