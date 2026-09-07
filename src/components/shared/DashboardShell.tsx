@@ -7,6 +7,7 @@ import {
   Sparkles,
   Users,
   CreditCard,
+  ChartPie,
   Settings,
   UserCog,
   Menu,
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/housekeeping", label: "Housekeeping", icon: Sparkles },
   { to: "/guests", label: "Guests", icon: Users },
   { to: "/payments", label: "Payments", icon: CreditCard },
+  { to: "/finance", label: "Finance", icon: ChartPie },
   { to: "/staff", label: "Staff", icon: UserCog },
   { to: "/billing", label: "Plan & billing", icon: Receipt },
   { to: "/settings", label: "Settings", icon: Settings },
@@ -113,7 +115,9 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
               </SheetContent>
             </Sheet>
             {title ? (
-              <h1 className="kinetic-label truncate text-sm text-foreground lg:text-base">{title}</h1>
+              <h1 className="kinetic-label truncate text-sm text-foreground lg:text-base">
+                {title}
+              </h1>
             ) : null}
           </div>
 
@@ -132,7 +136,9 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <HotelGate allow={location.pathname === "/settings" || location.pathname === "/onboarding"}>
+          <HotelGate
+            allow={location.pathname === "/settings" || location.pathname === "/onboarding"}
+          >
             {children}
           </HotelGate>
         </main>

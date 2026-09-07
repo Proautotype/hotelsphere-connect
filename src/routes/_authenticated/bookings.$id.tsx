@@ -9,7 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { createBooking, confirmBooking, checkInBooking, checkOutBooking, cancelBooking, addFolioCharge } from "@/lib/bookings.functions";
+import {
+  createBooking,
+  confirmBooking,
+  checkInBooking,
+  checkOutBooking,
+  cancelBooking,
+  addFolioCharge,
+} from "@/lib/bookings.functions";
 import { recordCashPayment, initializePaystackPayment } from "@/lib/payments.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,9 +29,15 @@ export const Route = createFileRoute("/_authenticated/bookings/$id")({
   head: () => ({
     meta: [
       { title: "Booking details — Custard Hotels" },
-      { name: "description", content: "Manage a reservation: folio charges, payments, check-in and check-out." },
+      {
+        name: "description",
+        content: "Manage a reservation: folio charges, payments, check-in and check-out.",
+      },
       { property: "og:title", content: "Booking details — Custard Hotels" },
-      { property: "og:description", content: "Manage a reservation: folio charges, payments, check-in and check-out." },
+      {
+        property: "og:description",
+        content: "Manage a reservation: folio charges, payments, check-in and check-out.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -38,7 +51,6 @@ export const Route = createFileRoute("/_authenticated/bookings/$id")({
     </DashboardShell>
   ),
   component: BookingDetailPage,
-
 });
 
 interface FolioItem {
@@ -79,12 +91,25 @@ interface BookingDetail {
   notes: string;
   created_at: string;
   hotel_id: string;
-  guests: { id: string; full_name: string; email: string | null; phone: string | null; country: string | null } | null;
+  guests: {
+    id: string;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    country: string | null;
+  } | null;
   rooms: { room_number: string } | null;
   room_types: { name: string } | null;
   folio_items: FolioItem[];
   payments: PaymentRow[];
-  hotels: { name: string; address: string; city: string; phone: string | null; email: string | null; currency: string } | null;
+  hotels: {
+    name: string;
+    address: string;
+    city: string;
+    phone: string | null;
+    email: string | null;
+    currency: string;
+  } | null;
 }
 
 async function fetchBooking(id: string, hotelId: string): Promise<BookingDetail> {
@@ -97,7 +122,10 @@ async function fetchBooking(id: string, hotelId: string): Promise<BookingDetail>
     .eq("hotel_id", hotelId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("This booking belongs to another hotel. Switch workspace at the top of the screen to open it.");
+  if (!data)
+    throw new Error(
+      "This booking belongs to another hotel. Switch workspace at the top of the screen to open it.",
+    );
   return data as unknown as BookingDetail;
 }
 
@@ -254,12 +282,22 @@ function BookingDetail({ id }: { id: string }) {
               </Button>
             ) : null}
             {booking.status === "confirmed" ? (
-              <Button disabled={busy} onClick={() => run("Guest checked in", () => checkIn({ data: { bookingId: booking.id } }))}>
+              <Button
+                disabled={busy}
+                onClick={() =>
+                  run("Guest checked in", () => checkIn({ data: { bookingId: booking.id } }))
+                }
+              >
                 Check in
               </Button>
             ) : null}
             {booking.status === "checked_in" ? (
-              <Button disabled={busy} onClick={() => run("Guest checked out", () => checkOut({ data: { bookingId: booking.id } }))}>
+              <Button
+                disabled={busy}
+                onClick={() =>
+                  run("Guest checked out", () => checkOut({ data: { bookingId: booking.id } }))
+                }
+              >
                 Check out
               </Button>
             ) : null}
@@ -269,7 +307,9 @@ function BookingDetail({ id }: { id: string }) {
                 disabled={busy}
                 onClick={() => {
                   if (!window.confirm("Cancel this booking?")) return;
-                  void run("Booking cancelled", () => cancel({ data: { bookingId: booking.id, reason: "Cancelled at front desk" } }));
+                  void run("Booking cancelled", () =>
+                    cancel({ data: { bookingId: booking.id, reason: "Cancelled at front desk" } }),
+                  );
                 }}
               >
                 Cancel
@@ -292,13 +332,17 @@ function BookingDetail({ id }: { id: string }) {
                   <p className="text-sm text-muted-foreground">
                     {booking.hotels?.address}, {booking.hotels?.city}
                   </p>
-                  <p className="text-sm text-muted-foreground">{booking.hotels?.phone} {booking.hotels?.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.hotels?.phone} {booking.hotels?.email}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="kinetic-label text-xs text-foreground">Invoice</p>
                   <p className="font-display font-semibold text-foreground">{booking.reference}</p>
                   <p className="text-xs text-muted-foreground">{dateTime(booking.created_at)}</p>
-                  <div className="mt-1 flex justify-end"><StatusBadge status={booking.status} /></div>
+                  <div className="mt-1 flex justify-end">
+                    <StatusBadge status={booking.status} />
+                  </div>
                 </div>
               </div>
 
@@ -311,9 +355,16 @@ function BookingDetail({ id }: { id: string }) {
                 </div>
                 <div className="sm:text-right">
                   <p className="kinetic-label text-[10px] text-muted-foreground">Stay</p>
-                  <p className="font-medium text-foreground">{shortDate(booking.check_in)} → {shortDate(booking.check_out)}</p>
-                  <p className="text-sm text-muted-foreground">{booking.nights ?? 0} night(s) · {booking.guests_count} guest(s)</p>
-                  <p className="text-sm text-muted-foreground">{booking.room_types?.name} {booking.rooms?.room_number ? `· Room ${booking.rooms.room_number}` : ""}</p>
+                  <p className="font-medium text-foreground">
+                    {shortDate(booking.check_in)} → {shortDate(booking.check_out)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.nights ?? 0} night(s) · {booking.guests_count} guest(s)
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.room_types?.name}{" "}
+                    {booking.rooms?.room_number ? `· Room ${booking.rooms.room_number}` : ""}
+                  </p>
                 </div>
               </div>
 
@@ -321,26 +372,45 @@ function BookingDetail({ id }: { id: string }) {
                 <thead>
                   <tr className="border-b-2 border-ink text-left">
                     <th className="kinetic-label pb-2 text-[10px] text-muted-foreground">Item</th>
-                    <th className="kinetic-label pb-2 text-right text-[10px] text-muted-foreground">Qty</th>
-                    <th className="kinetic-label pb-2 text-right text-[10px] text-muted-foreground">Rate</th>
-                    <th className="kinetic-label pb-2 text-right text-[10px] text-muted-foreground">Amount</th>
+                    <th className="kinetic-label pb-2 text-right text-[10px] text-muted-foreground">
+                      Qty
+                    </th>
+                    <th className="kinetic-label pb-2 text-right text-[10px] text-muted-foreground">
+                      Rate
+                    </th>
+                    <th className="kinetic-label pb-2 text-right text-[10px] text-muted-foreground">
+                      Amount
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-border">
-                    <td className="py-2 text-foreground">Accommodation ({booking.nights ?? 0} nights)</td>
+                    <td className="py-2 text-foreground">
+                      Accommodation ({booking.nights ?? 0} nights)
+                    </td>
                     <td className="py-2 text-right text-muted-foreground">{booking.nights ?? 0}</td>
-                    <td className="py-2 text-right text-muted-foreground">{money(booking.room_rate, currency)}</td>
-                    <td className="py-2 text-right text-foreground">{money(Number(booking.room_rate) * Number(booking.nights ?? 0), currency)}</td>
+                    <td className="py-2 text-right text-muted-foreground">
+                      {money(booking.room_rate, currency)}
+                    </td>
+                    <td className="py-2 text-right text-foreground">
+                      {money(Number(booking.room_rate) * Number(booking.nights ?? 0), currency)}
+                    </td>
                   </tr>
                   {(booking.folio_items ?? []).map((item) => (
                     <tr key={item.id} className="border-b border-border">
                       <td className="py-2 text-foreground">
-                        {item.description} <span className="text-xs text-muted-foreground">· {titleCase(item.category)}</span>
+                        {item.description}{" "}
+                        <span className="text-xs text-muted-foreground">
+                          · {titleCase(item.category)}
+                        </span>
                       </td>
                       <td className="py-2 text-right text-muted-foreground">{item.quantity}</td>
-                      <td className="py-2 text-right text-muted-foreground">{money(item.unit_price, currency)}</td>
-                      <td className="py-2 text-right text-foreground">{money(item.amount, currency)}</td>
+                      <td className="py-2 text-right text-muted-foreground">
+                        {money(item.unit_price, currency)}
+                      </td>
+                      <td className="py-2 text-right text-foreground">
+                        {money(item.amount, currency)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -349,15 +419,25 @@ function BookingDetail({ id }: { id: string }) {
               <dl className="mt-4 ml-auto max-w-xs space-y-1.5 text-sm">
                 <Row label="Service charge" value={money(booking.service_charge, currency)} />
                 <Row label="Tax" value={money(booking.tax_amount, currency)} />
-                {Number(booking.discount) > 0 ? <Row label="Discount" value={`- ${money(booking.discount, currency)}`} /> : null}
+                {Number(booking.discount) > 0 ? (
+                  <Row label="Discount" value={`- ${money(booking.discount, currency)}`} />
+                ) : null}
                 <div className="flex justify-between border-t-[3px] border-ink pt-2">
                   <dt className="kinetic-label text-xs text-foreground">Total</dt>
-                  <dd className="font-display font-extrabold text-foreground">{money(booking.total, currency)}</dd>
+                  <dd className="font-display font-extrabold text-foreground">
+                    {money(booking.total, currency)}
+                  </dd>
                 </div>
                 <Row label="Paid" value={money(booking.amount_paid, currency)} />
                 <div className="flex justify-between">
                   <dt className="kinetic-label text-xs text-foreground">Balance</dt>
-                  <dd className={balance > 0.009 ? "font-semibold text-destructive" : "font-semibold text-foreground"}>
+                  <dd
+                    className={
+                      balance > 0.009
+                        ? "font-semibold text-destructive"
+                        : "font-semibold text-foreground"
+                    }
+                  >
                     {money(balance, currency)}
                   </dd>
                 </div>
@@ -373,7 +453,10 @@ function BookingDetail({ id }: { id: string }) {
               ) : (
                 <div className="mt-3 space-y-2">
                   {booking.payments.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between border-b border-border pb-2 text-sm">
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between border-b border-border pb-2 text-sm"
+                    >
                       <div>
                         <p className="font-medium text-foreground">{p.receipt_number}</p>
                         <p className="text-xs text-muted-foreground">
@@ -545,9 +628,20 @@ function NewBookingForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const create = useServerFn(createBooking);
-  const [rooms, setRooms] = useState<{ id: string; room_number: string; room_type_id: string | null; room_types: { name: string } | null }[]>([]);
-  const [roomTypes, setRoomTypes] = useState<{ id: string; name: string; base_price: number }[]>([]);
-  const [guests, setGuests] = useState<{ id: string; full_name: string; phone: string | null; email: string | null }[]>([]);
+  const [rooms, setRooms] = useState<
+    {
+      id: string;
+      room_number: string;
+      room_type_id: string | null;
+      room_types: { name: string } | null;
+    }[]
+  >([]);
+  const [roomTypes, setRoomTypes] = useState<{ id: string; name: string; base_price: number }[]>(
+    [],
+  );
+  const [guests, setGuests] = useState<
+    { id: string; full_name: string; phone: string | null; email: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -573,8 +667,18 @@ function NewBookingForm() {
           .eq("hotel_id", activeHotel.id)
           .in("status", ["available", "inspected", "cleaning"])
           .order("room_number"),
-        supabase.from("guests").select("id, full_name, phone, email").eq("hotel_id", activeHotel.id).order("full_name").limit(100),
-        supabase.from("room_types").select("id, name, base_price").eq("hotel_id", activeHotel.id).eq("is_active", true).order("name"),
+        supabase
+          .from("guests")
+          .select("id, full_name, phone, email")
+          .eq("hotel_id", activeHotel.id)
+          .order("full_name")
+          .limit(100),
+        supabase
+          .from("room_types")
+          .select("id, name, base_price")
+          .eq("hotel_id", activeHotel.id)
+          .eq("is_active", true)
+          .order("name"),
       ]);
       setRooms((roomsRes.data ?? []) as unknown as typeof rooms);
       setGuests((guestsRes.data ?? []) as unknown as typeof guests);
@@ -623,7 +727,6 @@ function NewBookingForm() {
     }
   };
 
-
   return (
     <DashboardShell title="New booking">
       <PageHeader title="Create booking" description="Reserve a room and open a guest folio." />
@@ -648,21 +751,37 @@ function NewBookingForm() {
               >
                 <option value="">New guest</option>
                 {guests.map((g) => (
-                  <option key={g.id} value={g.id}>{g.full_name} {g.phone ? `· ${g.phone}` : ""}</option>
+                  <option key={g.id} value={g.id}>
+                    {g.full_name} {g.phone ? `· ${g.phone}` : ""}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
               <Label htmlFor="fullName">Guest name</Label>
-              <Input id="fullName" required value={form.fullName} onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))} />
+              <Input
+                id="fullName"
+                required
+                value={form.fullName}
+                onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+              <Input
+                id="phone"
+                value={form.phone}
+                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="roomId">Room</Label>
@@ -672,16 +791,24 @@ function NewBookingForm() {
                 value={form.roomId}
                 onChange={(e) => {
                   const room = rooms.find((r) => r.id === e.target.value);
-                  setForm((p) => ({ ...p, roomId: e.target.value, roomTypeId: room?.room_type_id ?? p.roomTypeId }));
+                  setForm((p) => ({
+                    ...p,
+                    roomId: e.target.value,
+                    roomTypeId: room?.room_type_id ?? p.roomTypeId,
+                  }));
                 }}
               >
                 <option value="">Unassigned (choose room type)</option>
                 {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>{r.room_number} · {r.room_types?.name}</option>
+                  <option key={r.id} value={r.id}>
+                    {r.room_number} · {r.room_types?.name}
+                  </option>
                 ))}
               </select>
               {rooms.length === 0 ? (
-                <p className="mt-1 text-xs text-muted-foreground">No free rooms — pick a room type instead.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  No free rooms — pick a room type instead.
+                </p>
               ) : null}
             </div>
             <div>
@@ -703,22 +830,49 @@ function NewBookingForm() {
 
             <div>
               <Label htmlFor="checkIn">Check in</Label>
-              <Input id="checkIn" type="date" required value={form.checkIn} onChange={(e) => setForm((p) => ({ ...p, checkIn: e.target.value }))} />
+              <Input
+                id="checkIn"
+                type="date"
+                required
+                value={form.checkIn}
+                onChange={(e) => setForm((p) => ({ ...p, checkIn: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="checkOut">Check out</Label>
-              <Input id="checkOut" type="date" required value={form.checkOut} onChange={(e) => setForm((p) => ({ ...p, checkOut: e.target.value }))} />
+              <Input
+                id="checkOut"
+                type="date"
+                required
+                value={form.checkOut}
+                onChange={(e) => setForm((p) => ({ ...p, checkOut: e.target.value }))}
+              />
             </div>
             <div>
               <Label htmlFor="guestsCount">Guests</Label>
-              <Input id="guestsCount" type="number" min={1} max={20} value={form.guestsCount} onChange={(e) => setForm((p) => ({ ...p, guestsCount: parseInt(e.target.value || "1", 10) }))} />
+              <Input
+                id="guestsCount"
+                type="number"
+                min={1}
+                max={20}
+                value={form.guestsCount}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, guestsCount: parseInt(e.target.value || "1", 10) }))
+                }
+              />
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="note">Notes</Label>
-              <Input id="note" value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} />
+              <Input
+                id="note"
+                value={form.note}
+                onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
+              />
             </div>
             <div className="sm:col-span-2 flex justify-end">
-              <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create booking"}</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Creating..." : "Create booking"}
+              </Button>
             </div>
           </form>
         </CardContent>

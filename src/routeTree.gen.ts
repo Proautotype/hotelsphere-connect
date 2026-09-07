@@ -18,6 +18,7 @@ import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated/finance'
 import { Route as AuthenticatedGuestsRouteImport } from './routes/_authenticated/guests'
 import { Route as AuthenticatedHousekeepingRouteImport } from './routes/_authenticated/housekeeping'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -81,6 +82,11 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedGuestsRoute = AuthenticatedGuestsRouteImport.update({
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/finance': typeof AuthenticatedFinanceRoute
   '/guests': typeof AuthenticatedGuestsRoute
   '/housekeeping': typeof AuthenticatedHousekeepingRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/finance': typeof AuthenticatedFinanceRoute
   '/guests': typeof AuthenticatedGuestsRoute
   '/housekeeping': typeof AuthenticatedHousekeepingRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -263,6 +271,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/guests': typeof AuthenticatedGuestsRoute
   '/_authenticated/housekeeping': typeof AuthenticatedHousekeepingRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/billing'
     | '/dashboard'
+    | '/finance'
     | '/guests'
     | '/housekeeping'
     | '/onboarding'
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/billing'
     | '/dashboard'
+    | '/finance'
     | '/guests'
     | '/housekeeping'
     | '/onboarding'
@@ -357,6 +368,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/_authenticated/billing'
     | '/_authenticated/dashboard'
+    | '/_authenticated/finance'
     | '/_authenticated/guests'
     | '/_authenticated/housekeeping'
     | '/_authenticated/onboarding'
@@ -456,6 +468,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/finance': {
+      id: '/_authenticated/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof AuthenticatedFinanceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/guests': {
@@ -635,6 +654,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface AuthenticatedRouteChildren {
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedGuestsRoute: typeof AuthenticatedGuestsRoute
   AuthenticatedHousekeepingRoute: typeof AuthenticatedHousekeepingRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
@@ -650,6 +670,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedGuestsRoute: AuthenticatedGuestsRoute,
   AuthenticatedHousekeepingRoute: AuthenticatedHousekeepingRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,

@@ -10,7 +10,11 @@ export type StaffRole =
 
 /** Job titles a hotel owner can hand out. Never includes platform-team roles. */
 export const STAFF_ROLE_OPTIONS: { value: StaffRole; label: string; blurb: string }[] = [
-  { value: "hotel_admin", label: "Hotel admin", blurb: "Full control of this hotel, including its team" },
+  {
+    value: "hotel_admin",
+    label: "Hotel admin",
+    blurb: "Full control of this hotel, including its team",
+  },
   { value: "manager", label: "Manager", blurb: "Runs day-to-day operations" },
   { value: "receptionist", label: "Receptionist", blurb: "Front desk, bookings, check-in/out" },
   { value: "cashier", label: "Cashier", blurb: "Takes payments and runs the cash drawer" },
@@ -33,6 +37,7 @@ export type PermissionKey =
   | "payments:record"
   | "payments:refund"
   | "cash_session:manage"
+  | "finance:view"
   | "guests:view"
   | "guests:manage"
   | "staff:manage"
@@ -55,6 +60,7 @@ export const PERMISSIONS: { key: PermissionKey; label: string }[] = [
   { key: "payments:record", label: "Record payments" },
   { key: "payments:refund", label: "Refund payments" },
   { key: "cash_session:manage", label: "Manage cash sessions" },
+  { key: "finance:view", label: "View finances" },
   { key: "guests:view", label: "View guests" },
   { key: "guests:manage", label: "Manage guests" },
   { key: "staff:manage", label: "Manage staff" },
@@ -82,6 +88,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<StaffRole, PermissionKey[]> = {
     "payments:record",
     "payments:refund",
     "cash_session:manage",
+    "finance:view",
     "guests:view",
     "guests:manage",
     "staff:manage",
@@ -90,18 +97,70 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<StaffRole, PermissionKey[]> = {
     "hotel:settings",
     "billing:view",
   ],
-  receptionist: ["bookings:view", "bookings:create", "bookings:edit", "bookings:check_in", "bookings:check_out", "rooms:view", "guests:view", "guests:manage"],
-  cashier: ["payments:record", "cash_session:manage", "bookings:view"],
-  accountant: ["payments:record", "payments:refund", "cash_session:manage", "reports:view", "bookings:view"],
+  receptionist: [
+    "bookings:view",
+    "bookings:create",
+    "bookings:edit",
+    "bookings:check_in",
+    "bookings:check_out",
+    "rooms:view",
+    "guests:view",
+    "guests:manage",
+  ],
+  cashier: ["payments:record", "cash_session:manage", "finance:view", "bookings:view"],
+  accountant: [
+    "payments:record",
+    "payments:refund",
+    "cash_session:manage",
+    "finance:view",
+    "reports:view",
+    "bookings:view",
+  ],
   housekeeping: ["rooms:view", "housekeeping:update"],
   restaurant: ["services:manage", "bookings:view"],
   other: ["bookings:view", "rooms:view"],
 };
 
-export const HOTEL_TYPES = ["hotel", "guesthouse", "bnb", "apartment", "hostel", "resort", "boutique", "other"];
+export const HOTEL_TYPES = [
+  "hotel",
+  "guesthouse",
+  "bnb",
+  "apartment",
+  "hostel",
+  "resort",
+  "boutique",
+  "other",
+];
 
-export const ROOM_STATUSES = ["available", "reserved", "occupied", "cleaning", "dirty", "inspected", "maintenance", "out_of_service"];
+export const ROOM_STATUSES = [
+  "available",
+  "reserved",
+  "occupied",
+  "cleaning",
+  "dirty",
+  "inspected",
+  "maintenance",
+  "out_of_service",
+];
 
-export const BOOKING_STATUSES = ["pending", "confirmed", "checked_in", "checked_out", "cancelled", "no_show"];
+export const BOOKING_STATUSES = [
+  "pending",
+  "confirmed",
+  "checked_in",
+  "checked_out",
+  "cancelled",
+  "no_show",
+];
 
-export const FOLIO_CATEGORIES = ["accommodation", "food", "drink", "laundry", "spa", "transport", "extra", "tax", "discount", "refund"];
+export const FOLIO_CATEGORIES = [
+  "accommodation",
+  "food",
+  "drink",
+  "laundry",
+  "spa",
+  "transport",
+  "extra",
+  "tax",
+  "discount",
+  "refund",
+];

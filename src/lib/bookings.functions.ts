@@ -18,7 +18,10 @@ function generateRef(prefix: string) {
 }
 
 const optionalText = (max: number) =>
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().max(max).optional());
+  z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().max(max).optional(),
+  );
 
 const optionalEmail = z.preprocess(
   (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
@@ -28,7 +31,10 @@ const optionalEmail = z.preprocess(
 const createBookingSchema = z.object({
   hotelId: z.string().uuid(),
   guest: z.object({
-    id: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
+    id: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      z.string().uuid().optional(),
+    ),
     full_name: z.string().min(2),
     email: optionalEmail,
     phone: optionalText(30),
@@ -40,15 +46,20 @@ const createBookingSchema = z.object({
     emergency_contact: optionalText(100),
     notes: optionalText(1000),
   }),
-  roomTypeId: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
-  roomId: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().uuid().optional()),
+  roomTypeId: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().uuid().optional(),
+  ),
+  roomId: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().uuid().optional(),
+  ),
   checkIn: z.string().date(),
   checkOut: z.string().date(),
   guestsCount: z.number().int().min(1).default(1),
   source: z.enum(["staff", "hotel_website", "discovery", "external"]).default("staff"),
   notes: optionalText(2000),
 });
-
 
 export const createBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -58,20 +69,32 @@ export const createBooking = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertHotelAccess(supabase, data.hotelId);
 
-    const { data: hotel } = await supabase.from("hotels").select("currency, tax_percent, service_charge_percent").eq("id", data.hotelId).single();
+    const { data: hotel } = await supabase
+      .from("hotels")
+      .select("currency, tax_percent, service_charge_percent")
+      .eq("id", data.hotelId)
+      .single();
     if (!hotel) throw new Error("Hotel not found");
 
     const checkIn = new Date(data.checkIn);
     const checkOut = new Date(data.checkOut);
-    if (checkOut.getTime() <= checkIn.getTime()) throw new Error("Check-out must be after check-in");
-    const nights = Math.max(1, Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
+    if (checkOut.getTime() <= checkIn.getTime())
+      throw new Error("Check-out must be after check-in");
+    const nights = Math.max(
+      1,
+      Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)),
+    );
 
     let roomRate = 0;
     let roomTypeId: string | null = data.roomTypeId ?? null;
     let roomId: string | null = data.roomId ?? null;
 
     if (data.roomId) {
-      const { data: room } = await supabase.from("rooms").select("id, room_type_id, status").eq("id", data.roomId).single();
+      const { data: room } = await supabase
+        .from("rooms")
+        .select("id, room_type_id, status")
+        .eq("id", data.roomId)
+        .single();
       if (!room) throw new Error("Selected room not found");
       roomTypeId = room.room_type_id ?? roomTypeId;
       roomId = room.id;
@@ -80,10 +103,15 @@ export const createBooking = createServerFn({ method: "POST" })
     if (!roomId && !roomTypeId) throw new Error("Select a room or room type");
 
     if (roomTypeId) {
-      const { data: rt } = await supabase.from("room_types").select("base_price").eq("id", roomTypeId).single();
+      const { data: rt } = await supabase
+        .from("room_types")
+        .select("base_price")
+        .eq("id", roomTypeId)
+        .single();
       roomRate = Number(rt?.base_price ?? 0);
     }
-    if (!roomRate) throw new Error("Could not determine room rate — set a base price on the room type");
+    if (!roomRate)
+      throw new Error("Could not determine room rate — set a base price on the room type");
 
     const subtotal = round2(roomRate * nights);
     const tax = round2(subtotal * (Number(hotel.tax_percent) / 100));
@@ -92,7 +120,12 @@ export const createBooking = createServerFn({ method: "POST" })
 
     let guestId = data.guest.id ?? null;
     if (guestId) {
-      const { data: existing } = await supabase.from("guests").select("id").eq("id", guestId).eq("hotel_id", data.hotelId).maybeSingle();
+      const { data: existing } = await supabase
+        .from("guests")
+        .select("id")
+        .eq("id", guestId)
+        .eq("hotel_id", data.hotelId)
+        .maybeSingle();
       if (!existing) guestId = null;
     }
     if (!guestId) {
@@ -116,7 +149,6 @@ export const createBooking = createServerFn({ method: "POST" })
       if (guestError || !guest) throw new Error(guestError?.message ?? "Guest creation failed");
       guestId = guest.id;
     }
-
 
     const reference = generateRef("RES");
     const { data: booking, error: bookingError } = await supabase
@@ -143,7 +175,8 @@ export const createBooking = createServerFn({ method: "POST" })
       })
       .select("*")
       .single();
-    if (bookingError || !booking) throw new Error(bookingError?.message ?? "Booking creation failed");
+    if (bookingError || !booking)
+      throw new Error(bookingError?.message ?? "Booking creation failed");
 
     await supabase.from("folio_items").insert({
       hotel_id: data.hotelId,
@@ -188,7 +221,11 @@ export const changeBooking = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: booking } = await supabase.from("bookings").select("*").eq("id", data.bookingId).single();
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("id", data.bookingId)
+      .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
     if (["checked_out", "cancelled"].includes(booking.status)) throw new Error("Booking is closed");
@@ -200,7 +237,10 @@ export const changeBooking = createServerFn({ method: "POST" })
     if (data.roomTypeId) update["room_type_id"] = data.roomTypeId;
     if (data.notes !== undefined) update["notes"] = data.notes;
 
-    const { error } = await supabase.from("bookings").update(update as never).eq("id", data.bookingId);
+    const { error } = await supabase
+      .from("bookings")
+      .update(update as never)
+      .eq("id", data.bookingId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -245,7 +285,10 @@ export const confirmBooking = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const cancelBookingSchema = z.object({ bookingId: z.string().uuid(), reason: z.string().max(500).default("") });
+const cancelBookingSchema = z.object({
+  bookingId: z.string().uuid(),
+  reason: z.string().max(500).default(""),
+});
 
 export const cancelBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -254,10 +297,15 @@ export const cancelBooking = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: booking } = await supabase.from("bookings").select("id, hotel_id, status, room_id").eq("id", data.bookingId).single();
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, status, room_id")
+      .eq("id", data.bookingId)
+      .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
-    if (["checked_in", "checked_out", "cancelled"].includes(booking.status)) throw new Error("Booking cannot be cancelled");
+    if (["checked_in", "checked_out", "cancelled"].includes(booking.status))
+      throw new Error("Booking cannot be cancelled");
 
     await supabase
       .from("bookings")
@@ -289,10 +337,15 @@ export const checkInBooking = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: booking } = await supabase.from("bookings").select("id, hotel_id, status, room_id").eq("id", data.bookingId).single();
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, status, room_id")
+      .eq("id", data.bookingId)
+      .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
-    if (booking.status !== "confirmed") throw new Error("Only confirmed bookings can be checked in");
+    if (booking.status !== "confirmed")
+      throw new Error("Only confirmed bookings can be checked in");
 
     await supabase
       .from("bookings")
@@ -321,13 +374,21 @@ export const checkOutBooking = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: booking } = await supabase.from("bookings").select("id, hotel_id, status, room_id, total, amount_paid").eq("id", data.bookingId).single();
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, status, room_id, total, amount_paid")
+      .eq("id", data.bookingId)
+      .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
-    if (booking.status !== "checked_in") throw new Error("Only checked-in bookings can be checked out");
+    if (booking.status !== "checked_in")
+      throw new Error("Only checked-in bookings can be checked out");
 
     const outstanding = round2(Number(booking.total) - Number(booking.amount_paid));
-    if (outstanding > 0.009) throw new Error(`Outstanding balance must be paid before check-out: ${outstanding.toFixed(2)}`);
+    if (outstanding > 0.009)
+      throw new Error(
+        `Outstanding balance must be paid before check-out: ${outstanding.toFixed(2)}`,
+      );
 
     await supabase
       .from("bookings")
@@ -409,7 +470,11 @@ export const addFolioCharge = createServerFn({ method: "POST" })
       new_value: {
         amount: totalAmount,
         count: rows.length,
-        items: data.items.map((i) => ({ description: i.description, category: i.category, amount: round2(i.quantity * i.unitPrice) })),
+        items: data.items.map((i) => ({
+          description: i.description,
+          category: i.category,
+          amount: round2(i.quantity * i.unitPrice),
+        })),
       },
     });
 

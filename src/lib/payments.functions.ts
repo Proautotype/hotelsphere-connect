@@ -48,11 +48,13 @@ export const recordCashPayment = createServerFn({ method: "POST" })
       .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
-    if (["checked_out", "cancelled"].includes(booking.status)) throw new Error("Booking is closed; payment not allowed");
+    if (["checked_out", "cancelled"].includes(booking.status))
+      throw new Error("Booking is closed; payment not allowed");
 
     const amount = round2(data.amount);
     const outstanding = round2(Number(booking.total) - Number(booking.amount_paid));
-    if (amount > outstanding + 0.009) throw new Error(`Payment exceeds outstanding balance (${outstanding.toFixed(2)})`);
+    if (amount > outstanding + 0.009)
+      throw new Error(`Payment exceeds outstanding balance (${outstanding.toFixed(2)})`);
 
     const reference = createPaymentRef("PMT", booking.id);
     const receipt = createPaymentRef("RCP", booking.id);
@@ -97,13 +99,21 @@ export const recordCashPayment = createServerFn({ method: "POST" })
 export const initializePaystackPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ bookingId: z.string().uuid(), email: z.string().email(), amount: z.number().positive().max(1_000_000) }).parse(data),
+    z
+      .object({
+        bookingId: z.string().uuid(),
+        email: z.string().email(),
+        amount: z.number().positive().max(1_000_000),
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const secret = await getPaystackSecret();
     if (!secret) {
-      throw new Error("Paystack is not configured. Ask the platform admin to add the PAYSTACK_SECRET_KEY secret.");
+      throw new Error(
+        "Paystack is not configured. Ask the platform admin to add the PAYSTACK_SECRET_KEY secret.",
+      );
     }
 
     const { data: booking } = await supabase
@@ -142,7 +152,11 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
       })
       .eq("id", inserted.id);
 
-    const { data: hotel } = await supabase.from("hotels").select("name").eq("id", booking.hotel_id).single();
+    const { data: hotel } = await supabase
+      .from("hotels")
+      .select("name")
+      .eq("id", booking.hotel_id)
+      .single();
     const guest = booking.guests as unknown as { full_name: string; phone?: string } | null;
 
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -156,7 +170,8 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
         amount: Math.round(data.amount * 100),
         currency: "GHS",
         reference,
-        callback_url: typeof process !== "undefined" ? `${process.env["APP_URL"] ?? ""}/payments/verify` : "",
+        callback_url:
+          typeof process !== "undefined" ? `${process.env["APP_URL"] ?? ""}/payments/verify` : "",
         metadata: {
           payment_id: inserted.id,
           booking_id: booking.id,
@@ -165,20 +180,33 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
           guest_phone: guest?.phone,
           custom_fields: [
             { display_name: "Hotel", variable_name: "hotel", value: hotel?.name },
-            { display_name: "Booking", variable_name: "booking_reference", value: booking.reference },
+            {
+              display_name: "Booking",
+              variable_name: "booking_reference",
+              value: booking.reference,
+            },
           ],
         },
       }),
     });
 
     if (!response.ok) {
-      await supabase.from("payments").update({ status: "failed", metadata: { failure: "Paystack initialization failed" } }).eq("id", inserted.id);
+      await supabase
+        .from("payments")
+        .update({ status: "failed", metadata: { failure: "Paystack initialization failed" } })
+        .eq("id", inserted.id);
       throw new Error("Paystack charge initialization failed");
     }
 
-    const result = (await response.json()) as { status: boolean; data: { authorization_url: string; reference: string } };
+    const result = (await response.json()) as {
+      status: boolean;
+      data: { authorization_url: string; reference: string };
+    };
     if (!result.status || !result.data?.authorization_url) {
-      await supabase.from("payments").update({ status: "failed", metadata: { failure: "Paystack initialization failed" } }).eq("id", inserted.id);
+      await supabase
+        .from("payments")
+        .update({ status: "failed", metadata: { failure: "Paystack initialization failed" } })
+        .eq("id", inserted.id);
       throw new Error("Paystack charge initialization failed");
     }
 
@@ -200,13 +228,19 @@ export const verifyPaystackPayment = createServerFn({ method: "POST" })
       .single();
     if (!payment) throw new Error("Payment not found");
 
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(data.reference)}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${secret}` },
-    });
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(data.reference)}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${secret}` },
+      },
+    );
     if (!response.ok) throw new Error("Could not reach Paystack");
 
-    const body = (await response.json()) as { status: boolean; data?: { status: string; amount: number } };
+    const body = (await response.json()) as {
+      status: boolean;
+      data?: { status: string; amount: number };
+    };
     if (!body.status || !body.data) throw new Error("Paystack verification failed");
 
     const verifiedAmount = round2((body.data.amount ?? 0) / 100);
@@ -221,7 +255,10 @@ export const verifyPaystackPayment = createServerFn({ method: "POST" })
         throw new Error("Payment amount mismatch");
       }
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.from("payments").update({ status: "successful", paid_at: new Date().toISOString() }).eq("id", payment.id);
+      await supabaseAdmin
+        .from("payments")
+        .update({ status: "successful", paid_at: new Date().toISOString() })
+        .eq("id", payment.id);
       const { data: booking } = await supabase
         .from("bookings")
         .select("id, amount_paid")
@@ -243,13 +280,23 @@ export const verifyPaystackPayment = createServerFn({ method: "POST" })
       return { status: "successful", paymentId: payment.id, amount: verifiedAmount };
     }
 
-    await supabase.from("payments").update({ status: verifiedStatus as "failed" }).eq("id", payment.id);
+    await supabase
+      .from("payments")
+      .update({ status: verifiedStatus as "failed" })
+      .eq("id", payment.id);
     return { status: verifiedStatus, paymentId: payment.id, amount: verifiedAmount };
   });
 
 export const openCashSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ hotelId: z.string().uuid(), openingBalance: z.number().nonnegative().max(1_000_000) }).parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        hotelId: z.string().uuid(),
+        openingBalance: z.number().nonnegative().max(1_000_000),
+      })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertHotelAccess(supabase, data.hotelId);
@@ -262,7 +309,11 @@ export const openCashSession = createServerFn({ method: "POST" })
       .maybeSingle();
     if (existing) throw new Error("A cash session is already open. Close it first.");
 
-    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
 
     const { data: session, error } = await supabase
       .from("cash_sessions")
@@ -281,7 +332,11 @@ export const openCashSession = createServerFn({ method: "POST" })
 
 export const closeCashSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ sessionId: z.string().uuid(), actualCash: z.number().nonnegative().max(1_000_000) }).parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({ sessionId: z.string().uuid(), actualCash: z.number().nonnegative().max(1_000_000) })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -342,7 +397,9 @@ export const reconcileCashSession = createServerFn({ method: "POST" })
     if (!session) throw new Error("Cash session not found");
     if (session.status !== "open") throw new Error("Can only reconcile an open cash session");
 
-    const notes = [session.notes || "", `${data.type}: ${data.amount} - ${data.note}`].filter(Boolean).join("; ");
+    const notes = [session.notes || "", `${data.type}: ${data.amount} - ${data.note}`]
+      .filter(Boolean)
+      .join("; ");
     await supabase.from("cash_sessions").update({ notes }).eq("id", data.sessionId);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -357,7 +414,9 @@ export const reconcileCashSession = createServerFn({ method: "POST" })
   });
 
 export const handlePaystackWebhook = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ signature: z.string(), body: z.string() }).parse(data))
+  .inputValidator((data: unknown) =>
+    z.object({ signature: z.string(), body: z.string() }).parse(data),
+  )
   .handler(async ({ data }) => {
     const secret = await getPaystackSecret();
     if (!secret) throw new Error("Paystack not configured");
@@ -367,7 +426,10 @@ export const handlePaystackWebhook = createServerFn({ method: "POST" })
       return { ok: false, message: "Invalid signature" };
     }
 
-    const event = JSON.parse(data.body) as { event: string; data?: { reference?: string; status?: string; amount?: number } };
+    const event = JSON.parse(data.body) as {
+      event: string;
+      data?: { reference?: string; status?: string; amount?: number };
+    };
     if (event.event !== "charge.success" || !event.data?.reference) {
       return { ok: true, message: "Ignored" };
     }
@@ -378,14 +440,18 @@ export const handlePaystackWebhook = createServerFn({ method: "POST" })
       .select("id, booking_id, amount, status")
       .eq("provider_reference", event.data.reference)
       .single();
-    if (!payment || payment.status === "successful") return { ok: true, message: "Already processed or not found" };
+    if (!payment || payment.status === "successful")
+      return { ok: true, message: "Already processed or not found" };
 
     const amount = round2((event.data.amount ?? 0) / 100);
     if (Math.abs(amount - Number(payment.amount)) > 0.01) {
       return { ok: false, message: "Amount mismatch" };
     }
 
-    await supabaseAdmin.from("payments").update({ status: "successful", paid_at: new Date().toISOString() }).eq("id", payment.id);
+    await supabaseAdmin
+      .from("payments")
+      .update({ status: "successful", paid_at: new Date().toISOString() })
+      .eq("id", payment.id);
     const { data: booking } = await supabaseAdmin
       .from("bookings")
       .select("id, amount_paid")

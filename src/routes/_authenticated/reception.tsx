@@ -33,7 +33,9 @@ async function fetchTodayBookings(hotelId: string) {
   const todayStr = today();
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, reference, status, check_in, check_out, total, amount_paid, guests(full_name), rooms(room_number)")
+    .select(
+      "id, reference, status, check_in, check_out, total, amount_paid, guests(full_name), rooms(room_number)",
+    )
     .eq("hotel_id", hotelId)
     .or(`check_in.eq.${todayStr},check_out.eq.${todayStr},status.eq.checked_in`)
     .not("status", "in", "(cancelled,no_show)")
@@ -57,7 +59,19 @@ function ReceptionPage() {
   const checkIn = useServerFn(checkInBooking);
   const checkOut = useServerFn(checkOutBooking);
 
-  const filtered = (bookings as Array<{ id: string; reference: string; status: string; total: number; amount_paid: number; check_in: string; check_out: string; guests: unknown; rooms: unknown }>).filter((b) => {
+  const filtered = (
+    bookings as Array<{
+      id: string;
+      reference: string;
+      status: string;
+      total: number;
+      amount_paid: number;
+      check_in: string;
+      check_out: string;
+      guests: unknown;
+      rooms: unknown;
+    }>
+  ).filter((b) => {
     const q = query.toLowerCase();
     const guest = b.guests as unknown as { full_name: string } | null;
     return (
@@ -125,9 +139,25 @@ function ReceptionPage() {
 
       <div className="mt-4 space-y-3">
         {filtered.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No bookings found.</CardContent></Card>
+          <Card>
+            <CardContent className="p-8 text-center text-sm text-muted-foreground">
+              No bookings found.
+            </CardContent>
+          </Card>
         ) : (
-          (filtered as Array<{ id: string; reference: string; status: string; total: number; amount_paid: number; check_in: string; check_out: string; guests: unknown; rooms: unknown }>).map((b) => {
+          (
+            filtered as Array<{
+              id: string;
+              reference: string;
+              status: string;
+              total: number;
+              amount_paid: number;
+              check_in: string;
+              check_out: string;
+              guests: unknown;
+              rooms: unknown;
+            }>
+          ).map((b) => {
             const guest = b.guests as unknown as { full_name: string } | null;
             const room = b.rooms as unknown as { room_number: string } | null;
             const balance = Number(b.total) - Number(b.amount_paid);
@@ -139,20 +169,53 @@ function ReceptionPage() {
                       <p className="font-display font-semibold text-foreground">{b.reference}</p>
                       <StatusBadge status={b.status} />
                     </div>
-                    <p className="text-sm text-muted-foreground">{guest?.full_name} · Room {room?.room_number}</p>
-                    <p className="text-xs text-muted-foreground">{shortDate(b.check_in)} → {shortDate(b.check_out)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {guest?.full_name} · Room {room?.room_number}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {shortDate(b.check_in)} → {shortDate(b.check_out)}
+                    </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <p className="font-medium text-foreground">{money(b.total, activeHotel?.currency)}</p>
-                    {balance > 0.009 && <p className="text-xs text-destructive">Balance {money(balance, activeHotel?.currency)}</p>}
+                    <p className="font-medium text-foreground">
+                      {money(b.total, activeHotel?.currency)}
+                    </p>
+                    {balance > 0.009 && (
+                      <p className="text-xs text-destructive">
+                        Balance {money(balance, activeHotel?.currency)}
+                      </p>
+                    )}
                     <div className="flex gap-2">
                       {b.status === "pending" && (
-                        <Button size="sm" variant="outline" disabled={busyId !== null} onClick={() => runConfirm(b.id)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId !== null}
+                          onClick={() => runConfirm(b.id)}
+                        >
                           {busyId === b.id ? "Working…" : "Confirm"}
                         </Button>
                       )}
-                      {b.status === "confirmed" && <Button size="sm" disabled={busyId !== null} onClick={() => runCheckIn(b.id)}><DoorOpen className="mr-1 size-4" /> {busyId === b.id ? "Working…" : "Check in"}</Button>}
-                      {b.status === "checked_in" && <Button size="sm" variant="outline" disabled={busyId !== null} onClick={() => runCheckOut(b.id)}>{busyId === b.id ? "Working…" : "Check out"}</Button>}
+                      {b.status === "confirmed" && (
+                        <Button
+                          size="sm"
+                          disabled={busyId !== null}
+                          onClick={() => runCheckIn(b.id)}
+                        >
+                          <DoorOpen className="mr-1 size-4" />{" "}
+                          {busyId === b.id ? "Working…" : "Check in"}
+                        </Button>
+                      )}
+                      {b.status === "checked_in" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId !== null}
+                          onClick={() => runCheckOut(b.id)}
+                        >
+                          {busyId === b.id ? "Working…" : "Check out"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
