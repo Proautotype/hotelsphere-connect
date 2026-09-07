@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/housekeeping")({
   head: () => ({
@@ -54,7 +55,12 @@ function HousekeepingPage() {
     enabled: Boolean(hotelId),
   });
 
+  const [busyRoom, setBusyRoom] = useState<string | null>(null);
+
   const updateStatus = async (id: string, status: string) => {
+    if (busyRoom) return;
+    setBusyRoom(id);
+    try {
     const { error } = await supabase
       .from("rooms")
       .update({ status: status as "dirty" })
@@ -62,6 +68,9 @@ function HousekeepingPage() {
       .eq("hotel_id", hotelId);
     if (error) return;
     await refetch();
+    } finally {
+      setBusyRoom(null);
+    }
   };
 
   type RoomRow = { id: string; room_number: string; status: string; room_types: unknown };
@@ -94,8 +103,8 @@ function HousekeepingPage() {
                         <p className="text-xs text-muted-foreground">{rt?.name}</p>
                       </div>
                       {next && (
-                        <Button size="sm" variant="ghost" onClick={() => updateStatus(room.id, next)}>
-                          <Sparkles className="mr-1 size-3" /> {next.replace("_", " ")}
+                        <Button size="sm" variant="ghost" disabled={busyRoom !== null} onClick={() => updateStatus(room.id, next)}>
+                          {busyRoom === room.id ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Sparkles className="mr-1 size-3" />} {next.replace("_", " ")}
                         </Button>
                       )}
                     </div>

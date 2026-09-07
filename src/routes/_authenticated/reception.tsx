@@ -52,6 +52,7 @@ function ReceptionPage() {
     enabled: Boolean(hotelId),
   });
   const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
   const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
   const checkOut = useServerFn(checkOutBooking);
@@ -67,31 +68,44 @@ function ReceptionPage() {
   });
 
   const runConfirm = async (id: string) => {
+    if (busyId) return;
+    setBusyId(id);
     try {
       await confirm({ data: { bookingId: id } });
       toast.success("Booking confirmed");
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Confirmation failed");
+    } finally {
+      setBusyId(null);
     }
   };
 
   const runCheckIn = async (id: string) => {
+    if (busyId) return;
+    setBusyId(id);
     try {
       await checkIn({ data: { bookingId: id } });
       toast.success("Guest checked in");
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Check-in failed");
+    } finally {
+      setBusyId(null);
     }
   };
 
   const runCheckOut = async (id: string) => {
+    if (busyId) return;
+    setBusyId(id);
     try {
       await checkOut({ data: { bookingId: id } });
       toast.success("Guest checked out");
+      await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Check-out failed");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -133,12 +147,12 @@ function ReceptionPage() {
                     {balance > 0.009 && <p className="text-xs text-destructive">Balance {money(balance, activeHotel?.currency)}</p>}
                     <div className="flex gap-2">
                       {b.status === "pending" && (
-                        <Button size="sm" variant="outline" onClick={() => runConfirm(b.id)}>
-                          Confirm
+                        <Button size="sm" variant="outline" disabled={busyId !== null} onClick={() => runConfirm(b.id)}>
+                          {busyId === b.id ? "Working…" : "Confirm"}
                         </Button>
                       )}
-                      {b.status === "confirmed" && <Button size="sm" onClick={() => runCheckIn(b.id)}><DoorOpen className="mr-1 size-4" /> Check in</Button>}
-                      {b.status === "checked_in" && <Button size="sm" variant="outline" onClick={() => runCheckOut(b.id)}>Check out</Button>}
+                      {b.status === "confirmed" && <Button size="sm" disabled={busyId !== null} onClick={() => runCheckIn(b.id)}><DoorOpen className="mr-1 size-4" /> {busyId === b.id ? "Working…" : "Check in"}</Button>}
+                      {b.status === "checked_in" && <Button size="sm" variant="outline" disabled={busyId !== null} onClick={() => runCheckOut(b.id)}>{busyId === b.id ? "Working…" : "Check out"}</Button>}
                     </div>
                   </div>
                 </CardContent>
