@@ -192,17 +192,193 @@ export const getFinanceData = createServerFn({ method: "POST" })
       guest_name: (b.guests as unknown as { full_name: string } | null)?.full_name ?? null,
     }));
 
+    const expensesRes = await supabase
+      .from("expenses")
+      .select(
+        "id, spent_on, category, vendor, description, amount, method, reference, note, created_at",
+      )
+      .eq("hotel_id", data.hotelId)
+      .gte("spent_on", data.from ?? "1970-01-01")
+      .lte("spent_on", data.to ?? "2999-12-31")
+      .order("spent_on", { ascending: false })
+      .limit(200);
+
+    const expenses = (expensesRes.data ?? []).map((e) => ({
+      id: e.id,
+      spent_on: e.spent_on,
+      category: e.category as string,
+      vendor: e.vendor,
+      description: e.description,
+      amount: Number(e.amount),
+      method: e.method as string,
+      reference: e.reference,
+      note: e.note,
+      created_at: e.created_at,
+    }));
+    const expensesTotal = round2(expenses.reduce((sum, e) => sum + e.amount, 0));
+
+    const byCategory = Object.entries(
+      expenses.reduce<Record<string, number>>((acc, e) => {
+        acc[e.category] = round2((acc[e.category] ?? 0) + e.amount);
+        return acc;
+      }, {}),
+    )
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount);
+
     return {
       hotel: hotelRes.data,
       currency: hotelRes.data.currency ?? "GHS",
       payments,
-      totals: { received, today: todayReceived, outstanding, count: payments.length },
+      totals: {
+        received,
+        today: todayReceived,
+        outstanding,
+        count: payments.length,
+        expenses: expensesTotal,
+        net: round2(received - expensesTotal),
+      },
       openSession: openSessionRes.data?.[0] ?? null,
       purchases,
       purchasesTotal,
       bookings,
+      expenses,
+      expensesTotal,
+      expensesByCategory: byCategory,
     };
   });
+
+/* ------------------------------------------------------------------ */
+/* Hotel expenses — money the business spends running the hotel        */
+/* ------------------------------------------------------------------ */
+
+const EXPENSE_CATEGORIES = [
+  "utilities",
+  "supplies",
+  "salaries",
+  "maintenance",
+  "food_drink",
+  "transport",
+  "marketing",
+  "rent",
+  "taxes_fees",
+  "other",
+] as const;
+
+const EXPENSE_METHODS = ["cash", "mobile_money", "bank_transfer", "card"] as const;
+
+const addExpenseSchema = z.object({
+  hotelId: z.string().uuid(),
+  spentOn: z.string().date(),
+  category: z.enum(EXPENSE_CATEGORIES),
+  vendor: z.string().max(120).default(""),
+  description: z.string().min(2).max(200),
+  amount: z.number().positive().max(10_000_000),
+  method: z.enum(EXPENSE_METHODS).default("cash"),
+  reference: z.string().max(80).default(""),
+  note: z.string().max(400).default(""),
+});
+
+export const addExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => addExpenseSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertHotelPermission(supabase, data.hotelId, userId, "payments:record");
+
+    // Cash spending is tied to the drawer that is open, so the count adds up.
+    let cashSessionId: string | null = null;
+    if (data.method === "cash") {
+      const { data: session } = await supabase
+        .from("cash_sessions")
+        .select("id")
+        .eq("hotel_id", data.hotelId)
+        .eq("status", "open")
+        .order("opened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      cashSessionId = session?.id ?? null;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("expenses")
+      .insert({
+        hotel_id: data.hotelId,
+        spent_on: data.spentOn,
+        category: data.category,
+        vendor: data.vendor,
+        description: data.description,
+        amount: round2(data.amount),
+        method: data.method,
+        reference: data.reference,
+        note: data.note,
+        cash_session_id: cashSessionId,
+        created_by: userId,
+      })
+      .select("id, amount")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: data.hotelId,
+      user_id: userId,
+      action: "finance.expense_recorded",
+      resource: "expense",
+      resource_id: inserted.id,
+      new_value: {
+        amount: round2(data.amount),
+        category: data.category,
+        description: data.description,
+        method: data.method,
+      },
+    });
+
+    return { ok: true, id: inserted.id, amount: round2(data.amount) };
+  });
+
+const deleteExpenseSchema = z.object({
+  hotelId: z.string().uuid(),
+  expenseId: z.string().uuid(),
+});
+
+export const deleteExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => deleteExpenseSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertHotelPermission(supabase, data.hotelId, userId, "payments:record");
+
+    const { data: existing } = await supabase
+      .from("expenses")
+      .select("id, amount, description")
+      .eq("id", data.expenseId)
+      .eq("hotel_id", data.hotelId)
+      .maybeSingle();
+    if (!existing) throw new Error("That expense belongs to another hotel");
+
+    const { error } = await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", data.expenseId)
+      .eq("hotel_id", data.hotelId);
+    if (error) throw new Error(error.message);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: data.hotelId,
+      user_id: userId,
+      action: "finance.expense_deleted",
+      resource: "expense",
+      resource_id: existing.id,
+      old_value: { amount: Number(existing.amount), description: existing.description },
+    });
+
+    return { ok: true };
+  });
+
+export const EXPENSE_CATEGORY_OPTIONS = EXPENSE_CATEGORIES;
+
 
 /* ------------------------------------------------------------------ */
 /* Record a purchase — post guest charges to a booking folio           */
