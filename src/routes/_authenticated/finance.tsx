@@ -825,6 +825,199 @@ function FinancePage() {
               </Card>
             </div>
           </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-5">
+            {canRecord ? (
+              <Card className="lg:col-span-2">
+                <CardContent className="p-5">
+                  <h3 className="kinetic-label text-xs text-foreground">Record an expense</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Money the hotel spends — electricity, supplies, salaries, repairs. Cash
+                    spending is tied to the open cash drawer.
+                  </p>
+                  <form onSubmit={submitExpense} className="mt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="exp-date">Date</Label>
+                        <Input
+                          id="exp-date"
+                          type="date"
+                          required
+                          value={expenseForm.spentOn}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, spentOn: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="exp-cat">Category</Label>
+                        <select
+                          id="exp-cat"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={expenseForm.category}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, category: e.target.value }))
+                          }
+                        >
+                          {EXPENSE_CATEGORY_OPTIONS.map((c) => (
+                            <option key={c} value={c}>
+                              {titleCase(c)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="exp-desc">Description</Label>
+                      <Input
+                        id="exp-desc"
+                        required
+                        placeholder="e.g. Electricity bill for August"
+                        value={expenseForm.description}
+                        onChange={(e) =>
+                          setExpenseForm((f) => ({ ...f, description: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="exp-vendor">Paid to (optional)</Label>
+                      <Input
+                        id="exp-vendor"
+                        placeholder="e.g. ECG, Makola market"
+                        value={expenseForm.vendor}
+                        onChange={(e) =>
+                          setExpenseForm((f) => ({ ...f, vendor: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="exp-amount">Amount</Label>
+                        <Input
+                          id="exp-amount"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          required
+                          value={expenseForm.amount}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, amount: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="exp-method">Paid with</Label>
+                        <select
+                          id="exp-method"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={expenseForm.method}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, method: e.target.value }))
+                          }
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="mobile_money">Mobile money</option>
+                          <option value="bank_transfer">Bank transfer</option>
+                          <option value="card">Card</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="exp-note">Note (optional)</Label>
+                      <Input
+                        id="exp-note"
+                        value={expenseForm.note}
+                        onChange={(e) =>
+                          setExpenseForm((f) => ({ ...f, note: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={busy}>
+                      <Plus className="mr-1 size-4" /> Record expense
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card className={canRecord ? "lg:col-span-3" : "lg:col-span-5"}>
+              <CardContent className="p-5">
+                <h3 className="kinetic-label text-xs text-foreground">Hotel spending</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Expenses in the selected period · {money(fin.expensesTotal, currency)}
+                </p>
+                {fin.expensesByCategory.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {fin.expensesByCategory.map((c) => (
+                      <span
+                        key={c.category}
+                        className="ink bg-card px-2 py-1 text-xs font-medium text-foreground"
+                      >
+                        {titleCase(c.category)} · {money(c.amount, currency)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="mt-3 max-h-[420px] overflow-auto">
+                  {fin.expenses.length === 0 ? (
+                    <EmptyState
+                      icon={TrendingDown}
+                      title="No expenses"
+                      description="Spending recorded in this period will appear here."
+                    />
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-[2px] border-ink text-left">
+                          <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
+                          <th className="py-2 pr-2 text-xs text-muted-foreground">Expense</th>
+                          <th className="py-2 pr-2 text-xs text-muted-foreground">Paid with</th>
+                          <th className="py-2 pr-2 text-right text-xs text-muted-foreground">
+                            Amount
+                          </th>
+                          {canRecord ? (
+                            <th className="py-2 text-right text-xs text-muted-foreground" />
+                          ) : null}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fin.expenses.map((x) => (
+                          <tr key={x.id} className="border-b border-border">
+                            <td className="py-2 pr-2">{shortDate(x.spent_on)}</td>
+                            <td className="py-2 pr-2">
+                              <span className="block text-foreground">{x.description}</span>
+                              <span className="block text-xs text-muted-foreground">
+                                {titleCase(x.category)}
+                                {x.vendor ? ` · ${x.vendor}` : ""}
+                              </span>
+                            </td>
+                            <td className="py-2 pr-2">
+                              {METHOD_LABELS[x.method] ?? titleCase(x.method)}
+                            </td>
+                            <td className="py-2 pr-2 text-right font-medium">
+                              {money(x.amount, currency)}
+                            </td>
+                            {canRecord ? (
+                              <td className="py-2 text-right">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy || busyExpenseId === x.id}
+                                  onClick={() => removeExpense(x.id)}
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </td>
+                            ) : null}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </>
       )}
     </DashboardShell>
