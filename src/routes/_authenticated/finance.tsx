@@ -402,7 +402,7 @@ function FinancePage() {
         <p className="mt-6 text-sm text-muted-foreground">Loading financial data…</p>
       ) : (
         <>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               label="Received (period)"
               value={money(fin.totals.received, currency)}
@@ -654,9 +654,11 @@ function FinancePage() {
               {canRecord ? (
                 <Card>
                   <CardContent className="p-5">
-                    <h3 className="kinetic-label text-xs text-foreground">Record a purchase</h3>
+                    <h3 className="kinetic-label text-xs text-foreground">
+                      Charge a guest (folio)
+                    </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Post guest purchases to a booking folio.
+                      Money guests owe you — food, laundry and extras added to a booking's bill.
                     </p>
                     <form onSubmit={submitPurchase} className="mt-3 space-y-3">
                       <div>
@@ -775,7 +777,7 @@ function FinancePage() {
 
               <Card>
                 <CardContent className="p-5">
-                  <h3 className="kinetic-label text-xs text-foreground">Purchases & charges</h3>
+                  <h3 className="kinetic-label text-xs text-foreground">Guest charges (folio)</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Folio charges in the selected period · {money(fin.purchasesTotal, currency)}
                   </p>
