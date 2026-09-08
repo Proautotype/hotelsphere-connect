@@ -231,9 +231,23 @@ function FinancePage() {
   const [purchaseRows, setPurchaseRows] = useState([
     { id: "purchase-1", category: "food", description: "", quantity: 1, unitPrice: 0 },
   ]);
+  const emptyExpense = {
+    spentOn: today(),
+    category: "supplies" as string,
+    vendor: "",
+    description: "",
+    amount: "",
+    method: "cash" as string,
+    reference: "",
+    note: "",
+  };
+  const [expenseForm, setExpenseForm] = useState(emptyExpense);
+  const [busyExpenseId, setBusyExpenseId] = useState("");
 
   const fetchFinance = useServerFn(getFinanceData);
   const record = useServerFn(recordPurchase);
+  const addExpenseFn = useServerFn(addExpense);
+  const deleteExpenseFn = useServerFn(deleteExpense);
   const openSessionFn = useServerFn(openCashSession);
   const closeSessionFn = useServerFn(closeCashSession);
 
