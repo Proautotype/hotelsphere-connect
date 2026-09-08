@@ -3,7 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Wallet, Receipt, Printer, Plus, ChartPie, Banknote } from "lucide-react";
+import {
+  Wallet,
+  Receipt,
+  Printer,
+  Plus,
+  ChartPie,
+  Banknote,
+  TrendingDown,
+  TrendingUp,
+  Trash2,
+} from "lucide-react";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
@@ -14,7 +24,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { getFinanceData, recordPurchase } from "@/lib/finance.functions";
+import {
+  getFinanceData,
+  recordPurchase,
+  addExpense,
+  deleteExpense,
+  EXPENSE_CATEGORY_OPTIONS,
+} from "@/lib/finance.functions";
 import { openCashSession, closeCashSession } from "@/lib/payments.functions";
 import { FOLIO_CATEGORIES } from "@/lib/permissions";
 import { money, shortDate, today, titleCase } from "@/lib/format";
