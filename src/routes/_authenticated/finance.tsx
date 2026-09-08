@@ -342,6 +342,47 @@ function FinancePage() {
     }, "Purchase recorded on the folio");
   };
 
+  const submitExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(expenseForm.amount);
+    if (!amount || amount <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    if (expenseForm.description.trim().length < 2) {
+      toast.error("Describe the expense");
+      return;
+    }
+    await run(async () => {
+      await addExpenseFn({
+        data: {
+          hotelId,
+          spentOn: expenseForm.spentOn,
+          category: expenseForm.category as never,
+          vendor: expenseForm.vendor.trim(),
+          description: expenseForm.description.trim(),
+          amount,
+          method: expenseForm.method as never,
+          reference: expenseForm.reference.trim(),
+          note: expenseForm.note.trim(),
+        },
+      });
+      setExpenseForm({ ...emptyExpense, spentOn: expenseForm.spentOn });
+    }, "Expense recorded");
+  };
+
+  const removeExpense = (expenseId: string) => {
+    setBusyExpenseId(expenseId);
+    addExpenseFn; // noop guard
+    deleteExpenseFn({ data: { hotelId, expenseId } })
+      .then(async () => {
+        toast.success("Expense removed");
+        await refetch();
+      })
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Action failed"))
+      .finally(() => setBusyExpenseId(""));
+  };
+
   return (
     <DashboardShell title="Finance">
       <PageHeader
