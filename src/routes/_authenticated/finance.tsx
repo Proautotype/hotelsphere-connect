@@ -39,11 +39,11 @@ export const Route = createFileRoute("/_authenticated/finance")({
   head: () => ({
     meta: [
       { title: "Finance — Custard Hotels" },
-      { name: "description", content: "Track payments, record purchases and print receipts." },
+      { name: "description", content: "Track payments, hotel spending, guest charges and receipts." },
       { property: "og:title", content: "Finance — Custard Hotels" },
       {
         property: "og:description",
-        content: "Track payments, record purchases and print receipts.",
+        content: "Track payments, hotel spending, guest charges and receipts.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -387,7 +387,7 @@ function FinancePage() {
     <DashboardShell title="Finance">
       <PageHeader
         title="Finance"
-        description="Track payments, record purchases and print receipts."
+        description="Track payments, hotel spending, guest charges and receipts."
       />
 
       {!canView ? (
