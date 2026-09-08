@@ -424,11 +424,18 @@ function FinancePage() {
               hint="Active bookings"
             />
             <StatCard
-              label="Purchases recorded"
-              value={money(fin.purchasesTotal, currency)}
-              icon={Plus}
-              tone="primary"
-              hint="Folio charges in period"
+              label="Spending (period)"
+              value={money(fin.totals.expenses, currency)}
+              icon={TrendingDown}
+              tone="destructive"
+              hint={`${fin.expenses.length} expense(s)`}
+            />
+            <StatCard
+              label="Net cash"
+              value={money(fin.totals.net, currency)}
+              icon={TrendingUp}
+              tone={fin.totals.net >= 0 ? "primary" : "warning"}
+              hint="Received minus spending"
             />
           </div>
 
