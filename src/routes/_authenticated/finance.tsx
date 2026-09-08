@@ -243,6 +243,7 @@ function FinancePage() {
   };
   const [expenseForm, setExpenseForm] = useState(emptyExpense);
   const [busyExpenseId, setBusyExpenseId] = useState("");
+  const [tab, setTab] = useState<"payments" | "guests" | "spending">("payments");
 
   const fetchFinance = useServerFn(getFinanceData);
   const record = useServerFn(recordPurchase);

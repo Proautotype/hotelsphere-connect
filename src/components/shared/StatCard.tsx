@@ -29,17 +29,21 @@ const shadowMap: Record<string, string> = {
 
 export function StatCard({ label, value, hint, icon: Icon, tone = "default" }: StatCardProps) {
   return (
-    <div className={cn("ink kinetic-tilt bg-card p-5", shadowMap[tone])}>
-      <div className="flex items-start gap-4">
+    <div className={cn("ink kinetic-tilt min-w-0 bg-card p-4", shadowMap[tone])}>
+      <div className="flex items-start gap-3">
         {Icon ? (
-          <div className={cn("ink flex size-10 shrink-0 items-center justify-center", toneMap[tone])}>
-            <Icon className="size-5" />
+          <div className={cn("ink flex size-8 shrink-0 items-center justify-center", toneMap[tone])}>
+            <Icon className="size-4" />
           </div>
         ) : null}
-        <div className="min-w-0">
-          <p className="kinetic-label text-[11px] text-muted-foreground">{label}</p>
-          <p className="mt-1 font-display text-3xl font-extrabold tracking-tighter text-foreground">{value}</p>
-          {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+        <div className="min-w-0 flex-1">
+          <p className="kinetic-label truncate text-[10px] text-muted-foreground">{label}</p>
+          <p className="mt-1 font-display text-lg font-extrabold leading-tight tracking-tight text-foreground [overflow-wrap:anywhere] sm:text-xl">
+            {value}
+          </p>
+          {hint ? (
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">{hint}</p>
+          ) : null}
         </div>
       </div>
     </div>
