@@ -373,7 +373,7 @@ function FinancePage() {
 
   const removeExpense = (expenseId: string) => {
     setBusyExpenseId(expenseId);
-    addExpenseFn; // noop guard
+    
     deleteExpenseFn({ data: { hotelId, expenseId } })
       .then(async () => {
         toast.success("Expense removed");
