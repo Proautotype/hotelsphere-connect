@@ -3,7 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Wallet, Receipt, Printer, Plus, ChartPie, Banknote } from "lucide-react";
+import {
+  Wallet,
+  Receipt,
+  Printer,
+  Plus,
+  ChartPie,
+  Banknote,
+  TrendingDown,
+  TrendingUp,
+  Trash2,
+} from "lucide-react";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
@@ -14,7 +24,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { getFinanceData, recordPurchase } from "@/lib/finance.functions";
+import {
+  getFinanceData,
+  recordPurchase,
+  addExpense,
+  deleteExpense,
+  EXPENSE_CATEGORY_OPTIONS,
+} from "@/lib/finance.functions";
 import { openCashSession, closeCashSession } from "@/lib/payments.functions";
 import { FOLIO_CATEGORIES } from "@/lib/permissions";
 import { money, shortDate, today, titleCase } from "@/lib/format";
@@ -23,11 +39,11 @@ export const Route = createFileRoute("/_authenticated/finance")({
   head: () => ({
     meta: [
       { title: "Finance — Custard Hotels" },
-      { name: "description", content: "Track payments, record purchases and print receipts." },
+      { name: "description", content: "Track payments, hotel spending, guest charges and receipts." },
       { property: "og:title", content: "Finance — Custard Hotels" },
       {
         property: "og:description",
-        content: "Track payments, record purchases and print receipts.",
+        content: "Track payments, hotel spending, guest charges and receipts.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -215,9 +231,23 @@ function FinancePage() {
   const [purchaseRows, setPurchaseRows] = useState([
     { id: "purchase-1", category: "food", description: "", quantity: 1, unitPrice: 0 },
   ]);
+  const emptyExpense = {
+    spentOn: today(),
+    category: "supplies" as string,
+    vendor: "",
+    description: "",
+    amount: "",
+    method: "cash" as string,
+    reference: "",
+    note: "",
+  };
+  const [expenseForm, setExpenseForm] = useState(emptyExpense);
+  const [busyExpenseId, setBusyExpenseId] = useState("");
 
   const fetchFinance = useServerFn(getFinanceData);
   const record = useServerFn(recordPurchase);
+  const addExpenseFn = useServerFn(addExpense);
+  const deleteExpenseFn = useServerFn(deleteExpense);
   const openSessionFn = useServerFn(openCashSession);
   const closeSessionFn = useServerFn(closeCashSession);
 
@@ -312,11 +342,52 @@ function FinancePage() {
     }, "Purchase recorded on the folio");
   };
 
+  const submitExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(expenseForm.amount);
+    if (!amount || amount <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    if (expenseForm.description.trim().length < 2) {
+      toast.error("Describe the expense");
+      return;
+    }
+    await run(async () => {
+      await addExpenseFn({
+        data: {
+          hotelId,
+          spentOn: expenseForm.spentOn,
+          category: expenseForm.category as never,
+          vendor: expenseForm.vendor.trim(),
+          description: expenseForm.description.trim(),
+          amount,
+          method: expenseForm.method as never,
+          reference: expenseForm.reference.trim(),
+          note: expenseForm.note.trim(),
+        },
+      });
+      setExpenseForm({ ...emptyExpense, spentOn: expenseForm.spentOn });
+    }, "Expense recorded");
+  };
+
+  const removeExpense = (expenseId: string) => {
+    setBusyExpenseId(expenseId);
+    
+    deleteExpenseFn({ data: { hotelId, expenseId } })
+      .then(async () => {
+        toast.success("Expense removed");
+        await refetch();
+      })
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Action failed"))
+      .finally(() => setBusyExpenseId(""));
+  };
+
   return (
     <DashboardShell title="Finance">
       <PageHeader
         title="Finance"
-        description="Track payments, record purchases and print receipts."
+        description="Track payments, hotel spending, guest charges and receipts."
       />
 
       {!canView ? (
@@ -331,7 +402,7 @@ function FinancePage() {
         <p className="mt-6 text-sm text-muted-foreground">Loading financial data…</p>
       ) : (
         <>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               label="Received (period)"
               value={money(fin.totals.received, currency)}
@@ -353,11 +424,18 @@ function FinancePage() {
               hint="Active bookings"
             />
             <StatCard
-              label="Purchases recorded"
-              value={money(fin.purchasesTotal, currency)}
-              icon={Plus}
-              tone="primary"
-              hint="Folio charges in period"
+              label="Spending (period)"
+              value={money(fin.totals.expenses, currency)}
+              icon={TrendingDown}
+              tone="destructive"
+              hint={`${fin.expenses.length} expense(s)`}
+            />
+            <StatCard
+              label="Net cash"
+              value={money(fin.totals.net, currency)}
+              icon={TrendingUp}
+              tone={fin.totals.net >= 0 ? "primary" : "warning"}
+              hint="Received minus spending"
             />
           </div>
 
@@ -576,9 +654,11 @@ function FinancePage() {
               {canRecord ? (
                 <Card>
                   <CardContent className="p-5">
-                    <h3 className="kinetic-label text-xs text-foreground">Record a purchase</h3>
+                    <h3 className="kinetic-label text-xs text-foreground">
+                      Charge a guest (folio)
+                    </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Post guest purchases to a booking folio.
+                      Money guests owe you — food, laundry and extras added to a booking's bill.
                     </p>
                     <form onSubmit={submitPurchase} className="mt-3 space-y-3">
                       <div>
@@ -697,7 +777,7 @@ function FinancePage() {
 
               <Card>
                 <CardContent className="p-5">
-                  <h3 className="kinetic-label text-xs text-foreground">Purchases & charges</h3>
+                  <h3 className="kinetic-label text-xs text-foreground">Guest charges (folio)</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Folio charges in the selected period · {money(fin.purchasesTotal, currency)}
                   </p>
@@ -744,6 +824,199 @@ function FinancePage() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-5">
+            {canRecord ? (
+              <Card className="lg:col-span-2">
+                <CardContent className="p-5">
+                  <h3 className="kinetic-label text-xs text-foreground">Record an expense</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Money the hotel spends — electricity, supplies, salaries, repairs. Cash
+                    spending is tied to the open cash drawer.
+                  </p>
+                  <form onSubmit={submitExpense} className="mt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="exp-date">Date</Label>
+                        <Input
+                          id="exp-date"
+                          type="date"
+                          required
+                          value={expenseForm.spentOn}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, spentOn: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="exp-cat">Category</Label>
+                        <select
+                          id="exp-cat"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={expenseForm.category}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, category: e.target.value }))
+                          }
+                        >
+                          {EXPENSE_CATEGORY_OPTIONS.map((c) => (
+                            <option key={c} value={c}>
+                              {titleCase(c)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="exp-desc">Description</Label>
+                      <Input
+                        id="exp-desc"
+                        required
+                        placeholder="e.g. Electricity bill for August"
+                        value={expenseForm.description}
+                        onChange={(e) =>
+                          setExpenseForm((f) => ({ ...f, description: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="exp-vendor">Paid to (optional)</Label>
+                      <Input
+                        id="exp-vendor"
+                        placeholder="e.g. ECG, Makola market"
+                        value={expenseForm.vendor}
+                        onChange={(e) =>
+                          setExpenseForm((f) => ({ ...f, vendor: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="exp-amount">Amount</Label>
+                        <Input
+                          id="exp-amount"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          required
+                          value={expenseForm.amount}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, amount: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="exp-method">Paid with</Label>
+                        <select
+                          id="exp-method"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={expenseForm.method}
+                          onChange={(e) =>
+                            setExpenseForm((f) => ({ ...f, method: e.target.value }))
+                          }
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="mobile_money">Mobile money</option>
+                          <option value="bank_transfer">Bank transfer</option>
+                          <option value="card">Card</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="exp-note">Note (optional)</Label>
+                      <Input
+                        id="exp-note"
+                        value={expenseForm.note}
+                        onChange={(e) =>
+                          setExpenseForm((f) => ({ ...f, note: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={busy}>
+                      <Plus className="mr-1 size-4" /> Record expense
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card className={canRecord ? "lg:col-span-3" : "lg:col-span-5"}>
+              <CardContent className="p-5">
+                <h3 className="kinetic-label text-xs text-foreground">Hotel spending</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Expenses in the selected period · {money(fin.expensesTotal, currency)}
+                </p>
+                {fin.expensesByCategory.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {fin.expensesByCategory.map((c) => (
+                      <span
+                        key={c.category}
+                        className="ink bg-card px-2 py-1 text-xs font-medium text-foreground"
+                      >
+                        {titleCase(c.category)} · {money(c.amount, currency)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="mt-3 max-h-[420px] overflow-auto">
+                  {fin.expenses.length === 0 ? (
+                    <EmptyState
+                      icon={TrendingDown}
+                      title="No expenses"
+                      description="Spending recorded in this period will appear here."
+                    />
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-[2px] border-ink text-left">
+                          <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
+                          <th className="py-2 pr-2 text-xs text-muted-foreground">Expense</th>
+                          <th className="py-2 pr-2 text-xs text-muted-foreground">Paid with</th>
+                          <th className="py-2 pr-2 text-right text-xs text-muted-foreground">
+                            Amount
+                          </th>
+                          {canRecord ? (
+                            <th className="py-2 text-right text-xs text-muted-foreground" />
+                          ) : null}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fin.expenses.map((x) => (
+                          <tr key={x.id} className="border-b border-border">
+                            <td className="py-2 pr-2">{shortDate(x.spent_on)}</td>
+                            <td className="py-2 pr-2">
+                              <span className="block text-foreground">{x.description}</span>
+                              <span className="block text-xs text-muted-foreground">
+                                {titleCase(x.category)}
+                                {x.vendor ? ` · ${x.vendor}` : ""}
+                              </span>
+                            </td>
+                            <td className="py-2 pr-2">
+                              {METHOD_LABELS[x.method] ?? titleCase(x.method)}
+                            </td>
+                            <td className="py-2 pr-2 text-right font-medium">
+                              {money(x.amount, currency)}
+                            </td>
+                            {canRecord ? (
+                              <td className="py-2 text-right">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy || busyExpenseId === x.id}
+                                  onClick={() => removeExpense(x.id)}
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </td>
+                            ) : null}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </>
       )}
