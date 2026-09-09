@@ -384,6 +384,12 @@ function FinancePage() {
       .finally(() => setBusyExpenseId(""));
   };
 
+  const tabs = [
+    { key: "payments" as const, label: "Money in", hint: "Payments & receipts" },
+    { key: "guests" as const, label: "Guest charges", hint: "Food, laundry, extras" },
+    { key: "spending" as const, label: "Hotel spending", hint: "Bills & expenses" },
+  ];
+
   return (
     <DashboardShell title="Finance">
       <PageHeader
@@ -403,7 +409,48 @@ function FinancePage() {
         <p className="mt-6 text-sm text-muted-foreground">Loading financial data…</p>
       ) : (
         <>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Period selector — one shared context for every number on this page */}
+          <Card className="mt-6">
+            <CardContent className="flex flex-wrap items-end gap-3 p-4">
+              <div className="mr-auto">
+                <p className="kinetic-label text-[10px] text-muted-foreground">Showing</p>
+                <p className="text-sm font-medium text-foreground">
+                  {shortDate(from)} — {shortDate(to)}
+                </p>
+              </div>
+              <div className="w-36">
+                <Label htmlFor="fin-from">From</Label>
+                <Input
+                  id="fin-from"
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </div>
+              <div className="w-36">
+                <Label htmlFor="fin-to">To</Label>
+                <Input id="fin-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              </div>
+              <Button onClick={() => refetch()} disabled={busy}>
+                Apply
+              </Button>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  setFrom(daysAgoISO(30));
+                  setTo(today());
+                  setMethodFilter("all");
+                  setQuery("");
+                }}
+              >
+                Reset
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Headline numbers */}
+          <div className="mt-4 grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
             <StatCard
               label="Received (period)"
               value={money(fin.totals.received, currency)}
@@ -418,7 +465,7 @@ function FinancePage() {
               tone="accent"
             />
             <StatCard
-              label="Outstanding balance"
+              label="Outstanding"
               value={money(fin.totals.outstanding, currency)}
               icon={Receipt}
               tone="warning"
@@ -440,585 +487,594 @@ function FinancePage() {
             />
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-5">
-            <div className="min-w-0 space-y-6 lg:col-span-3">
-              <Card>
-                <CardContent className="p-5">
-                  <h3 className="kinetic-label text-xs text-foreground">Payments ledger</h3>
-                  <div className="mt-3 flex flex-wrap items-end gap-2">
-                    <div>
-                      <Label htmlFor="fin-from">From</Label>
-                      <Input
-                        id="fin-from"
-                        type="date"
-                        value={from}
-                        onChange={(e) => setFrom(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fin-to">To</Label>
-                      <Input
-                        id="fin-to"
-                        type="date"
-                        value={to}
-                        onChange={(e) => setTo(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fin-method">Method</Label>
-                      <select
-                        id="fin-method"
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={methodFilter}
-                        onChange={(e) => setMethodFilter(e.target.value)}
-                      >
-                        <option value="all">All methods</option>
-                        <option value="cash">Cash</option>
-                        <option value="mobile_money">Mobile money</option>
-                        <option value="bank_transfer">Bank transfer</option>
-                        <option value="card">Card</option>
-                      </select>
-                    </div>
-                    <Button onClick={() => refetch()} disabled={busy}>
-                      Apply
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => {
-                        setFrom(daysAgoISO(30));
-                        setTo(today());
-                        setMethodFilter("all");
-                        setQuery("");
-                      }}
-                    >
-                      Reset
-                    </Button>
-                  </div>
-                  <Input
-                    className="mt-2"
-                    placeholder="Search receipt, booking reference or guest…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-
-                  <div className="mt-4 max-h-[460px] overflow-auto">
-                    {fin.payments.length === 0 ? (
-                      <EmptyState
-                        icon={Receipt}
-                        title="No payments"
-                        description="No payments match this period or filter."
-                      />
-                    ) : (
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b-[2px] border-ink text-left">
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Receipt</th>
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">
-                              Guest / booking
-                            </th>
-                            <th className="py-2 pr-2 text-right text-xs text-muted-foreground">
-                              Amount
-                            </th>
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Method</th>
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Status</th>
-                            <th className="py-2 text-right text-xs text-muted-foreground">
-                              Receipt
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {fin.payments
-                            .filter((p) => {
-                              if (methodFilter !== "all" && p.method !== methodFilter) return false;
-                              const q = query.toLowerCase();
-                              if (!q) return true;
-                              return (
-                                (p.reference ?? "").toLowerCase().includes(q) ||
-                                (p.receipt_number ?? "").toLowerCase().includes(q) ||
-                                (p.booking_reference ?? "").toLowerCase().includes(q) ||
-                                (p.guest_name ?? "").toLowerCase().includes(q)
-                              );
-                            })
-                            .map((p) => (
-                              <tr key={p.id} className="border-b border-border">
-                                <td className="py-2 pr-2">
-                                  {shortDate(p.paid_at ?? p.created_at)}
-                                </td>
-                                <td className="py-2 pr-2 font-medium">
-                                  {p.receipt_number || p.reference || "—"}
-                                </td>
-                                <td className="py-2 pr-2">
-                                  <span className="block text-foreground">
-                                    {p.guest_name ?? "—"}
-                                  </span>
-                                  <span className="block text-xs text-muted-foreground">
-                                    {p.booking_reference ?? ""}
-                                  </span>
-                                </td>
-                                <td className="py-2 pr-2 text-right font-medium">
-                                  {money(p.amount, currency)}
-                                </td>
-                                <td className="py-2 pr-2">
-                                  {METHOD_LABELS[p.method] ?? titleCase(p.method)}
-                                </td>
-                                <td className="py-2 pr-2">
-                                  <StatusBadge status={p.status} />
-                                </td>
-                                <td className="py-2 text-right">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={p.status !== "successful"}
-                                    onClick={() => printPaymentReceipt(p, fin.hotel, currency)}
-                                  >
-                                    <Printer className="mr-1 size-4" /> Print
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="min-w-0 space-y-6 lg:col-span-2">
-              <Card>
-                <CardContent className="p-5">
-                  <h3 className="kinetic-label text-xs text-foreground">Cash session</h3>
-                  {fin.openSession ? (
-                    <div className="mt-3 space-y-3 text-sm">
-                      <p className="text-muted-foreground">
-                        Opened {shortDate(fin.openSession.opened_at)} by{" "}
-                        {fin.openSession.cashier_name}
-                      </p>
-                      <p>
-                        Float:{" "}
-                        <span className="font-medium">
-                          {money(fin.openSession.opening_balance, currency)}
-                        </span>
-                      </p>
-                      <p>
-                        Expected cash:{" "}
-                        <span className="font-medium">
-                          {money(fin.openSession.expected_cash ?? 0, currency)}
-                        </span>
-                      </p>
-                      {can("cash_session:manage") ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            placeholder="Closing cash"
-                            value={closeAmount}
-                            onChange={(e) => setCloseAmount(e.target.value)}
-                            disabled={busy}
-                          />
-                          <Button size="sm" disabled={busy} onClick={submitCloseSession}>
-                            Close
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="mt-3">
-                      {can("cash_session:manage") ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            placeholder="Opening float"
-                            value={openFloat}
-                            onChange={(e) => setOpenFloat(e.target.value)}
-                            disabled={busy}
-                          />
-                          <Button size="sm" disabled={busy} onClick={submitOpenSession}>
-                            Open
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          No cash session is open right now.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {canRecord ? (
-                <Card>
-                  <CardContent className="p-5">
-                    <h3 className="kinetic-label text-xs text-foreground">
-                      Charge a guest (folio)
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Money guests owe you — food, laundry and extras added to a booking's bill.
-                    </p>
-                    <form onSubmit={submitPurchase} className="mt-3 space-y-3">
-                      <div>
-                        <Label htmlFor="purchase-booking">Booking</Label>
-                        <select
-                          id="purchase-booking"
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={purchaseBookingId}
-                          onChange={(e) => setPurchaseBookingId(e.target.value)}
-                        >
-                          <option value="">Select a booking…</option>
-                          {fin.bookings.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.reference} · {b.guest_name ?? "Guest"} · balance{" "}
-                              {money(b.balance, currency)}
-                            </option>
-                          ))}
-                        </select>
-                        {fin.bookings.length === 0 ? (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            No active bookings to charge.
-                          </p>
-                        ) : null}
-                      </div>
-                      {purchaseRows.map((r, idx) => (
-                        <div key={r.id} className="rounded-md border border-border p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs font-medium text-foreground">Item {idx + 1}</p>
-                            {purchaseRows.length > 1 ? (
-                              <button
-                                type="button"
-                                className="text-xs text-muted-foreground underline hover:text-destructive"
-                                onClick={() => removePurchaseRow(r.id)}
-                              >
-                                Remove
-                              </button>
-                            ) : null}
-                          </div>
-                          <div className="mt-2">
-                            <Label htmlFor={`purchase-cat-${r.id}`}>Category</Label>
-                            <select
-                              id={`purchase-cat-${r.id}`}
-                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              value={r.category}
-                              onChange={(e) =>
-                                updatePurchaseRow(r.id, { category: e.target.value })
-                              }
-                            >
-                              {FOLIO_CATEGORIES.map((c) => (
-                                <option key={c} value={c}>
-                                  {titleCase(c)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="mt-2">
-                            <Label htmlFor={`purchase-desc-${r.id}`}>Description</Label>
-                            <Input
-                              id={`purchase-desc-${r.id}`}
-                              required
-                              value={r.description}
-                              onChange={(e) =>
-                                updatePurchaseRow(r.id, { description: e.target.value })
-                              }
-                            />
-                          </div>
-                          <div className="mt-2 grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor={`purchase-qty-${r.id}`}>Qty</Label>
-                              <Input
-                                id={`purchase-qty-${r.id}`}
-                                type="number"
-                                min={1}
-                                value={r.quantity}
-                                onChange={(e) =>
-                                  updatePurchaseRow(r.id, {
-                                    quantity: parseInt(e.target.value || "1", 10),
-                                  })
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor={`purchase-price-${r.id}`}>Unit price</Label>
-                              <Input
-                                id={`purchase-price-${r.id}`}
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                value={r.unitPrice}
-                                onChange={(e) =>
-                                  updatePurchaseRow(r.id, {
-                                    unitPrice: parseFloat(e.target.value || "0"),
-                                  })
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        disabled={busy}
-                        onClick={addPurchaseRow}
-                      >
-                        <Plus className="mr-1 size-4" /> Add item
-                      </Button>
-                      <Button type="submit" className="w-full" disabled={busy}>
-                        <Plus className="mr-1 size-4" /> Record purchase
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              ) : null}
-
-              <Card>
-                <CardContent className="p-5">
-                  <h3 className="kinetic-label text-xs text-foreground">Guest charges (folio)</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Folio charges in the selected period · {money(fin.purchasesTotal, currency)}
-                  </p>
-                  <div className="mt-3 max-h-[360px] overflow-auto">
-                    {fin.purchases.length === 0 ? (
-                      <EmptyState
-                        icon={Receipt}
-                        title="No purchases"
-                        description="Folio charges in this period will appear here."
-                      />
-                    ) : (
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b-[2px] border-ink text-left">
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Item</th>
-                            <th className="py-2 pr-2 text-xs text-muted-foreground">Booking</th>
-                            <th className="py-2 text-right text-xs text-muted-foreground">
-                              Amount
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {fin.purchases.map((c) => (
-                            <tr key={c.id} className="border-b border-border">
-                              <td className="py-2 pr-2">{shortDate(c.created_at)}</td>
-                              <td className="py-2 pr-2">
-                                <span className="block text-foreground">{c.description}</span>
-                                <span className="block text-xs text-muted-foreground">
-                                  {titleCase(c.category)} · {c.quantity} ×{" "}
-                                  {money(c.unit_price, currency)}
-                                </span>
-                              </td>
-                              <td className="py-2 pr-2">{c.booking_reference ?? "—"}</td>
-                              <td className="py-2 text-right font-medium">
-                                {money(c.amount, currency)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Section switcher — each area of money keeps its own page */}
+          <div className="mt-6 grid gap-2 sm:grid-cols-3">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={
+                  tab === t.key
+                    ? "ink shadow-hard-teal bg-primary p-3 text-left text-primary-foreground"
+                    : "ink bg-card p-3 text-left text-foreground hover:bg-muted"
+                }
+              >
+                <span className="kinetic-label block text-[11px]">{t.label}</span>
+                <span className="mt-0.5 block text-xs opacity-80">{t.hint}</span>
+              </button>
+            ))}
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-5">
-            {canRecord ? (
-              <Card className="lg:col-span-2">
-                <CardContent className="p-5">
-                  <h3 className="kinetic-label text-xs text-foreground">Record an expense</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Money the hotel spends — electricity, supplies, salaries, repairs. Cash
-                    spending is tied to the open cash drawer.
-                  </p>
-                  <form onSubmit={submitExpense} className="mt-3 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="exp-date">Date</Label>
-                        <Input
-                          id="exp-date"
-                          type="date"
-                          required
-                          value={expenseForm.spentOn}
-                          onChange={(e) =>
-                            setExpenseForm((f) => ({ ...f, spentOn: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="exp-cat">Category</Label>
+          {tab === "payments" ? (
+            <div className="mt-4 grid gap-6 lg:grid-cols-5">
+              <div className="min-w-0 lg:col-span-3">
+                <Card>
+                  <CardContent className="p-5">
+                    <h3 className="kinetic-label text-xs text-foreground">Payments ledger</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Every payment guests made in this period.
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-end gap-2">
+                      <div className="w-40">
+                        <Label htmlFor="fin-method">Method</Label>
                         <select
-                          id="exp-cat"
+                          id="fin-method"
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={expenseForm.category}
-                          onChange={(e) =>
-                            setExpenseForm((f) => ({ ...f, category: e.target.value }))
-                          }
+                          value={methodFilter}
+                          onChange={(e) => setMethodFilter(e.target.value)}
                         >
-                          {EXPENSE_CATEGORY_OPTIONS.map((c) => (
-                            <option key={c} value={c}>
-                              {titleCase(c)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="exp-desc">Description</Label>
-                      <Input
-                        id="exp-desc"
-                        required
-                        placeholder="e.g. Electricity bill for August"
-                        value={expenseForm.description}
-                        onChange={(e) =>
-                          setExpenseForm((f) => ({ ...f, description: e.target.value }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="exp-vendor">Paid to (optional)</Label>
-                      <Input
-                        id="exp-vendor"
-                        placeholder="e.g. ECG, Makola market"
-                        value={expenseForm.vendor}
-                        onChange={(e) =>
-                          setExpenseForm((f) => ({ ...f, vendor: e.target.value }))
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="exp-amount">Amount</Label>
-                        <Input
-                          id="exp-amount"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          required
-                          value={expenseForm.amount}
-                          onChange={(e) =>
-                            setExpenseForm((f) => ({ ...f, amount: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="exp-method">Paid with</Label>
-                        <select
-                          id="exp-method"
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={expenseForm.method}
-                          onChange={(e) =>
-                            setExpenseForm((f) => ({ ...f, method: e.target.value }))
-                          }
-                        >
+                          <option value="all">All methods</option>
                           <option value="cash">Cash</option>
                           <option value="mobile_money">Mobile money</option>
                           <option value="bank_transfer">Bank transfer</option>
                           <option value="card">Card</option>
                         </select>
                       </div>
+                      <div className="min-w-[200px] flex-1">
+                        <Label htmlFor="fin-search">Search</Label>
+                        <Input
+                          id="fin-search"
+                          placeholder="Receipt, booking reference or guest…"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="exp-note">Note (optional)</Label>
-                      <Input
-                        id="exp-note"
-                        value={expenseForm.note}
-                        onChange={(e) =>
-                          setExpenseForm((f) => ({ ...f, note: e.target.value }))
-                        }
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={busy}>
-                      <Plus className="mr-1 size-4" /> Record expense
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            ) : null}
 
-            <Card className={canRecord ? "lg:col-span-3" : "lg:col-span-5"}>
-              <CardContent className="p-5">
-                <h3 className="kinetic-label text-xs text-foreground">Hotel spending</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Expenses in the selected period · {money(fin.expensesTotal, currency)}
-                </p>
-                {fin.expensesByCategory.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {fin.expensesByCategory.map((c) => (
-                      <span
-                        key={c.category}
-                        className="ink bg-card px-2 py-1 text-xs font-medium text-foreground"
-                      >
-                        {titleCase(c.category)} · {money(c.amount, currency)}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="mt-3 max-h-[420px] overflow-auto">
-                  {fin.expenses.length === 0 ? (
-                    <EmptyState
-                      icon={TrendingDown}
-                      title="No expenses"
-                      description="Spending recorded in this period will appear here."
-                    />
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b-[2px] border-ink text-left">
-                          <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
-                          <th className="py-2 pr-2 text-xs text-muted-foreground">Expense</th>
-                          <th className="py-2 pr-2 text-xs text-muted-foreground">Paid with</th>
-                          <th className="py-2 pr-2 text-right text-xs text-muted-foreground">
-                            Amount
-                          </th>
-                          {canRecord ? (
-                            <th className="py-2 text-right text-xs text-muted-foreground" />
+                    <div className="mt-4 max-h-[460px] overflow-auto">
+                      {fin.payments.length === 0 ? (
+                        <EmptyState
+                          icon={Receipt}
+                          title="No payments"
+                          description="No payments match this period or filter."
+                        />
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b-[2px] border-ink text-left">
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Receipt</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">
+                                Guest / booking
+                              </th>
+                              <th className="py-2 pr-2 text-right text-xs text-muted-foreground">
+                                Amount
+                              </th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Method</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Status</th>
+                              <th className="py-2 text-right text-xs text-muted-foreground" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fin.payments
+                              .filter((p) => {
+                                if (methodFilter !== "all" && p.method !== methodFilter)
+                                  return false;
+                                const q = query.toLowerCase();
+                                if (!q) return true;
+                                return (
+                                  (p.reference ?? "").toLowerCase().includes(q) ||
+                                  (p.receipt_number ?? "").toLowerCase().includes(q) ||
+                                  (p.booking_reference ?? "").toLowerCase().includes(q) ||
+                                  (p.guest_name ?? "").toLowerCase().includes(q)
+                                );
+                              })
+                              .map((p) => (
+                                <tr key={p.id} className="border-b border-border">
+                                  <td className="py-2 pr-2">
+                                    {shortDate(p.paid_at ?? p.created_at)}
+                                  </td>
+                                  <td className="py-2 pr-2 font-medium">
+                                    {p.receipt_number || p.reference || "—"}
+                                  </td>
+                                  <td className="py-2 pr-2">
+                                    <span className="block text-foreground">
+                                      {p.guest_name ?? "—"}
+                                    </span>
+                                    <span className="block text-xs text-muted-foreground">
+                                      {p.booking_reference ?? ""}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 pr-2 text-right font-medium">
+                                    {money(p.amount, currency)}
+                                  </td>
+                                  <td className="py-2 pr-2">
+                                    {METHOD_LABELS[p.method] ?? titleCase(p.method)}
+                                  </td>
+                                  <td className="py-2 pr-2">
+                                    <StatusBadge status={p.status} />
+                                  </td>
+                                  <td className="py-2 text-right">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={p.status !== "successful"}
+                                      onClick={() => printPaymentReceipt(p, fin.hotel, currency)}
+                                    >
+                                      <Printer className="mr-1 size-4" /> Print
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="min-w-0 lg:col-span-2">
+                <Card>
+                  <CardContent className="p-5">
+                    <h3 className="kinetic-label text-xs text-foreground">Cash drawer</h3>
+                    {fin.openSession ? (
+                      <div className="mt-3 space-y-3 text-sm">
+                        <p className="text-muted-foreground">
+                          Opened {shortDate(fin.openSession.opened_at)} by{" "}
+                          {fin.openSession.cashier_name}
+                        </p>
+                        <p>
+                          Float:{" "}
+                          <span className="font-medium">
+                            {money(fin.openSession.opening_balance, currency)}
+                          </span>
+                        </p>
+                        <p>
+                          Expected cash:{" "}
+                          <span className="font-medium">
+                            {money(fin.openSession.expected_cash ?? 0, currency)}
+                          </span>
+                        </p>
+                        {can("cash_session:manage") ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              placeholder="Closing cash"
+                              value={closeAmount}
+                              onChange={(e) => setCloseAmount(e.target.value)}
+                              disabled={busy}
+                            />
+                            <Button size="sm" disabled={busy} onClick={submitCloseSession}>
+                              Close
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="mt-3">
+                        {can("cash_session:manage") ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              placeholder="Opening float"
+                              value={openFloat}
+                              onChange={(e) => setOpenFloat(e.target.value)}
+                              disabled={busy}
+                            />
+                            <Button size="sm" disabled={busy} onClick={submitOpenSession}>
+                              Open
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No cash session is open right now.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "guests" ? (
+            <div className="mt-4 grid gap-6 lg:grid-cols-5">
+              <div className="min-w-0 lg:col-span-3">
+                <Card>
+                  <CardContent className="p-5">
+                    <h3 className="kinetic-label text-xs text-foreground">
+                      Guest charges (folio)
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Money guests owe you in this period · {money(fin.purchasesTotal, currency)}
+                    </p>
+                    <div className="mt-3 max-h-[460px] overflow-auto">
+                      {fin.purchases.length === 0 ? (
+                        <EmptyState
+                          icon={Receipt}
+                          title="No guest charges"
+                          description="Food, laundry and extras added to a booking will appear here."
+                        />
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b-[2px] border-ink text-left">
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Item</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Booking</th>
+                              <th className="py-2 text-right text-xs text-muted-foreground">
+                                Amount
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fin.purchases.map((c) => (
+                              <tr key={c.id} className="border-b border-border">
+                                <td className="py-2 pr-2">{shortDate(c.created_at)}</td>
+                                <td className="py-2 pr-2">
+                                  <span className="block text-foreground">{c.description}</span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {titleCase(c.category)} · {c.quantity} ×{" "}
+                                    {money(c.unit_price, currency)}
+                                  </span>
+                                </td>
+                                <td className="py-2 pr-2">{c.booking_reference ?? "—"}</td>
+                                <td className="py-2 text-right font-medium">
+                                  {money(c.amount, currency)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {canRecord ? (
+                <div className="min-w-0 lg:col-span-2">
+                  <Card>
+                    <CardContent className="p-5">
+                      <h3 className="kinetic-label text-xs text-foreground">Charge a guest</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Add food, laundry or extras to a booking's bill.
+                      </p>
+                      <form onSubmit={submitPurchase} className="mt-3 space-y-3">
+                        <div>
+                          <Label htmlFor="purchase-booking">Booking</Label>
+                          <select
+                            id="purchase-booking"
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={purchaseBookingId}
+                            onChange={(e) => setPurchaseBookingId(e.target.value)}
+                          >
+                            <option value="">Select a booking…</option>
+                            {fin.bookings.map((b) => (
+                              <option key={b.id} value={b.id}>
+                                {b.reference} · {b.guest_name ?? "Guest"} · balance{" "}
+                                {money(b.balance, currency)}
+                              </option>
+                            ))}
+                          </select>
+                          {fin.bookings.length === 0 ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              No active bookings to charge.
+                            </p>
                           ) : null}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {fin.expenses.map((x) => (
-                          <tr key={x.id} className="border-b border-border">
-                            <td className="py-2 pr-2">{shortDate(x.spent_on)}</td>
-                            <td className="py-2 pr-2">
-                              <span className="block text-foreground">{x.description}</span>
-                              <span className="block text-xs text-muted-foreground">
-                                {titleCase(x.category)}
-                                {x.vendor ? ` · ${x.vendor}` : ""}
-                              </span>
-                            </td>
-                            <td className="py-2 pr-2">
-                              {METHOD_LABELS[x.method] ?? titleCase(x.method)}
-                            </td>
-                            <td className="py-2 pr-2 text-right font-medium">
-                              {money(x.amount, currency)}
-                            </td>
-                            {canRecord ? (
-                              <td className="py-2 text-right">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={busy || busyExpenseId === x.id}
-                                  onClick={() => removeExpense(x.id)}
+                        </div>
+                        {purchaseRows.map((r, idx) => (
+                          <div key={r.id} className="rounded-md border border-border p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-medium text-foreground">Item {idx + 1}</p>
+                              {purchaseRows.length > 1 ? (
+                                <button
+                                  type="button"
+                                  className="text-xs text-muted-foreground underline hover:text-destructive"
+                                  onClick={() => removePurchaseRow(r.id)}
                                 >
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              </td>
-                            ) : null}
-                          </tr>
+                                  Remove
+                                </button>
+                              ) : null}
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor={`purchase-cat-${r.id}`}>Category</Label>
+                              <select
+                                id={`purchase-cat-${r.id}`}
+                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                value={r.category}
+                                onChange={(e) =>
+                                  updatePurchaseRow(r.id, { category: e.target.value })
+                                }
+                              >
+                                {FOLIO_CATEGORIES.map((c) => (
+                                  <option key={c} value={c}>
+                                    {titleCase(c)}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="mt-2">
+                              <Label htmlFor={`purchase-desc-${r.id}`}>Description</Label>
+                              <Input
+                                id={`purchase-desc-${r.id}`}
+                                required
+                                value={r.description}
+                                onChange={(e) =>
+                                  updatePurchaseRow(r.id, { description: e.target.value })
+                                }
+                              />
+                            </div>
+                            <div className="mt-2 grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor={`purchase-qty-${r.id}`}>Qty</Label>
+                                <Input
+                                  id={`purchase-qty-${r.id}`}
+                                  type="number"
+                                  min={1}
+                                  value={r.quantity}
+                                  onChange={(e) =>
+                                    updatePurchaseRow(r.id, {
+                                      quantity: parseInt(e.target.value || "1", 10),
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`purchase-price-${r.id}`}>Unit price</Label>
+                                <Input
+                                  id={`purchase-price-${r.id}`}
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={r.unitPrice}
+                                  onChange={(e) =>
+                                    updatePurchaseRow(r.id, {
+                                      unitPrice: parseFloat(e.target.value || "0"),
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          disabled={busy}
+                          onClick={addPurchaseRow}
+                        >
+                          <Plus className="mr-1 size-4" /> Add item
+                        </Button>
+                        <Button type="submit" className="w-full" disabled={busy}>
+                          <Plus className="mr-1 size-4" /> Charge guest
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {tab === "spending" ? (
+            <div className="mt-4 grid gap-6 lg:grid-cols-5">
+              <div className="min-w-0 space-y-6 lg:col-span-3">
+                <Card>
+                  <CardContent className="p-5">
+                    <h3 className="kinetic-label text-xs text-foreground">Hotel spending</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      What the hotel spent in this period · {money(fin.expensesTotal, currency)}
+                    </p>
+                    {fin.expensesByCategory.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {fin.expensesByCategory.map((c) => (
+                          <span
+                            key={c.category}
+                            className="ink bg-card px-2 py-1 text-xs font-medium text-foreground"
+                          >
+                            {titleCase(c.category)} · {money(c.amount, currency)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="mt-3 max-h-[460px] overflow-auto">
+                      {fin.expenses.length === 0 ? (
+                        <EmptyState
+                          icon={TrendingDown}
+                          title="No expenses"
+                          description="Spending recorded in this period will appear here."
+                        />
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b-[2px] border-ink text-left">
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Date</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">Expense</th>
+                              <th className="py-2 pr-2 text-xs text-muted-foreground">
+                                Paid with
+                              </th>
+                              <th className="py-2 pr-2 text-right text-xs text-muted-foreground">
+                                Amount
+                              </th>
+                              {canRecord ? (
+                                <th className="py-2 text-right text-xs text-muted-foreground" />
+                              ) : null}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fin.expenses.map((x) => (
+                              <tr key={x.id} className="border-b border-border">
+                                <td className="py-2 pr-2">{shortDate(x.spent_on)}</td>
+                                <td className="py-2 pr-2">
+                                  <span className="block text-foreground">{x.description}</span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {titleCase(x.category)}
+                                    {x.vendor ? ` · ${x.vendor}` : ""}
+                                  </span>
+                                </td>
+                                <td className="py-2 pr-2">
+                                  {METHOD_LABELS[x.method] ?? titleCase(x.method)}
+                                </td>
+                                <td className="py-2 pr-2 text-right font-medium">
+                                  {money(x.amount, currency)}
+                                </td>
+                                {canRecord ? (
+                                  <td className="py-2 text-right">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={busy || busyExpenseId === x.id}
+                                      onClick={() => removeExpense(x.id)}
+                                    >
+                                      <Trash2 className="size-4" />
+                                    </Button>
+                                  </td>
+                                ) : null}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {canRecord ? (
+                <div className="min-w-0 lg:col-span-2">
+                  <Card>
+                    <CardContent className="p-5">
+                      <h3 className="kinetic-label text-xs text-foreground">Record an expense</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Electricity, supplies, salaries, repairs. Cash spending is tied to the open
+                        cash drawer.
+                      </p>
+                      <form onSubmit={submitExpense} className="mt-3 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="exp-date">Date</Label>
+                            <Input
+                              id="exp-date"
+                              type="date"
+                              required
+                              value={expenseForm.spentOn}
+                              onChange={(e) =>
+                                setExpenseForm((f) => ({ ...f, spentOn: e.target.value }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="exp-cat">Category</Label>
+                            <select
+                              id="exp-cat"
+                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              value={expenseForm.category}
+                              onChange={(e) =>
+                                setExpenseForm((f) => ({ ...f, category: e.target.value }))
+                              }
+                            >
+                              {EXPENSE_CATEGORY_OPTIONS.map((c) => (
+                                <option key={c} value={c}>
+                                  {titleCase(c)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="exp-desc">Description</Label>
+                          <Input
+                            id="exp-desc"
+                            required
+                            placeholder="e.g. Electricity bill for August"
+                            value={expenseForm.description}
+                            onChange={(e) =>
+                              setExpenseForm((f) => ({ ...f, description: e.target.value }))
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="exp-vendor">Paid to (optional)</Label>
+                          <Input
+                            id="exp-vendor"
+                            placeholder="e.g. ECG, Makola market"
+                            value={expenseForm.vendor}
+                            onChange={(e) =>
+                              setExpenseForm((f) => ({ ...f, vendor: e.target.value }))
+                            }
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="exp-amount">Amount</Label>
+                            <Input
+                              id="exp-amount"
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              required
+                              value={expenseForm.amount}
+                              onChange={(e) =>
+                                setExpenseForm((f) => ({ ...f, amount: e.target.value }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="exp-method">Paid with</Label>
+                            <select
+                              id="exp-method"
+                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              value={expenseForm.method}
+                              onChange={(e) =>
+                                setExpenseForm((f) => ({ ...f, method: e.target.value }))
+                              }
+                            >
+                              <option value="cash">Cash</option>
+                              <option value="mobile_money">Mobile money</option>
+                              <option value="bank_transfer">Bank transfer</option>
+                              <option value="card">Card</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="exp-note">Note (optional)</Label>
+                          <Input
+                            id="exp-note"
+                            value={expenseForm.note}
+                            onChange={(e) =>
+                              setExpenseForm((f) => ({ ...f, note: e.target.value }))
+                            }
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={busy}>
+                          <Plus className="mr-1 size-4" /> Record expense
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </>
       )}
     </DashboardShell>
