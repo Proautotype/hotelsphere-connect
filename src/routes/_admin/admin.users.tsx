@@ -89,53 +89,123 @@ async function fetchAdminUsers(): Promise<AdminUserRow[]> {
 
 function AdminUsersPage() {
   const { data: users } = useSuspenseQuery({ queryKey: ["admin", "users"], queryFn: fetchAdminUsers });
+  const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<"all" | "platform" | "hotel" | "guest">("all");
+
+  const kind = (u: AdminUserRow): "platform" | "hotel" | "guest" =>
+    u.roles.some((r) => r.startsWith("platform_")) ? "platform" : u.hotels.length > 0 ? "hotel" : "guest";
+
+  const counts = {
+    all: users.length,
+    platform: users.filter((u) => kind(u) === "platform").length,
+    hotel: users.filter((u) => kind(u) === "hotel").length,
+    guest: users.filter((u) => kind(u) === "guest").length,
+  };
+
+  const groups = [
+    { key: "all" as const, label: "Everyone" },
+    { key: "platform" as const, label: "Platform team" },
+    { key: "hotel" as const, label: "Hotel people" },
+    { key: "guest" as const, label: "Guests" },
+  ];
+
+  const q = query.trim().toLowerCase();
+  const visible = users.filter((u) => {
+    if (group !== "all" && kind(u) !== group) return false;
+    if (!q) return true;
+    return (
+      u.full_name.toLowerCase().includes(q) ||
+      (u.email ?? "").toLowerCase().includes(q) ||
+      u.hotels.some((h) => h.name.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <AdminShell title="Accounts">
       <PageHeader title="Accounts" description="Everyone who has signed up, and where they belong." />
 
       <Card className="mt-6 border-l-[10px] border-l-amber">
-        <CardContent className="flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-start gap-2 text-sm text-foreground">
             <ShieldAlert className="mt-0.5 size-4 shrink-0" />
             <span>
-              This list is view-only. Hotel owners and hotel staff can never be given platform powers from here — the platform team is managed on
-              its own page.
+              This list is view-only. Hotel owners and hotel staff can never be given platform powers from here — the platform team is
+              managed on its own page.
             </span>
           </p>
-          <Button asChild variant="secondary">
+          <Button asChild variant="secondary" className="shrink-0">
             <Link to="/admin/team">Platform team</Link>
           </Button>
         </CardContent>
       </Card>
 
-      <div className="mt-6 space-y-3">
-        {users.length === 0 ? (
-          <EmptyState icon={Users} title="No accounts yet" description="Accounts will appear here as people sign up." />
+      <Card className="mt-4">
+        <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center">
+          <div className="flex flex-wrap gap-2">
+            {groups.map((g) => (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => setGroup(g.key)}
+                className={
+                  group === g.key
+                    ? "ink bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wide text-primary-foreground"
+                    : "ink bg-card px-3 py-2 text-xs font-semibold uppercase tracking-wide text-foreground hover:bg-muted"
+                }
+              >
+                {g.label} · {counts[g.key]}
+              </button>
+            ))}
+          </div>
+          <div className="lg:ml-auto lg:w-72">
+            <Input
+              placeholder="Search name, email or hotel…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="mt-4 space-y-2">
+        {visible.length === 0 ? (
+          <EmptyState icon={Users} title="No accounts found" description="Try a different search or group." />
         ) : (
-          users.map((user) => {
+          visible.map((user) => {
             const platform = user.roles.filter((r) => r.startsWith("platform_"));
+            const type = kind(user);
             return (
               <Card key={user.id}>
-                <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">{user.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                    {user.hotels.length > 0 && (
-                      <p className="mt-1 text-sm">
-                        {user.hotels.map((h) => `${h.name} — ${h.role}`).join(" · ")}
-                      </p>
+                <CardContent className="grid gap-3 p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] sm:items-center">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">{user.full_name}</p>
+                    <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                  <div className="min-w-0">
+                    {user.hotels.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {user.hotels.map((h) => (
+                          <span
+                            key={`${user.id}-${h.name}-${h.role}`}
+                            className="ink bg-card px-2 py-1 text-xs text-foreground"
+                          >
+                            {h.name} · {h.role}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No hotel</p>
                     )}
                   </div>
-                  <div className="text-sm text-muted-foreground sm:text-right">
+                  <div className="text-sm sm:text-right">
                     <p className="font-medium text-foreground">
                       {platform.length > 0
                         ? platform.map(titleCase).join(", ")
-                        : user.hotels.length > 0
+                        : type === "hotel"
                           ? "Hotel account"
                           : titleCase(user.roles[0] ?? "customer")}
                     </p>
-                    <p className="text-xs">Joined {shortDate(user.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">Joined {shortDate(user.created_at)}</p>
                   </div>
                 </CardContent>
               </Card>
