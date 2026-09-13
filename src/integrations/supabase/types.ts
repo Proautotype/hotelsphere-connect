@@ -137,6 +137,7 @@ export type Database = {
           created_by: string | null
           customer_user_id: string | null
           discount: number
+          early_checkout: boolean
           guest_id: string
           guests_count: number
           hotel_id: string
@@ -144,6 +145,7 @@ export type Database = {
           nights: number | null
           notes: string
           reference: string
+          refunded_amount: number
           room_id: string | null
           room_rate: number
           room_type_id: string | null
@@ -154,6 +156,7 @@ export type Database = {
           tax_amount: number
           total: number
           updated_at: string
+          withheld_amount: number
         }
         Insert: {
           amount_paid?: number
@@ -168,6 +171,7 @@ export type Database = {
           created_by?: string | null
           customer_user_id?: string | null
           discount?: number
+          early_checkout?: boolean
           guest_id: string
           guests_count?: number
           hotel_id: string
@@ -175,6 +179,7 @@ export type Database = {
           nights?: number | null
           notes?: string
           reference?: string
+          refunded_amount?: number
           room_id?: string | null
           room_rate?: number
           room_type_id?: string | null
@@ -185,6 +190,7 @@ export type Database = {
           tax_amount?: number
           total?: number
           updated_at?: string
+          withheld_amount?: number
         }
         Update: {
           amount_paid?: number
@@ -199,6 +205,7 @@ export type Database = {
           created_by?: string | null
           customer_user_id?: string | null
           discount?: number
+          early_checkout?: boolean
           guest_id?: string
           guests_count?: number
           hotel_id?: string
@@ -206,6 +213,7 @@ export type Database = {
           nights?: number | null
           notes?: string
           reference?: string
+          refunded_amount?: number
           room_id?: string | null
           room_rate?: number
           room_type_id?: string | null
@@ -216,6 +224,7 @@ export type Database = {
           tax_amount?: number
           total?: number
           updated_at?: string
+          withheld_amount?: number
         }
         Relationships: [
           {
@@ -689,6 +698,8 @@ export type Database = {
           created_at: string
           currency: string
           description: string
+          early_checkout_withhold_flat: number
+          early_checkout_withhold_percent: number
           email: string | null
           hotel_type: string
           id: string
@@ -703,6 +714,7 @@ export type Database = {
           onboarding_step: number
           owner_id: string | null
           phone: string | null
+          photos: string[]
           rating: number
           region: string
           rejection_reason: string | null
@@ -715,6 +727,7 @@ export type Database = {
           tax_percent: number
           timezone: string
           updated_at: string
+          videos: string[]
           website: string | null
         }
         Insert: {
@@ -730,6 +743,8 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string
+          early_checkout_withhold_flat?: number
+          early_checkout_withhold_percent?: number
           email?: string | null
           hotel_type?: string
           id?: string
@@ -744,6 +759,7 @@ export type Database = {
           onboarding_step?: number
           owner_id?: string | null
           phone?: string | null
+          photos?: string[]
           rating?: number
           region?: string
           rejection_reason?: string | null
@@ -756,6 +772,7 @@ export type Database = {
           tax_percent?: number
           timezone?: string
           updated_at?: string
+          videos?: string[]
           website?: string | null
         }
         Update: {
@@ -771,6 +788,8 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string
+          early_checkout_withhold_flat?: number
+          early_checkout_withhold_percent?: number
           email?: string | null
           hotel_type?: string
           id?: string
@@ -785,6 +804,7 @@ export type Database = {
           onboarding_step?: number
           owner_id?: string | null
           phone?: string | null
+          photos?: string[]
           rating?: number
           region?: string
           rejection_reason?: string | null
@@ -797,6 +817,7 @@ export type Database = {
           tax_percent?: number
           timezone?: string
           updated_at?: string
+          videos?: string[]
           website?: string | null
         }
         Relationships: []
@@ -914,6 +935,7 @@ export type Database = {
           guest_id: string | null
           hotel_id: string
           id: string
+          kind: string
           metadata: Json
           method: Database["public"]["Enums"]["payment_method"]
           paid_at: string | null
@@ -935,6 +957,7 @@ export type Database = {
           guest_id?: string | null
           hotel_id: string
           id?: string
+          kind?: string
           metadata?: Json
           method: Database["public"]["Enums"]["payment_method"]
           paid_at?: string | null
@@ -956,6 +979,7 @@ export type Database = {
           guest_id?: string | null
           hotel_id?: string
           id?: string
+          kind?: string
           metadata?: Json
           method?: Database["public"]["Enums"]["payment_method"]
           paid_at?: string | null
