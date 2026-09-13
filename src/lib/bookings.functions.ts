@@ -255,6 +255,36 @@ export const changeBooking = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+type MinimalDb = {
+  from: (table: string) => any;
+};
+
+/**
+ * Move a booking from one status to the next, but only if it is still in the
+ * status we expect. This makes the change atomic, so two clicks (or two staff
+ * members) can never check the same guest in or out twice.
+ */
+async function transitionStatus(
+  supabase: unknown,
+  bookingId: string,
+  from: string,
+  to: string,
+  extra: Record<string, unknown> = {},
+) {
+  const { data, error } = await (supabase as MinimalDb)
+    .from("bookings")
+    .update({ status: to, ...extra })
+    .eq("id", bookingId)
+    .eq("status", from)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error(
+      `This booking is no longer ${from.replace(/_/g, " ")} — someone may have already done this. Refresh to see the latest status.`,
+    );
+  }
+}
+
 const confirmBookingSchema = z.object({ bookingId: z.string().uuid() });
 export const confirmBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -272,7 +302,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
     await assertHotelAccess(supabase, booking.hotel_id);
     if (booking.status !== "pending") throw new Error("Only pending bookings can be confirmed");
 
-    await supabase.from("bookings").update({ status: "confirmed" }).eq("id", data.bookingId);
+    await transitionStatus(supabase, data.bookingId, "pending", "confirmed");
 
     await supabaseAdmin.from("audit_logs").insert({
       hotel_id: booking.hotel_id,
@@ -304,13 +334,14 @@ export const cancelBooking = createServerFn({ method: "POST" })
       .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
-    if (["checked_in", "checked_out", "cancelled"].includes(booking.status))
-      throw new Error("Booking cannot be cancelled");
+    if (!["pending", "confirmed"].includes(booking.status))
+      throw new Error(
+        "Only bookings that have not started can be cancelled. Check the guest out instead.",
+      );
 
-    await supabase
-      .from("bookings")
-      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-      .eq("id", data.bookingId);
+    await transitionStatus(supabase, data.bookingId, booking.status, "cancelled", {
+      cancelled_at: new Date().toISOString(),
+    });
 
     if (booking.room_id) {
       await supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id);
@@ -344,13 +375,13 @@ export const checkInBooking = createServerFn({ method: "POST" })
       .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
+    if (booking.status === "checked_in") throw new Error("This guest is already checked in");
     if (booking.status !== "confirmed")
       throw new Error("Only confirmed bookings can be checked in");
 
-    await supabase
-      .from("bookings")
-      .update({ status: "checked_in", checked_in_at: new Date().toISOString() })
-      .eq("id", data.bookingId);
+    await transitionStatus(supabase, data.bookingId, "confirmed", "checked_in", {
+      checked_in_at: new Date().toISOString(),
+    });
 
     if (booking.room_id) {
       await supabase.from("rooms").update({ status: "occupied" }).eq("id", booking.room_id);
@@ -367,33 +398,192 @@ export const checkInBooking = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const checkOutBooking = createServerFn({ method: "POST" })
+/** Days from `from` (inclusive) to `to` (exclusive), never negative. */
+function nightsBetween(from: string, to: string) {
+  const a = new Date(`${from}T00:00:00Z`).getTime();
+  const b = new Date(`${to}T00:00:00Z`).getTime();
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+interface CheckOutMath {
+  early: boolean;
+  unusedNights: number;
+  unusedValue: number;
+  adjustedTotal: number;
+  outstanding: number;
+  grossRefund: number;
+  withheld: number;
+  netRefund: number;
+  withholdPercent: number;
+  withholdFlat: number;
+}
+
+function checkOutMath(
+  booking: {
+    check_out: string;
+    room_rate: number | string;
+    total: number | string;
+    amount_paid: number | string;
+  },
+  hotel: {
+    early_checkout_withhold_percent: number | string;
+    early_checkout_withhold_flat: number | string;
+  },
+  todayIso: string,
+): CheckOutMath {
+  const unusedNights = nightsBetween(todayIso, booking.check_out);
+  const unusedValue = round2(Number(booking.room_rate) * unusedNights);
+  const adjustedTotal = Math.max(0, round2(Number(booking.total) - unusedValue));
+  const paid = Number(booking.amount_paid);
+  const outstanding = Math.max(0, round2(adjustedTotal - paid));
+  const grossRefund = Math.max(0, round2(paid - adjustedTotal));
+  const percent = Number(hotel.early_checkout_withhold_percent ?? 0);
+  const flat = Number(hotel.early_checkout_withhold_flat ?? 0);
+  const withheld =
+    grossRefund > 0
+      ? Math.min(grossRefund, round2(Math.max((grossRefund * percent) / 100, flat)))
+      : 0;
+  return {
+    early: unusedNights > 0,
+    unusedNights,
+    unusedValue,
+    adjustedTotal,
+    outstanding,
+    grossRefund,
+    withheld,
+    netRefund: round2(grossRefund - withheld),
+    withholdPercent: percent,
+    withholdFlat: flat,
+  };
+}
+
+/** Read-only preview so staff see the refund maths before they commit. */
+export const previewCheckOut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => checkInOutSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, status, check_in, check_out, room_rate, total, amount_paid")
+      .eq("id", data.bookingId)
+      .single();
+    if (!booking) throw new Error("Booking not found");
+    await assertHotelAccess(supabase, booking.hotel_id);
+
+    const { data: hotel } = await supabase
+      .from("hotels")
+      .select("currency, early_checkout_withhold_percent, early_checkout_withhold_flat")
+      .eq("id", booking.hotel_id)
+      .single();
+    if (!hotel) throw new Error("Hotel not found");
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    return {
+      ...checkOutMath(booking, hotel, todayIso),
+      currency: hotel.currency,
+      status: booking.status,
+    };
+  });
+
+const checkOutSchema = z.object({
+  bookingId: z.string().uuid(),
+  refundMethod: z.enum(["none", "cash", "mobile_money"]).default("none"),
+  sessionId: z.string().uuid().optional(),
+});
+
+export const checkOutBooking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => checkOutSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: booking } = await supabase
       .from("bookings")
-      .select("id, hotel_id, status, room_id, total, amount_paid")
+      .select(
+        "id, hotel_id, status, room_id, guest_id, reference, check_in, check_out, room_rate, total, amount_paid, services_total",
+      )
       .eq("id", data.bookingId)
       .single();
     if (!booking) throw new Error("Booking not found");
     await assertHotelAccess(supabase, booking.hotel_id);
+    if (booking.status === "checked_out")
+      throw new Error("This guest has already been checked out");
     if (booking.status !== "checked_in")
       throw new Error("Only checked-in bookings can be checked out");
 
-    const outstanding = round2(Number(booking.total) - Number(booking.amount_paid));
-    if (outstanding > 0.009)
+    const { data: hotel } = await supabase
+      .from("hotels")
+      .select("currency, early_checkout_withhold_percent, early_checkout_withhold_flat")
+      .eq("id", booking.hotel_id)
+      .single();
+    if (!hotel) throw new Error("Hotel not found");
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const math = checkOutMath(booking, hotel, todayIso);
+
+    if (math.outstanding > 0.009)
       throw new Error(
-        `Outstanding balance must be paid before check-out: ${outstanding.toFixed(2)}`,
+        `Outstanding balance must be paid before check-out: ${math.outstanding.toFixed(2)}`,
+      );
+    if (math.netRefund > 0.009 && data.refundMethod === "none")
+      throw new Error(
+        `This is an early check-out with ${math.netRefund.toFixed(2)} to refund. Choose how to pay the guest back.`,
       );
 
-    await supabase
-      .from("bookings")
-      .update({ status: "checked_out", checked_out_at: new Date().toISOString() })
-      .eq("id", data.bookingId);
+    // Close the stay first, so a second click cannot repeat the refund.
+    await transitionStatus(supabase, data.bookingId, "checked_in", "checked_out", {
+      checked_out_at: new Date().toISOString(),
+    });
+
+    let refundedAmount = 0;
+    let refundNote = "";
+
+    if (math.early) {
+      // Drop the nights the guest never used, then charge the fee the hotel keeps.
+      let newTotal = math.adjustedTotal;
+
+      if (math.withheld > 0.009) {
+        await supabase.from("folio_items").insert({
+          hotel_id: booking.hotel_id,
+          booking_id: booking.id,
+          category: "extra",
+          description: "Early departure fee",
+          quantity: 1,
+          unit_price: math.withheld,
+          amount: math.withheld,
+          created_by: userId,
+        });
+        newTotal = round2(newTotal + math.withheld);
+      }
+
+      if (math.netRefund > 0.009) {
+        const result = await payRefund({
+          supabase,
+          supabaseAdmin,
+          booking,
+          amount: math.netRefund,
+          method: data.refundMethod === "mobile_money" ? "mobile_money" : "cash",
+          sessionId: data.sessionId ?? null,
+          userId,
+          reason: `Early check-out refund (${math.unusedNights} unused night${math.unusedNights === 1 ? "" : "s"})`,
+        });
+        refundedAmount = result.amount;
+        refundNote = result.note;
+      }
+
+      await supabase
+        .from("bookings")
+        .update({
+          total: newTotal,
+          amount_paid: round2(Number(booking.amount_paid) - refundedAmount),
+          refunded_amount: refundedAmount,
+          withheld_amount: math.withheld,
+          early_checkout: true,
+        })
+        .eq("id", booking.id);
+    }
 
     if (booking.room_id) {
       await supabase.from("rooms").update({ status: "dirty" }).eq("id", booking.room_id);
@@ -405,10 +595,165 @@ export const checkOutBooking = createServerFn({ method: "POST" })
       action: "booking.check_out",
       resource: "booking",
       resource_id: booking.id,
+      new_value: {
+        early: math.early,
+        unused_nights: math.unusedNights,
+        refunded: refundedAmount,
+        withheld: math.withheld,
+        method: data.refundMethod,
+      },
     });
 
-    return { ok: true };
+    return {
+      ok: true,
+      early: math.early,
+      refunded: refundedAmount,
+      withheld: math.withheld,
+      note: refundNote,
+    };
   });
+
+/**
+ * Pays money back to a guest. Cash is handed over at the front desk and logged
+ * against the drawer; Mobile Money is sent back through Paystack.
+ */
+async function payRefund(args: {
+  supabase: any;
+  supabaseAdmin: any;
+  booking: { id: string; hotel_id: string; guest_id: string | null; reference: string };
+  amount: number;
+  method: "cash" | "mobile_money";
+  sessionId: string | null;
+  userId: string;
+  reason: string;
+}) {
+  const { supabase, supabaseAdmin, booking, amount, method, sessionId, userId, reason } = args;
+  let provider = "manual";
+  let providerReference: string | null = null;
+  let note = "Cash handed to the guest at the front desk.";
+
+  if (method === "mobile_money") {
+    const secret = (process.env["PAYSTACK_SECRET_KEY"] as string | undefined) ?? null;
+    const { data: source } = await supabase
+      .from("payments")
+      .select("id, provider_reference, amount")
+      .eq("booking_id", booking.id)
+      .eq("provider", "paystack")
+      .eq("status", "successful")
+      .eq("kind", "charge")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!secret || !source?.provider_reference)
+      throw new Error(
+        "Mobile Money refunds are not available for this booking — refund cash at the front desk instead.",
+      );
+
+    const response = await fetch("https://api.paystack.co/refund", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transaction: source.provider_reference,
+        amount: Math.round(amount * 100),
+        merchant_note: reason,
+      }),
+    });
+    if (!response.ok)
+      throw new Error(
+        "Mobile Money refund was declined by the provider — refund cash at the front desk instead.",
+      );
+    provider = "paystack";
+    providerReference = source.provider_reference as string;
+    note = "Mobile Money refund sent; it can take a few minutes to arrive.";
+  }
+
+  const reference = generateRef("REF");
+  const { error } = await supabase.from("payments").insert({
+    hotel_id: booking.hotel_id,
+    booking_id: booking.id,
+    guest_id: booking.guest_id,
+    amount: -amount,
+    currency: "GHS",
+    method,
+    provider,
+    provider_reference: providerReference,
+    status: "refunded",
+    kind: "refund",
+    reason,
+    reference,
+    receipt_number: generateRef("RRC"),
+    cash_session_id: method === "cash" ? sessionId : null,
+    metadata: { refund: true, note: reason },
+    received_by: userId,
+    paid_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
+
+  await supabaseAdmin.from("audit_logs").insert({
+    hotel_id: booking.hotel_id,
+    user_id: userId,
+    action: "payment.refunded",
+    resource: "booking",
+    resource_id: booking.id,
+    new_value: { amount, method, reason },
+  });
+
+  return { amount, note };
+}
+
+const manualRefundSchema = z.object({
+  bookingId: z.string().uuid(),
+  amount: z.number().positive().max(1_000_000),
+  method: z.enum(["cash", "mobile_money"]).default("cash"),
+  reason: z.string().min(3).max(300),
+  sessionId: z.string().uuid().optional(),
+});
+
+/** Refund a guest outside of check-out, e.g. a service they never received. */
+export const refundBooking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => manualRefundSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("id, hotel_id, guest_id, reference, total, amount_paid, refunded_amount")
+      .eq("id", data.bookingId)
+      .single();
+    if (!booking) throw new Error("Booking not found");
+    await assertHotelAccess(supabase, booking.hotel_id);
+
+    const amount = round2(data.amount);
+    if (amount > Number(booking.amount_paid) + 0.009)
+      throw new Error(
+        `You cannot refund more than the guest has paid (${Number(booking.amount_paid).toFixed(2)})`,
+      );
+
+    const result = await payRefund({
+      supabase,
+      supabaseAdmin,
+      booking,
+      amount,
+      method: data.method,
+      sessionId: data.sessionId ?? null,
+      userId,
+      reason: data.reason,
+    });
+
+    await supabase
+      .from("bookings")
+      .update({
+        amount_paid: round2(Number(booking.amount_paid) - amount),
+        refunded_amount: round2(Number(booking.refunded_amount ?? 0) + amount),
+      })
+      .eq("id", booking.id);
+
+    return { ok: true, amount: result.amount, note: result.note };
+  });
+
 
 const folioChargeItemSchema = z.object({
   description: z.string().min(2).max(200),
