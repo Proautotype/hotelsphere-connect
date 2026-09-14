@@ -302,3 +302,53 @@ export const updateHotelSettings = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+const youtubeUrl = z
+  .string()
+  .max(300)
+  .regex(
+    /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[\w-]{6,}/i,
+    "Use a YouTube link, e.g. https://www.youtube.com/watch?v=…",
+  );
+
+const hotelMediaSchema = z.object({
+  hotelId: z.string().uuid(),
+  photos: z.array(z.string().min(3).max(400)).max(30).optional(),
+  videos: z.array(youtubeUrl).max(10).optional(),
+  logoUrl: z.string().max(400).nullable().optional(),
+  coverUrl: z.string().max(400).nullable().optional(),
+});
+
+/** Save the photo list (storage paths), YouTube links, logo and cover for a hotel. */
+export const updateHotelMedia = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => hotelMediaSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertHotelAccess(supabase, data.hotelId);
+
+    const update: Record<string, unknown> = {};
+    if (data.photos) update["photos"] = data.photos;
+    if (data.videos) update["videos"] = data.videos;
+    if (data.logoUrl !== undefined) update["logo_url"] = data.logoUrl;
+    if (data.coverUrl !== undefined) update["cover_url"] = data.coverUrl;
+    if (Object.keys(update).length === 0) return { ok: true };
+
+    const { error } = await supabase
+      .from("hotels")
+      .update(update as never)
+      .eq("id", data.hotelId);
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: data.hotelId,
+      user_id: userId,
+      action: "hotel.media_updated",
+      resource: "hotel",
+      resource_id: data.hotelId,
+      new_value: update as Record<string, never>,
+    });
+
+    return { ok: true };
+  });
