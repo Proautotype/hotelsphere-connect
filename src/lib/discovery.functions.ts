@@ -118,7 +118,7 @@ export const getPublicHotel = createServerFn({ method: "GET" })
     const { data: hotel, error } = await supabaseAdmin
       .from("hotels")
       .select(
-        `${HOTEL_COLUMNS}, phone, email, website, check_in_time, check_out_time, tax_percent, service_charge_percent, cancellation_policy, show_availability`,
+        `${HOTEL_COLUMNS}, phone, email, website, check_in_time, check_out_time, tax_percent, service_charge_percent, cancellation_policy, show_availability, photos, videos`,
       )
       .eq("slug", data.slug)
       .eq("status", "active")
