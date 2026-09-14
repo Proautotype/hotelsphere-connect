@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { HotelMediaManager } from "@/components/shared/HotelMediaManager";
 import { supabase } from "@/integrations/supabase/client";
 import { updateHotelSettings } from "@/lib/hotels.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -51,6 +52,10 @@ interface HotelRow {
   show_prices: boolean;
   show_availability: boolean;
   status: string;
+  photos: string[] | null;
+  videos: string[] | null;
+  early_checkout_withhold_percent: number;
+  early_checkout_withhold_flat: number;
 }
 
 async function fetchHotel(hotelId: string | null) {
@@ -99,6 +104,8 @@ function SettingsPage() {
           acceptOnlineBookings: form.accept_online_bookings,
           showPrices: form.show_prices,
           showAvailability: form.show_availability,
+          earlyCheckoutWithholdPercent: Number(form.early_checkout_withhold_percent ?? 0),
+          earlyCheckoutWithholdFlat: Number(form.early_checkout_withhold_flat ?? 0),
         },
       });
       toast.success("Settings saved");
@@ -181,6 +188,62 @@ function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="space-y-4 p-6">
+              <h3 className="kinetic-label text-xs text-foreground">Early departure</h3>
+              <p className="text-sm text-muted-foreground">
+                When a guest leaves before their last night, the unused nights are refunded. You
+                keep whichever of these two is higher.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="withholdPercent">Keep % of the refund</Label>
+                  <Input
+                    id="withholdPercent"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.01"
+                    value={form.early_checkout_withhold_percent ?? 0}
+                    disabled={!allowed}
+                    onChange={(e) =>
+                      set("early_checkout_withhold_percent", parseFloat(e.target.value || "0"))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="withholdFlat">Minimum fee kept ({form.currency})</Label>
+                  <Input
+                    id="withholdFlat"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.early_checkout_withhold_flat ?? 0}
+                    disabled={!allowed}
+                    onChange={(e) =>
+                      set("early_checkout_withhold_flat", parseFloat(e.target.value || "0"))
+                    }
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set both to 0 to refund unused nights in full.
+              </p>
+            </CardContent>
+          </Card>
+
+          <HotelMediaManager
+            hotelId={form.id}
+            photos={form.photos ?? []}
+            videos={form.videos ?? []}
+            allowed={allowed}
+            onSaved={async () => {
+              await refetch();
+            }}
+          />
+
+
 
           <Card>
             <CardContent className="space-y-4 p-6">

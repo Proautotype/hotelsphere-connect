@@ -4,6 +4,7 @@ import { useState } from "react";
 import { HotelShell } from "@/components/discovery/HotelShell";
 import { getPublicHotel, createPublicBooking, startPublicPayment } from "@/lib/discovery.functions";
 import { money, titleCase, today } from "@/lib/format";
+import { youtubeEmbedUrl } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MapPin, Phone, Mail, Clock, Users, BedDouble } from "lucide-react";
@@ -42,6 +43,8 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
   const hotel = data?.hotel ?? initial.hotel;
   const roomTypes = data?.roomTypes ?? initial.roomTypes;
   const selected = roomTypes.find((r) => r.id === roomTypeId) ?? null;
+  const photoUrls = data?.photoUrls ?? initial.photoUrls ?? [];
+  const videos = ((hotel as unknown as { videos?: string[] }).videos ?? []).filter(Boolean);
 
   const submit = async () => {
     if (!selected) {
@@ -112,6 +115,47 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
           )}
         </div>
       </div>
+
+      {(photoUrls.length > 0 || videos.length > 0) && (
+        <section className="mt-8">
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">Photos &amp; videos</h2>
+          {photoUrls.length > 0 && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {photoUrls.map((url, i) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt={`${hotel.name} photo ${i + 1}`}
+                  loading="lazy"
+                  className="ink h-48 w-full object-cover"
+                />
+              ))}
+            </div>
+          )}
+          {videos.length > 0 && (
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              {videos.map((video) => {
+                const embed = youtubeEmbedUrl(video);
+                if (!embed) return null;
+                return (
+                  <div key={video} className="ink aspect-video overflow-hidden">
+                    <iframe
+                      src={embed}
+                      title={`${hotel.name} video`}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="size-full"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+
 
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
         <section className="lg:col-span-2">
