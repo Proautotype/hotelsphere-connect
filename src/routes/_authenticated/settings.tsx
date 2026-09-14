@@ -103,6 +103,8 @@ function SettingsPage() {
           acceptOnlineBookings: form.accept_online_bookings,
           showPrices: form.show_prices,
           showAvailability: form.show_availability,
+          earlyCheckoutWithholdPercent: Number(form.early_checkout_withhold_percent ?? 0),
+          earlyCheckoutWithholdFlat: Number(form.early_checkout_withhold_flat ?? 0),
         },
       });
       toast.success("Settings saved");
