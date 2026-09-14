@@ -51,6 +51,10 @@ interface HotelRow {
   show_prices: boolean;
   show_availability: boolean;
   status: string;
+  photos: string[] | null;
+  videos: string[] | null;
+  early_checkout_withhold_percent: number;
+  early_checkout_withhold_flat: number;
 }
 
 async function fetchHotel(hotelId: string | null) {
