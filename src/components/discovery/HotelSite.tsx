@@ -4,6 +4,7 @@ import { useState } from "react";
 import { HotelShell } from "@/components/discovery/HotelShell";
 import { getPublicHotel, createPublicBooking, startPublicPayment } from "@/lib/discovery.functions";
 import { money, titleCase, today } from "@/lib/format";
+import { youtubeEmbedUrl } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MapPin, Phone, Mail, Clock, Users, BedDouble } from "lucide-react";
