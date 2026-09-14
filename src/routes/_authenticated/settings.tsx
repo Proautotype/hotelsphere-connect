@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { HotelMediaManager } from "@/components/shared/HotelMediaManager";
 import { supabase } from "@/integrations/supabase/client";
 import { updateHotelSettings } from "@/lib/hotels.functions";
 import { useServerFn } from "@tanstack/react-start";
