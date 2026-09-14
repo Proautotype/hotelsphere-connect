@@ -274,6 +274,8 @@ export const updateHotelSettings = createServerFn({ method: "POST" })
       acceptOnlineBookings: "accept_online_bookings",
       showPrices: "show_prices",
       showAvailability: "show_availability",
+      earlyCheckoutWithholdPercent: "early_checkout_withhold_percent",
+      earlyCheckoutWithholdFlat: "early_checkout_withhold_flat",
     };
 
     const update: Record<string, unknown> = {};
