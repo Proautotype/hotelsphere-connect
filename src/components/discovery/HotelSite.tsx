@@ -42,6 +42,8 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
   const hotel = data?.hotel ?? initial.hotel;
   const roomTypes = data?.roomTypes ?? initial.roomTypes;
   const selected = roomTypes.find((r) => r.id === roomTypeId) ?? null;
+  const photoUrls = data?.photoUrls ?? initial.photoUrls ?? [];
+  const videos = ((hotel as unknown as { videos?: string[] }).videos ?? []).filter(Boolean);
 
   const submit = async () => {
     if (!selected) {
