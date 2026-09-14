@@ -113,6 +113,47 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
         </div>
       </div>
 
+      {(photoUrls.length > 0 || videos.length > 0) && (
+        <section className="mt-8">
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">Photos &amp; videos</h2>
+          {photoUrls.length > 0 && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {photoUrls.map((url, i) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt={`${hotel.name} photo ${i + 1}`}
+                  loading="lazy"
+                  className="ink h-48 w-full object-cover"
+                />
+              ))}
+            </div>
+          )}
+          {videos.length > 0 && (
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              {videos.map((video) => {
+                const embed = youtubeEmbedUrl(video);
+                if (!embed) return null;
+                return (
+                  <div key={video} className="ink aspect-video overflow-hidden">
+                    <iframe
+                      src={embed}
+                      title={`${hotel.name} video`}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="size-full"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+
+
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
         <section className="lg:col-span-2">
           <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">Rooms &amp; rates</h2>
