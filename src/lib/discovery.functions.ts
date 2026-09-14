@@ -179,7 +179,19 @@ export const getPublicHotel = createServerFn({ method: "GET" })
       };
     });
 
-    return { hotel, roomTypes, services: services ?? [], nights };
+    // Hotel photos live in private storage, so hand the page ready-to-use links.
+    const photoPaths = ((hotel as unknown as { photos?: string[] }).photos ?? []).filter(Boolean);
+    let photoUrls: string[] = [];
+    if (photoPaths.length > 0) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("hotel-media")
+        .createSignedUrls(photoPaths, 60 * 60 * 24 * 7);
+      photoUrls = (signed ?? [])
+        .map((s) => s.signedUrl)
+        .filter((url): url is string => Boolean(url));
+    }
+
+    return { hotel, roomTypes, services: services ?? [], nights, photoUrls };
   });
 
 const bookingSchema = z.object({
