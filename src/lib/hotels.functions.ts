@@ -243,6 +243,8 @@ const hotelSettingsSchema = z.object({
   acceptOnlineBookings: z.boolean().optional(),
   showPrices: z.boolean().optional(),
   showAvailability: z.boolean().optional(),
+  earlyCheckoutWithholdPercent: z.number().min(0).max(100).optional(),
+  earlyCheckoutWithholdFlat: z.number().min(0).max(1_000_000).optional(),
 });
 
 export const updateHotelSettings = createServerFn({ method: "POST" })
