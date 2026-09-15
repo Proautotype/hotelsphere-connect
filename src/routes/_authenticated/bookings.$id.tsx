@@ -157,6 +157,10 @@ function BookingDetail({ id }: { id: string }) {
     { id: "charge-1", category: "food", description: "", quantity: 1, unitPrice: 0 },
   ]);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const preview_ = useServerFn(previewCheckOut);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [refundMethod, setRefundMethod] = useState<RefundMethod>("cash");
+  const [preview, setPreview] = useState<CheckOutPreview | null>(null);
 
   const balance = Number(booking.total) - Number(booking.amount_paid);
   const closed = ["checked_out", "cancelled"].includes(booking.status);
