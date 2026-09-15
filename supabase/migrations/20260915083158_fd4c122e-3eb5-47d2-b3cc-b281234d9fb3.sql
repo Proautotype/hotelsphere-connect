@@ -1,0 +1,1 @@
+ALTER TABLE public.hotels ADD COLUMN IF NOT EXISTS tour_video_path text NOT NULL DEFAULT '';

@@ -726,6 +726,7 @@ export type Database = {
           status: Database["public"]["Enums"]["hotel_status"]
           tax_percent: number
           timezone: string
+          tour_video_path: string
           updated_at: string
           videos: string[]
           website: string | null
@@ -771,6 +772,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["hotel_status"]
           tax_percent?: number
           timezone?: string
+          tour_video_path?: string
           updated_at?: string
           videos?: string[]
           website?: string | null
@@ -816,6 +818,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["hotel_status"]
           tax_percent?: number
           timezone?: string
+          tour_video_path?: string
           updated_at?: string
           videos?: string[]
           website?: string | null
