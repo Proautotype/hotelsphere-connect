@@ -261,6 +261,28 @@ function BookingDetail({ id }: { id: string }) {
     }
   };
 
+  const openCheckOut = async () => {
+    setBusy(true);
+    try {
+      const result = await preview_(({ data: { bookingId: booking.id } }));
+      setPreview(result);
+      setRefundMethod(result.netRefund > 0.009 ? "cash" : "none");
+      setCheckoutOpen(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not prepare check-out");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmCheckOut = async () => {
+    await run("Guest checked out", async () => {
+      await checkOut({ data: { bookingId: booking.id, refundMethod } });
+      setCheckoutOpen(false);
+      setPreview(null);
+    });
+  };
+
   return (
     <DashboardShell title={booking.reference}>
       <PageHeader
