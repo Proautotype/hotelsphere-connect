@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { confirmBooking, checkInBooking, checkOutBooking } from "@/lib/bookings.functions";
+import { confirmBooking, checkInBooking } from "@/lib/bookings.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { DoorOpen, Search } from "lucide-react";
+import { ArrowRight, DoorOpen, Search } from "lucide-react";
 import { money, shortDate, today } from "@/lib/format";
 import { useState } from "react";
 
@@ -57,7 +57,7 @@ function ReceptionPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
-  const checkOut = useServerFn(checkOutBooking);
+  
 
   const filtered = (
     bookings as Array<{
@@ -109,19 +109,6 @@ function ReceptionPage() {
     }
   };
 
-  const runCheckOut = async (id: string) => {
-    if (busyId) return;
-    setBusyId(id);
-    try {
-      await checkOut({ data: { bookingId: id } });
-      toast.success("Guest checked out");
-      await refetch();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Check-out failed");
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   return (
     <DashboardShell title="Reception">
@@ -166,11 +153,27 @@ function ReceptionPage() {
                 <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-display font-semibold text-foreground">{b.reference}</p>
+                      <Link
+                        to="/bookings/$id"
+                        params={{ id: b.id }}
+                        className="font-display font-semibold text-foreground underline decoration-2 underline-offset-4"
+                      >
+                        {b.reference}
+                      </Link>
                       <StatusBadge status={b.status} />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {guest?.full_name} · Room {room?.room_number}
+                      {guest?.full_name}
+                      {room?.room_number ? (
+                        <>
+                          {" · "}
+                          <Link to="/rooms" className="underline underline-offset-2">
+                            Room {room.room_number}
+                          </Link>
+                        </>
+                      ) : (
+                        " · No room assigned"
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {shortDate(b.check_in)} → {shortDate(b.check_out)}
@@ -185,7 +188,7 @@ function ReceptionPage() {
                         Balance {money(balance, activeHotel?.currency)}
                       </p>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
                       {b.status === "pending" && (
                         <Button
                           size="sm"
@@ -207,15 +210,17 @@ function ReceptionPage() {
                         </Button>
                       )}
                       {b.status === "checked_in" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId !== null}
-                          onClick={() => runCheckOut(b.id)}
-                        >
-                          {busyId === b.id ? "Working…" : "Check out"}
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/bookings/$id" params={{ id: b.id }}>
+                            Check out
+                          </Link>
                         </Button>
                       )}
+                      <Button size="sm" variant="ghost" asChild>
+                        <Link to="/bookings/$id" params={{ id: b.id }}>
+                          Open <ArrowRight className="ml-1 size-4" />
+                        </Link>
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

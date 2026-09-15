@@ -14,9 +14,18 @@ import {
   confirmBooking,
   checkInBooking,
   checkOutBooking,
+  previewCheckOut,
   cancelBooking,
   addFolioCharge,
 } from "@/lib/bookings.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { recordCashPayment, initializePaystackPayment } from "@/lib/payments.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +33,18 @@ import { toast } from "sonner";
 import { money, shortDate, dateTime, today, titleCase } from "@/lib/format";
 import { FOLIO_CATEGORIES } from "@/lib/permissions";
 import { Printer, Plus, Smartphone, Wallet } from "lucide-react";
+
+type RefundMethod = "none" | "cash" | "mobile_money";
+interface CheckOutPreview {
+  early: boolean;
+  unusedNights: number;
+  unusedValue: number;
+  adjustedTotal: number;
+  outstanding: number;
+  grossRefund: number;
+  withheld: number;
+  netRefund: number;
+}
 
 export const Route = createFileRoute("/_authenticated/bookings/$id")({
   head: () => ({
@@ -157,6 +178,10 @@ function BookingDetail({ id }: { id: string }) {
     { id: "charge-1", category: "food", description: "", quantity: 1, unitPrice: 0 },
   ]);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const preview_ = useServerFn(previewCheckOut);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [refundMethod, setRefundMethod] = useState<RefundMethod>("cash");
+  const [preview, setPreview] = useState<CheckOutPreview | null>(null);
 
   const balance = Number(booking.total) - Number(booking.amount_paid);
   const closed = ["checked_out", "cancelled"].includes(booking.status);
@@ -261,6 +286,28 @@ function BookingDetail({ id }: { id: string }) {
     }
   };
 
+  const openCheckOut = async () => {
+    setBusy(true);
+    try {
+      const result = await preview_(({ data: { bookingId: booking.id } }));
+      setPreview(result);
+      setRefundMethod(result.netRefund > 0.009 ? "cash" : "none");
+      setCheckoutOpen(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not prepare check-out");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmCheckOut = async () => {
+    await run("Guest checked out", async () => {
+      await checkOut({ data: { bookingId: booking.id, refundMethod } });
+      setCheckoutOpen(false);
+      setPreview(null);
+    });
+  };
+
   return (
     <DashboardShell title={booking.reference}>
       <PageHeader
@@ -292,13 +339,8 @@ function BookingDetail({ id }: { id: string }) {
               </Button>
             ) : null}
             {booking.status === "checked_in" ? (
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  run("Guest checked out", () => checkOut({ data: { bookingId: booking.id } }))
-                }
-              >
-                Check out
+              <Button disabled={busy} onClick={() => void openCheckOut()}>
+                {busy ? "Working…" : "Check out"}
               </Button>
             ) : null}
             {!closed && booking.status !== "checked_in" ? (
@@ -610,6 +652,70 @@ function BookingDetail({ id }: { id: string }) {
           ) : null}
         </div>
       </div>
+
+      <Dialog open={checkoutOpen} onOpenChange={(open) => !busy && setCheckoutOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Check out {booking.guests?.full_name ?? "guest"}</DialogTitle>
+            <DialogDescription>
+              {preview?.early
+                ? "This guest is leaving before their last night."
+                : "Confirm the guest is leaving and settle anything outstanding."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {preview ? (
+            <dl className="space-y-1 text-sm">
+              <Row label="Nights not used" value={String(preview.unusedNights)} />
+              <Row label="Value of unused nights" value={money(preview.unusedValue, currency)} />
+              <Row label="Revised total" value={money(preview.adjustedTotal, currency)} />
+              <Row label="Still to pay" value={money(preview.outstanding, currency)} />
+              <Row label="Refund due" value={money(preview.grossRefund, currency)} />
+              <Row label="Early departure fee kept" value={money(preview.withheld, currency)} />
+              <div className="flex justify-between border-t-[2px] border-ink pt-1 font-semibold">
+                <dt>Refund to guest</dt>
+                <dd>{money(preview.netRefund, currency)}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-muted-foreground">Checking the stay…</p>
+          )}
+
+          {preview && preview.outstanding > 0.009 && (
+            <p className="text-sm font-semibold text-destructive">
+              Take the outstanding {money(preview.outstanding, currency)} before checking out.
+            </p>
+          )}
+
+          {preview && preview.netRefund > 0.009 && (
+            <div>
+              <Label htmlFor="refundMethod">How is the refund paid?</Label>
+              <select
+                id="refundMethod"
+                className="mt-1 w-full border-[2px] border-ink bg-card px-3 py-2 text-sm"
+                value={refundMethod}
+                onChange={(e) => setRefundMethod(e.target.value as RefundMethod)}
+              >
+                <option value="cash">Cash at the front desk</option>
+                <option value="mobile_money">Back to Mobile Money</option>
+                <option value="none">Don't refund yet</option>
+              </select>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="ghost" disabled={busy} onClick={() => setCheckoutOpen(false)}>
+              Not yet
+            </Button>
+            <Button
+              disabled={busy || !preview || preview.outstanding > 0.009}
+              onClick={() => void confirmCheckOut()}
+            >
+              {busy ? "Working…" : "Check out guest"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardShell>
   );
 }
