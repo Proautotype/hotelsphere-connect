@@ -57,7 +57,7 @@ function ReceptionPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
-  const checkOut = useServerFn(checkOutBooking);
+  
 
   const filtered = (
     bookings as Array<{
