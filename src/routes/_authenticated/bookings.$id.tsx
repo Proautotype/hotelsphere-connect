@@ -14,9 +14,18 @@ import {
   confirmBooking,
   checkInBooking,
   checkOutBooking,
+  previewCheckOut,
   cancelBooking,
   addFolioCharge,
 } from "@/lib/bookings.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { recordCashPayment, initializePaystackPayment } from "@/lib/payments.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +33,18 @@ import { toast } from "sonner";
 import { money, shortDate, dateTime, today, titleCase } from "@/lib/format";
 import { FOLIO_CATEGORIES } from "@/lib/permissions";
 import { Printer, Plus, Smartphone, Wallet } from "lucide-react";
+
+type RefundMethod = "none" | "cash" | "mobile_money";
+interface CheckOutPreview {
+  early: boolean;
+  unusedNights: number;
+  unusedValue: number;
+  adjustedTotal: number;
+  outstanding: number;
+  grossRefund: number;
+  withheld: number;
+  netRefund: number;
+}
 
 export const Route = createFileRoute("/_authenticated/bookings/$id")({
   head: () => ({
