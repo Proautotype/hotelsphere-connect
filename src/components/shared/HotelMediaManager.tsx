@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -9,21 +9,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateHotelMedia } from "@/lib/hotels.functions";
 import {
   removeHotelPhoto,
+  removeHotelTourVideo,
   signHotelMedia,
   uploadHotelPhoto,
+  uploadHotelTourVideo,
   youtubeEmbedUrl,
 } from "@/lib/media";
-import { ImagePlus, Trash2, Youtube } from "lucide-react";
+import { ImagePlus, Trash2, Video, Youtube } from "lucide-react";
 
 interface Props {
   hotelId: string;
   photos: string[];
   videos: string[];
+  tourVideoPath: string;
   allowed: boolean;
   onSaved: () => Promise<unknown> | void;
 }
 
-export function HotelMediaManager({ hotelId, photos, videos, allowed, onSaved }: Props) {
+export function HotelMediaManager({
+  hotelId,
+  photos,
+  videos,
+  tourVideoPath,
+  allowed,
+  onSaved,
+}: Props) {
   const save = useServerFn(updateHotelMedia);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -34,6 +44,57 @@ export function HotelMediaManager({ hotelId, photos, videos, allowed, onSaved }:
     queryFn: () => signHotelMedia(photos),
     enabled: photos.length > 0,
   });
+
+  // Tour video (background clip on the hotel's public page).
+  const tourInput = useRef<HTMLInputElement | null>(null);
+  const [tourVideo, setTourVideo] = useState(tourVideoPath);
+
+  useEffect(() => {
+    setTourVideo(tourVideoPath);
+  }, [tourVideoPath]);
+
+  const { data: signedTour = [] } = useQuery({
+    queryKey: ["hotel", "tour-video", hotelId, tourVideo],
+    queryFn: () => signHotelMedia([tourVideo], 60 * 60 * 12),
+    enabled: Boolean(tourVideo),
+  });
+  const tourUrl = signedTour.find((s) => s.path === tourVideo)?.url ?? "";
+
+  const pickTourVideo = () => tourInput.current?.click();
+
+  const onTourVideo = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const path = await uploadHotelTourVideo(hotelId, file);
+      setTourVideo(path);
+      await save({ data: { hotelId, tourVideoPath: path } });
+      toast.success("Tour video added — it now plays in the background of your hotel page");
+      await onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setBusy(false);
+      if (tourInput.current) tourInput.current.value = "";
+    }
+  };
+
+  const removeTourVideo = async () => {
+    if (!tourVideo) return;
+    setBusy(true);
+    try {
+      await save({ data: { hotelId, tourVideoPath: "" } });
+      await removeHotelTourVideo(tourVideo);
+      setTourVideo("");
+      toast.success("Tour video removed");
+      await onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove video");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const pickFiles = () => fileInput.current?.click();
 
@@ -166,6 +227,71 @@ export function HotelMediaManager({ hotelId, photos, videos, allowed, onSaved }:
           </div>
         )}
 
+        <div className="border-[2px] border-ink p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-bold uppercase tracking-widest">Tour video</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Plays silently in the background of your hotel page. MP4 or WebM, up to 50&nbsp;MB.
+              </p>
+            </div>
+            {allowed ? (
+              tourVideo ? (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={pickTourVideo}
+                  >
+                    Replace
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    aria-label="Remove tour video"
+                    onClick={() => void removeTourVideo()}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={pickTourVideo}
+                >
+                  <Video className="mr-1 size-4" /> {busy ? "Uploading…" : "Import tour video"}
+                </Button>
+              )
+            ) : null}
+          </div>
+
+          {tourUrl && (
+            <video
+              key={tourVideo}
+              src={tourUrl}
+              muted
+              controls
+              playsInline
+              className="mt-3 aspect-video w-full border-[2px] border-ink bg-ink"
+            />
+          )}
+
+          <input
+            ref={tourInput}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+            hidden
+            onChange={(e) => void onTourVideo(e.target.files)}
+          />
+        </div>
+
         {allowed ? (
           <>
             <input
@@ -201,9 +327,7 @@ export function HotelMediaManager({ hotelId, photos, videos, allowed, onSaved }:
             </div>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            You have read-only access to hotel media.
-          </p>
+          <p className="text-sm text-muted-foreground">You have read-only access to hotel media.</p>
         )}
       </CardContent>
     </Card>

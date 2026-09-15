@@ -28,9 +28,44 @@ export async function removeHotelPhoto(path: string) {
   await supabase.storage.from(HOTEL_MEDIA_BUCKET).remove([path]);
 }
 
+/** Accepted browser-friendly tour video formats. */
+const TOUR_VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"]);
+
+/** Client-side cap matches the storage bucket's object size limit. */
+export const MAX_TOUR_VIDEO_BYTES = 50 * 1024 * 1024;
+
+/** Upload one tour video for a hotel and return its stored path. */
+export async function uploadHotelTourVideo(hotelId: string, file: File) {
+  const type = (file.type || "").toLowerCase();
+  if (!TOUR_VIDEO_TYPES.has(type)) {
+    throw new Error("Please choose an MP4 or WebM tour video.");
+  }
+  if (file.size > MAX_TOUR_VIDEO_BYTES) {
+    throw new Error("Tour video must be 50MB or smaller.");
+  }
+  const ext =
+    (file.name.split(".").pop() ?? "mp4")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, 5) || "mp4";
+  const path = `${hotelId}/tour/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from(HOTEL_MEDIA_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || "video/mp4",
+  });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+export async function removeHotelTourVideo(path: string) {
+  await supabase.storage.from(HOTEL_MEDIA_BUCKET).remove([path]);
+}
+
 /** Accepts any common YouTube link shape and returns the embed URL. */
 export function youtubeEmbedUrl(url: string): string | null {
-  const match =
-    /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/i.exec(url);
+  const match = /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/i.exec(
+    url,
+  );
   return match?.[1] ? `https://www.youtube.com/embed/${match[1]}` : null;
 }

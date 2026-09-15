@@ -7,7 +7,11 @@ import { z } from "zod";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
-const ACTIVE_BOOKING_STATUSES: ("pending" | "confirmed" | "checked_in")[] = ["pending", "confirmed", "checked_in"];
+const ACTIVE_BOOKING_STATUSES: ("pending" | "confirmed" | "checked_in")[] = [
+  "pending",
+  "confirmed",
+  "checked_in",
+];
 
 export interface DiscoveryHotel {
   id: string;
@@ -62,7 +66,10 @@ export const listPublicHotels = createServerFn({ method: "GET" })
       .order("name", { ascending: true })
       .limit(60);
 
-    if (data.search) query = query.or(`name.ilike.%${data.search}%,city.ilike.%${data.search}%,description.ilike.%${data.search}%`);
+    if (data.search)
+      query = query.or(
+        `name.ilike.%${data.search}%,city.ilike.%${data.search}%,description.ilike.%${data.search}%`,
+      );
     if (data.city) query = query.eq("city", data.city);
     if (data.hotelType) query = query.eq("hotel_type", data.hotelType);
 
@@ -94,10 +101,16 @@ export const listPublicHotels = createServerFn({ method: "GET" })
       room_type_count: priceMap[h.id]?.count ?? 0,
     }));
 
-    const filtered = data.maxPrice ? rows.filter((r) => r.from_price !== null && r.from_price <= data.maxPrice!) : rows;
+    const filtered = data.maxPrice
+      ? rows.filter((r) => r.from_price !== null && r.from_price <= data.maxPrice!)
+      : rows;
 
-    const cities = Array.from(new Set(rows.map((r) => r.city).filter((c): c is string => Boolean(c)))).sort();
-    const types = Array.from(new Set(rows.map((r) => r.hotel_type).filter((t): t is string => Boolean(t)))).sort();
+    const cities = Array.from(
+      new Set(rows.map((r) => r.city).filter((c): c is string => Boolean(c))),
+    ).sort();
+    const types = Array.from(
+      new Set(rows.map((r) => r.hotel_type).filter((t): t is string => Boolean(t))),
+    ).sort();
 
     return { hotels: filtered, cities, types };
   });
@@ -107,8 +120,14 @@ export const getPublicHotel = createServerFn({ method: "GET" })
     z
       .object({
         slug: z.string().min(1).max(120),
-        checkIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-        checkOut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        checkIn: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        checkOut: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
       })
       .parse(data),
   )
@@ -118,7 +137,7 @@ export const getPublicHotel = createServerFn({ method: "GET" })
     const { data: hotel, error } = await supabaseAdmin
       .from("hotels")
       .select(
-        `${HOTEL_COLUMNS}, phone, email, website, check_in_time, check_out_time, tax_percent, service_charge_percent, cancellation_policy, show_availability, photos, videos`,
+        `${HOTEL_COLUMNS}, phone, email, website, check_in_time, check_out_time, tax_percent, service_charge_percent, cancellation_policy, show_availability, photos, videos, tour_video_path`,
       )
       .eq("slug", data.slug)
       .eq("status", "active")
@@ -130,12 +149,19 @@ export const getPublicHotel = createServerFn({ method: "GET" })
     const [{ data: types }, { data: rooms }, { data: services }] = await Promise.all([
       supabaseAdmin
         .from("room_types")
-        .select("id, name, description, base_price, max_guests, bed_type, bed_count, amenities, images")
+        .select(
+          "id, name, description, base_price, max_guests, bed_type, bed_count, amenities, images",
+        )
         .eq("hotel_id", hotel.id)
         .eq("is_active", true)
         .order("base_price", { ascending: true }),
       supabaseAdmin.from("rooms").select("id, room_type_id, status").eq("hotel_id", hotel.id),
-      supabaseAdmin.from("services").select("id, name, price, category").eq("hotel_id", hotel.id).eq("is_active", true).limit(12),
+      supabaseAdmin
+        .from("services")
+        .select("id, name, price, category")
+        .eq("hotel_id", hotel.id)
+        .eq("is_active", true)
+        .limit(12),
     ]);
 
     const inventory: Record<string, number> = {};
@@ -175,7 +201,13 @@ export const getPublicHotel = createServerFn({ method: "GET" })
         base_price: Number(t.base_price),
         rooms_total: total,
         rooms_available: available,
-        quote: { nights, subtotal, tax, serviceCharge, total: round2(subtotal + tax + serviceCharge) },
+        quote: {
+          nights,
+          subtotal,
+          tax,
+          serviceCharge,
+          total: round2(subtotal + tax + serviceCharge),
+        },
       };
     });
 
@@ -191,7 +223,19 @@ export const getPublicHotel = createServerFn({ method: "GET" })
         .filter((url): url is string => Boolean(url));
     }
 
-    return { hotel, roomTypes, services: services ?? [], nights, photoUrls };
+    // The tour video is a background clip on the hotel's mini-website.
+    const tourPath = (
+      (hotel as unknown as { tour_video_path?: string }).tour_video_path ?? ""
+    ).trim();
+    let tourVideoUrl: string | null = null;
+    if (tourPath) {
+      const { data: signedTour } = await supabaseAdmin.storage
+        .from("hotel-media")
+        .createSignedUrls([tourPath], 60 * 60 * 24 * 7);
+      tourVideoUrl = signedTour?.[0]?.signedUrl ?? null;
+    }
+
+    return { hotel, roomTypes, services: services ?? [], nights, photoUrls, tourVideoUrl };
   });
 
 const bookingSchema = z.object({
@@ -215,19 +259,25 @@ export const createPublicBooking = createServerFn({ method: "POST" })
 
     const { data: hotel } = await supabaseAdmin
       .from("hotels")
-      .select("id, name, currency, tax_percent, service_charge_percent, accept_online_bookings, status, is_public_listed")
+      .select(
+        "id, name, currency, tax_percent, service_charge_percent, accept_online_bookings, status, is_public_listed",
+      )
       .eq("slug", data.slug)
       .maybeSingle();
-    if (!hotel || hotel.status !== "active" || !hotel.is_public_listed) throw new Error("Hotel is not available for booking");
-    if (!hotel.accept_online_bookings) throw new Error("This hotel is not accepting online bookings right now");
+    if (!hotel || hotel.status !== "active" || !hotel.is_public_listed)
+      throw new Error("Hotel is not available for booking");
+    if (!hotel.accept_online_bookings)
+      throw new Error("This hotel is not accepting online bookings right now");
 
     const { data: roomType } = await supabaseAdmin
       .from("room_types")
       .select("id, hotel_id, name, base_price, max_guests, is_active")
       .eq("id", data.roomTypeId)
       .maybeSingle();
-    if (!roomType || roomType.hotel_id !== hotel.id || !roomType.is_active) throw new Error("Room type unavailable");
-    if (data.guestsCount > roomType.max_guests) throw new Error(`This room takes up to ${roomType.max_guests} guests`);
+    if (!roomType || roomType.hotel_id !== hotel.id || !roomType.is_active)
+      throw new Error("Room type unavailable");
+    if (data.guestsCount > roomType.max_guests)
+      throw new Error(`This room takes up to ${roomType.max_guests} guests`);
 
     // Availability check (server-side, authoritative)
     const [{ data: rooms }, { data: overlapping }] = await Promise.all([
@@ -245,13 +295,17 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         .lt("check_in", data.checkOut)
         .gt("check_out", data.checkIn),
     ]);
-    const usableRooms = (rooms ?? []).filter((r) => r.status !== "out_of_service" && r.status !== "maintenance");
-    if (usableRooms.length - (overlapping?.length ?? 0) <= 0) throw new Error("No rooms of this type are free for those dates");
+    const usableRooms = (rooms ?? []).filter(
+      (r) => r.status !== "out_of_service" && r.status !== "maintenance",
+    );
+    if (usableRooms.length - (overlapping?.length ?? 0) <= 0)
+      throw new Error("No rooms of this type are free for those dates");
 
     // Pin the booking to a concrete room so the hotel's room board reflects it.
-    const takenRoomIds = new Set((overlapping ?? []).map((b) => b.room_id).filter(Boolean) as string[]);
+    const takenRoomIds = new Set(
+      (overlapping ?? []).map((b) => b.room_id).filter(Boolean) as string[],
+    );
     const assignedRoom = usableRooms.find((r) => !takenRoomIds.has(r.id)) ?? null;
-
 
     const nights = nightsBetween(data.checkIn, data.checkOut);
     const rate = Number(roomType.base_price);
@@ -271,18 +325,29 @@ export const createPublicBooking = createServerFn({ method: "POST" })
     if (!guestId) {
       const { data: guest, error: guestError } = await supabaseAdmin
         .from("guests")
-        .insert({ hotel_id: hotel.id, full_name: data.fullName, email: data.email, phone: data.phone })
+        .insert({
+          hotel_id: hotel.id,
+          full_name: data.fullName,
+          email: data.email,
+          phone: data.phone,
+        })
         .select("id")
         .single();
-      if (guestError || !guest) throw new Error(guestError?.message ?? "Could not save guest details");
+      if (guestError || !guest)
+        throw new Error(guestError?.message ?? "Could not save guest details");
       guestId = guest.id;
     } else {
-      await supabaseAdmin.from("guests").update({ full_name: data.fullName, phone: data.phone }).eq("id", guestId);
+      await supabaseAdmin
+        .from("guests")
+        .update({ full_name: data.fullName, phone: data.phone })
+        .eq("id", guestId);
     }
 
     // Lock in the commission rate that applies right now, so later rate
     // changes never rewrite history.
-    const { data: commissionPercent } = await supabaseAdmin.rpc("hotel_commission_percent", { _hotel_id: hotel.id });
+    const { data: commissionPercent } = await supabaseAdmin.rpc("hotel_commission_percent", {
+      _hotel_id: hotel.id,
+    });
     const commissionRate = Number(commissionPercent ?? 0);
     const commissionAmount = round2((total * commissionRate) / 100);
 
@@ -309,12 +374,15 @@ export const createPublicBooking = createServerFn({ method: "POST" })
       })
       .select("id, reference, total")
       .single();
-    if (bookingError || !booking) throw new Error(bookingError?.message ?? "Could not create booking");
+    if (bookingError || !booking)
+      throw new Error(bookingError?.message ?? "Could not create booking");
 
-    if (assignedRoom && (assignedRoom.status === "available" || assignedRoom.status === "inspected")) {
+    if (
+      assignedRoom &&
+      (assignedRoom.status === "available" || assignedRoom.status === "inspected")
+    ) {
       await supabaseAdmin.from("rooms").update({ status: "reserved" }).eq("id", assignedRoom.id);
     }
-
 
     await supabaseAdmin.from("folio_items").insert({
       hotel_id: hotel.id,
@@ -345,24 +413,35 @@ export const createPublicBooking = createServerFn({ method: "POST" })
   });
 
 export const startPublicPayment = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ reference: z.string().min(3).max(40), origin: z.string().url().max(300) }).parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({ reference: z.string().min(3).max(40), origin: z.string().url().max(300) })
+      .parse(data),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const secret = process.env["PAYSTACK_SECRET_KEY"];
 
     const { data: booking } = await supabaseAdmin
       .from("bookings")
-      .select("id, hotel_id, reference, total, amount_paid, status, guests(full_name, email, phone), hotels(name, currency)")
+      .select(
+        "id, hotel_id, reference, total, amount_paid, status, guests(full_name, email, phone), hotels(name, currency)",
+      )
       .eq("reference", data.reference)
       .maybeSingle();
     if (!booking) throw new Error("Booking not found");
     if (booking.status === "cancelled") throw new Error("This booking was cancelled");
 
     const outstanding = round2(Number(booking.total) - Number(booking.amount_paid));
-    if (outstanding <= 0) return { authorizationUrl: null, outstanding: 0, reason: "paid" as const };
+    if (outstanding <= 0)
+      return { authorizationUrl: null, outstanding: 0, reason: "paid" as const };
     if (!secret) return { authorizationUrl: null, outstanding, reason: "unconfigured" as const };
 
-    const guest = booking.guests as unknown as { full_name: string; email: string | null; phone: string | null } | null;
+    const guest = booking.guests as unknown as {
+      full_name: string;
+      email: string | null;
+      phone: string | null;
+    } | null;
     const hotel = booking.hotels as unknown as { name: string; currency: string } | null;
 
     const { data: payment, error } = await supabaseAdmin
@@ -381,7 +460,10 @@ export const startPublicPayment = createServerFn({ method: "POST" })
     if (error || !payment) throw new Error(error?.message ?? "Could not start payment");
 
     const providerRef = `WEB-${payment.id.replace(/-/g, "").slice(0, 10).toUpperCase()}`;
-    await supabaseAdmin.from("payments").update({ provider_reference: providerRef }).eq("id", payment.id);
+    await supabaseAdmin
+      .from("payments")
+      .update({ provider_reference: providerRef })
+      .eq("id", payment.id);
 
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -407,7 +489,10 @@ export const startPublicPayment = createServerFn({ method: "POST" })
       throw new Error("Payment could not be started. Please try again.");
     }
 
-    const result = (await response.json()) as { status: boolean; data?: { authorization_url?: string } };
+    const result = (await response.json()) as {
+      status: boolean;
+      data?: { authorization_url?: string };
+    };
     if (!result.status || !result.data?.authorization_url) {
       await supabaseAdmin.from("payments").update({ status: "failed" }).eq("id", payment.id);
       throw new Error("Payment could not be started. Please try again.");

@@ -1,13 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HotelShell } from "@/components/discovery/HotelShell";
 import { getPublicHotel, createPublicBooking, startPublicPayment } from "@/lib/discovery.functions";
 import { money, titleCase, today } from "@/lib/format";
 import { youtubeEmbedUrl } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { MapPin, Phone, Mail, Clock, Users, BedDouble } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Users, BedDouble, Pause, Play } from "lucide-react";
 
 export type HotelSiteData = NonNullable<Awaited<ReturnType<typeof getPublicHotel>>>;
 
@@ -44,7 +44,35 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
   const roomTypes = data?.roomTypes ?? initial.roomTypes;
   const selected = roomTypes.find((r) => r.id === roomTypeId) ?? null;
   const photoUrls = data?.photoUrls ?? initial.photoUrls ?? [];
+  const tourVideoUrl = data?.tourVideoUrl ?? initial.tourVideoUrl ?? null;
   const videos = ((hotel as unknown as { videos?: string[] }).videos ?? []).filter(Boolean);
+
+  // The tour video plays muted in the background of the hero; keep the media
+  // element around so the pause/play control can reach it.
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoPlaying, setVideoPlaying] = useState(true);
+
+  const renderMeta = (className: string) => (
+    <div className={`mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm ${className}`}>
+      <span className="flex items-center gap-1">
+        <MapPin className="size-4" aria-hidden /> {hotel.address ?? hotel.city}
+      </span>
+      {hotel.phone && (
+        <span className="flex items-center gap-1">
+          <Phone className="size-4" aria-hidden /> {hotel.phone}
+        </span>
+      )}
+      {hotel.email && (
+        <span className="flex items-center gap-1">
+          <Mail className="size-4" aria-hidden /> {hotel.email}
+        </span>
+      )}
+      <span className="flex items-center gap-1">
+        <Clock className="size-4" aria-hidden /> Check-in {String(hotel.check_in_time).slice(0, 5)}{" "}
+        · out {String(hotel.check_out_time).slice(0, 5)}
+      </span>
+    </div>
+  );
 
   const submit = async () => {
     if (!selected) {
@@ -54,9 +82,21 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
     setBusy(true);
     try {
       const booking = await createPublicBooking({
-        data: { slug, roomTypeId: selected.id, checkIn, checkOut, guestsCount, fullName, email, phone, notes },
+        data: {
+          slug,
+          roomTypeId: selected.id,
+          checkIn,
+          checkOut,
+          guestsCount,
+          fullName,
+          email,
+          phone,
+          notes,
+        },
       });
-      const payment = await startPublicPayment({ data: { reference: booking.reference, origin: window.location.origin } });
+      const payment = await startPublicPayment({
+        data: { reference: booking.reference, origin: window.location.origin },
+      });
       if (payment.authorizationUrl) {
         window.location.href = payment.authorizationUrl;
         return;
@@ -73,52 +113,108 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
   return (
     <HotelShell hotel={hotel}>
       <div className="ink shadow-hard overflow-hidden bg-card">
-        <div className="h-56 border-b-[3px] border-ink bg-sand sm:h-72">
-          {hotel.cover_url ? (
-            <img src={hotel.cover_url} alt={`${hotel.name} exterior`} className="size-full object-cover" />
-          ) : (
-            <div className="flex size-full items-center justify-center font-display text-4xl font-extrabold uppercase tracking-tighter text-sand-foreground">
-              {hotel.name}
+        {tourVideoUrl ? (
+          <div className="relative flex min-h-[24rem] items-end overflow-hidden border-b-[3px] border-ink bg-ink sm:min-h-[30rem]">
+            <video
+              ref={(node) => {
+                videoRef.current = node;
+                if (node) node.muted = true;
+              }}
+              src={tourVideoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              poster={hotel.cover_url ?? undefined}
+              onPlay={() => setVideoPlaying(true)}
+              onPause={() => setVideoPlaying(false)}
+              aria-label={`${hotel.name} tour video`}
+              className="absolute inset-0 size-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-ink/10" />
+            <div className="relative w-full p-5 sm:p-8">
+              <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tighter text-sand-foreground sm:text-5xl">
+                {hotel.name}
+              </h1>
+              {renderMeta("text-sand-foreground/90")}
+              <p className="mt-5 max-w-3xl text-base text-sand-foreground/90">
+                {hotel.description}
+              </p>
             </div>
-          )}
-        </div>
-        <div className="p-5 sm:p-8">
-          <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tighter sm:text-5xl">{hotel.name}</h1>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <MapPin className="size-4" aria-hidden /> {hotel.address ?? hotel.city}
-            </span>
-            {hotel.phone && (
-              <span className="flex items-center gap-1">
-                <Phone className="size-4" aria-hidden /> {hotel.phone}
-              </span>
-            )}
-            {hotel.email && (
-              <span className="flex items-center gap-1">
-                <Mail className="size-4" aria-hidden /> {hotel.email}
-              </span>
-            )}
-            <span className="flex items-center gap-1">
-              <Clock className="size-4" aria-hidden /> Check-in {String(hotel.check_in_time).slice(0, 5)} · out{" "}
-              {String(hotel.check_out_time).slice(0, 5)}
-            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              aria-label={videoPlaying ? "Pause tour video" : "Play tour video"}
+              onClick={() => {
+                const player = videoRef.current;
+                if (!player) return;
+                if (player.paused) void player.play();
+                else player.pause();
+              }}
+              className="absolute right-3 top-3 bg-ink/60 text-sand-foreground hover:bg-ink/80"
+            >
+              {videoPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+            </Button>
           </div>
-          <p className="mt-5 max-w-3xl text-base text-muted-foreground">{hotel.description}</p>
-          {hotel.amenities?.length > 0 && (
+        ) : (
+          <>
+            <div className="h-56 border-b-[3px] border-ink bg-sand sm:h-72">
+              {hotel.cover_url ? (
+                <img
+                  src={hotel.cover_url}
+                  alt={`${hotel.name} exterior`}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center font-display text-4xl font-extrabold uppercase tracking-tighter text-sand-foreground">
+                  {hotel.name}
+                </div>
+              )}
+            </div>
+            <div className="p-5 sm:p-8">
+              <h1 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tighter sm:text-5xl">
+                {hotel.name}
+              </h1>
+              {renderMeta("text-muted-foreground")}
+              <p className="mt-5 max-w-3xl text-base text-muted-foreground">{hotel.description}</p>
+              {hotel.amenities?.length > 0 && (
+                <ul className="mt-5 flex flex-wrap gap-2">
+                  {hotel.amenities.map((a: string) => (
+                    <li
+                      key={a}
+                      className="border-[2px] border-ink px-2 py-1 text-xs font-bold uppercase tracking-widest"
+                    >
+                      {titleCase(a)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+        {tourVideoUrl && hotel.amenities?.length > 0 && (
+          <div className="p-5 sm:p-8">
             <ul className="mt-5 flex flex-wrap gap-2">
               {hotel.amenities.map((a: string) => (
-                <li key={a} className="border-[2px] border-ink px-2 py-1 text-xs font-bold uppercase tracking-widest">
+                <li
+                  key={a}
+                  className="border-[2px] border-ink px-2 py-1 text-xs font-bold uppercase tracking-widest"
+                >
                   {titleCase(a)}
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {(photoUrls.length > 0 || videos.length > 0) && (
         <section className="mt-8">
-          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">Photos &amp; videos</h2>
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">
+            Photos &amp; videos
+          </h2>
           {photoUrls.length > 0 && (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {photoUrls.map((url, i) => (
@@ -155,11 +251,11 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
         </section>
       )}
 
-
-
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
         <section className="lg:col-span-2">
-          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">Rooms &amp; rates</h2>
+          <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight">
+            Rooms &amp; rates
+          </h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-widest">
               Check in
@@ -187,7 +283,9 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
           </div>
 
           <div className="mt-5 space-y-4">
-            {roomTypes.length === 0 && <p className="ink bg-card p-6 text-sm">This hotel hasn't published rooms yet.</p>}
+            {roomTypes.length === 0 && (
+              <p className="ink bg-card p-6 text-sm">This hotel hasn't published rooms yet.</p>
+            )}
             {roomTypes.map((room) => {
               const soldOut = room.rooms_available === 0;
               const active = roomTypeId === room.id;
@@ -198,25 +296,37 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-display text-xl font-extrabold uppercase tracking-tight">{room.name}</h3>
+                      <h3 className="font-display text-xl font-extrabold uppercase tracking-tight">
+                        {room.name}
+                      </h3>
                       <p className="mt-1 flex flex-wrap gap-x-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Users className="size-4" aria-hidden /> Up to {room.max_guests}
                         </span>
                         <span className="flex items-center gap-1">
-                          <BedDouble className="size-4" aria-hidden /> {room.bed_count} × {room.bed_type}
+                          <BedDouble className="size-4" aria-hidden /> {room.bed_count} ×{" "}
+                          {room.bed_type}
                         </span>
-                        <span>{soldOut ? "Sold out for these dates" : `${room.rooms_available} available`}</span>
+                        <span>
+                          {soldOut
+                            ? "Sold out for these dates"
+                            : `${room.rooms_available} available`}
+                        </span>
                       </p>
-                      <p className="mt-2 max-w-xl text-sm text-muted-foreground">{room.description}</p>
+                      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+                        {room.description}
+                      </p>
                     </div>
                     <div className="text-right">
                       {hotel.show_prices && (
                         <>
-                          <p className="font-display text-2xl font-extrabold">{money(room.base_price, hotel.currency)}</p>
+                          <p className="font-display text-2xl font-extrabold">
+                            {money(room.base_price, hotel.currency)}
+                          </p>
                           <p className="text-xs text-muted-foreground">per night</p>
                           <p className="mt-2 text-sm font-medium">
-                            {money(room.quote.total, hotel.currency)} total · {room.quote.nights} night
+                            {money(room.quote.total, hotel.currency)} total · {room.quote.nights}{" "}
+                            night
                             {room.quote.nights === 1 ? "" : "s"}
                           </p>
                         </>
@@ -254,10 +364,13 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
 
         <aside id="book" className="lg:sticky lg:top-6 lg:self-start">
           <div className="ink shadow-hard-amber bg-card p-5">
-            <h2 className="font-display text-xl font-extrabold uppercase tracking-tight">Book your stay</h2>
+            <h2 className="font-display text-xl font-extrabold uppercase tracking-tight">
+              Book your stay
+            </h2>
             {!hotel.accept_online_bookings ? (
               <p className="mt-3 text-sm text-muted-foreground">
-                This hotel takes bookings by phone only. Call {hotel.phone ?? hotel.email} to reserve.
+                This hotel takes bookings by phone only. Call {hotel.phone ?? hotel.email} to
+                reserve.
               </p>
             ) : (
               <div className="mt-4 space-y-3">
@@ -266,7 +379,8 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
                     <>
                       <p className="font-bold">{selected.name}</p>
                       <p className="text-muted-foreground">
-                        {checkIn} → {checkOut} · {selected.quote.nights} night{selected.quote.nights === 1 ? "" : "s"}
+                        {checkIn} → {checkOut} · {selected.quote.nights} night
+                        {selected.quote.nights === 1 ? "" : "s"}
                       </p>
                       <dl className="mt-2 space-y-1 text-xs">
                         <div className="flex justify-between">
@@ -331,17 +445,23 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
                   onChange={(e) => setNotes(e.target.value)}
                   aria-label="Requests"
                 />
-                <Button className="w-full" disabled={busy || !selected || !fullName || !email || !phone} onClick={submit}>
+                <Button
+                  className="w-full"
+                  disabled={busy || !selected || !fullName || !email || !phone}
+                  onClick={submit}
+                >
                   {busy ? "Reserving…" : "Book & pay"}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  You'll be taken to Mobile Money / card checkout. If online payment isn't available you can settle at the front
-                  desk.
+                  You'll be taken to Mobile Money / card checkout. If online payment isn't available
+                  you can settle at the front desk.
                 </p>
               </div>
             )}
             {hotel.cancellation_policy && (
-              <p className="mt-4 border-t-[2px] border-ink pt-3 text-xs text-muted-foreground">{hotel.cancellation_policy}</p>
+              <p className="mt-4 border-t-[2px] border-ink pt-3 text-xs text-muted-foreground">
+                {hotel.cancellation_policy}
+              </p>
             )}
           </div>
         </aside>

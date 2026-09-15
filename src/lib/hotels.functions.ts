@@ -317,9 +317,10 @@ const hotelMediaSchema = z.object({
   videos: z.array(youtubeUrl).max(10).optional(),
   logoUrl: z.string().max(2000).nullable().optional(),
   coverUrl: z.string().max(2000).nullable().optional(),
+  tourVideoPath: z.string().max(400).optional(),
 });
 
-/** Save the photo list (storage paths), YouTube links, logo and cover for a hotel. */
+/** Save the photo list (storage paths), YouTube links, logo, cover and tour video for a hotel. */
 export const updateHotelMedia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => hotelMediaSchema.parse(data))
@@ -333,6 +334,7 @@ export const updateHotelMedia = createServerFn({ method: "POST" })
     if (data.videos) update["videos"] = data.videos;
     if (data.logoUrl !== undefined) update["logo_url"] = data.logoUrl;
     if (data.coverUrl !== undefined) update["cover_url"] = data.coverUrl;
+    if (data.tourVideoPath !== undefined) update["tour_video_path"] = data.tourVideoPath;
     if (Object.keys(update).length === 0) return { ok: true };
 
     const { error } = await supabase
