@@ -315,8 +315,8 @@ const hotelMediaSchema = z.object({
   hotelId: z.string().uuid(),
   photos: z.array(z.string().min(3).max(400)).max(30).optional(),
   videos: z.array(youtubeUrl).max(10).optional(),
-  logoUrl: z.string().max(400).nullable().optional(),
-  coverUrl: z.string().max(400).nullable().optional(),
+  logoUrl: z.string().max(2000).nullable().optional(),
+  coverUrl: z.string().max(2000).nullable().optional(),
 });
 
 /** Save the photo list (storage paths), YouTube links, logo and cover for a hotel. */
