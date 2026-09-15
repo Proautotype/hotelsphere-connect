@@ -109,19 +109,6 @@ function ReceptionPage() {
     }
   };
 
-  const runCheckOut = async (id: string) => {
-    if (busyId) return;
-    setBusyId(id);
-    try {
-      await checkOut({ data: { bookingId: id } });
-      toast.success("Guest checked out");
-      await refetch();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Check-out failed");
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   return (
     <DashboardShell title="Reception">
