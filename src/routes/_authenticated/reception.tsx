@@ -166,11 +166,27 @@ function ReceptionPage() {
                 <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-display font-semibold text-foreground">{b.reference}</p>
+                      <Link
+                        to="/bookings/$id"
+                        params={{ id: b.id }}
+                        className="font-display font-semibold text-foreground underline decoration-2 underline-offset-4"
+                      >
+                        {b.reference}
+                      </Link>
                       <StatusBadge status={b.status} />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {guest?.full_name} · Room {room?.room_number}
+                      {guest?.full_name}
+                      {room?.room_number ? (
+                        <>
+                          {" · "}
+                          <Link to="/rooms" className="underline underline-offset-2">
+                            Room {room.room_number}
+                          </Link>
+                        </>
+                      ) : (
+                        " · No room assigned"
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {shortDate(b.check_in)} → {shortDate(b.check_out)}
@@ -185,7 +201,7 @@ function ReceptionPage() {
                         Balance {money(balance, activeHotel?.currency)}
                       </p>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
                       {b.status === "pending" && (
                         <Button
                           size="sm"
@@ -207,15 +223,17 @@ function ReceptionPage() {
                         </Button>
                       )}
                       {b.status === "checked_in" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId !== null}
-                          onClick={() => runCheckOut(b.id)}
-                        >
-                          {busyId === b.id ? "Working…" : "Check out"}
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/bookings/$id" params={{ id: b.id }}>
+                            Check out
+                          </Link>
                         </Button>
                       )}
+                      <Button size="sm" variant="ghost" asChild>
+                        <Link to="/bookings/$id" params={{ id: b.id }}>
+                          Open <ArrowRight className="ml-1 size-4" />
+                        </Link>
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
