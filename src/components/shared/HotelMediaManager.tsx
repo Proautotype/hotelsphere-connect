@@ -79,7 +79,9 @@ export function HotelMediaManager({ hotelId, photos, videos, allowed, onSaved }:
   const setCover = async (path: string) => {
     setBusy(true);
     try {
-      const [{ url }] = await signHotelMedia([path], 60 * 60 * 24 * 365);
+      const signedCover = await signHotelMedia([path], 60 * 60 * 24 * 365);
+      const url = signedCover[0]?.url;
+      if (!url) throw new Error("Could not prepare that photo");
       await save({ data: { hotelId, coverUrl: url } });
       toast.success("Cover photo updated");
       await onSaved();
