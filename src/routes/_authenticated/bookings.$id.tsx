@@ -292,13 +292,8 @@ function BookingDetail({ id }: { id: string }) {
               </Button>
             ) : null}
             {booking.status === "checked_in" ? (
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  run("Guest checked out", () => checkOut({ data: { bookingId: booking.id } }))
-                }
-              >
-                Check out
+              <Button disabled={busy} onClick={() => void openCheckOut()}>
+                {busy ? "Working…" : "Check out"}
               </Button>
             ) : null}
             {!closed && booking.status !== "checked_in" ? (
