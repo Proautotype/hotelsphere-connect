@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { confirmBooking, checkInBooking, checkOutBooking } from "@/lib/bookings.functions";
+import { confirmBooking, checkInBooking } from "@/lib/bookings.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { DoorOpen, Search } from "lucide-react";
+import { ArrowRight, DoorOpen, Search } from "lucide-react";
 import { money, shortDate, today } from "@/lib/format";
 import { useState } from "react";
 
