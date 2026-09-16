@@ -3,7 +3,6 @@
 -- timestamped migrations that follow.
 
 
-\restrict Nj83gsY51G0Vfnhli5RPs1rKzDfPLgHxUi0nOAOAAGtPliBCIRR5RYEQdixmcuF
 
 
 
@@ -2089,7 +2088,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON T
 
 
 
-\unrestrict Nj83gsY51G0Vfnhli5RPs1rKzDfPLgHxUi0nOAOAAGtPliBCIRR5RYEQdixmcuF
 
 
 --
@@ -2115,3 +2113,10 @@ DROP POLICY IF EXISTS "hotel team deletes media" ON storage.objects;
 CREATE POLICY "hotel team deletes media" ON storage.objects
   FOR DELETE TO authenticated
   USING (bucket_id = 'hotel-media' AND public.has_hotel_access(((storage.foldername(name))[1])::uuid));
+
+--
+-- Sign-up hook: create the profile + default role for each new account.
+--
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
