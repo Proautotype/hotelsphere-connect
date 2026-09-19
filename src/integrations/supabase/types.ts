@@ -127,6 +127,7 @@ export type Database = {
         Row: {
           amount_paid: number
           cancelled_at: string | null
+          channel_connection_id: string | null
           check_in: string
           check_out: string
           checked_in_at: string | null
@@ -161,6 +162,7 @@ export type Database = {
         Insert: {
           amount_paid?: number
           cancelled_at?: string | null
+          channel_connection_id?: string | null
           check_in: string
           check_out: string
           checked_in_at?: string | null
@@ -195,6 +197,7 @@ export type Database = {
         Update: {
           amount_paid?: number
           cancelled_at?: string | null
+          channel_connection_id?: string | null
           check_in?: string
           check_out?: string
           checked_in_at?: string | null
@@ -227,6 +230,13 @@ export type Database = {
           withheld_amount?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_channel_connection_id_fkey"
+            columns: ["channel_connection_id"]
+            isOneToOne: false
+            referencedRelation: "channel_connections"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_guest_id_fkey"
             columns: ["guest_id"]
@@ -303,6 +313,202 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cash_sessions_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_bookings: {
+        Row: {
+          booking_id: string | null
+          check_in: string
+          check_out: string
+          connection_id: string
+          created_at: string
+          external_uid: string
+          hotel_id: string
+          id: string
+          last_seen_at: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          check_in: string
+          check_out: string
+          connection_id: string
+          created_at?: string
+          external_uid: string
+          hotel_id: string
+          id?: string
+          last_seen_at?: string
+          summary?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          check_in?: string
+          check_out?: string
+          connection_id?: string
+          created_at?: string
+          external_uid?: string
+          hotel_id?: string
+          id?: string
+          last_seen_at?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_bookings_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "channel_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_bookings_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_connections: {
+        Row: {
+          api_config: Json
+          auto_sync: boolean
+          created_at: string
+          created_by: string | null
+          export_token: string
+          hotel_id: string
+          id: string
+          import_url: string | null
+          imported_count: number
+          label: string
+          last_sync_at: string | null
+          last_sync_message: string | null
+          last_sync_ok: boolean | null
+          mode: Database["public"]["Enums"]["channel_mode"]
+          provider: Database["public"]["Enums"]["channel_provider"]
+          room_type_id: string | null
+          status: Database["public"]["Enums"]["channel_status"]
+          updated_at: string
+        }
+        Insert: {
+          api_config?: Json
+          auto_sync?: boolean
+          created_at?: string
+          created_by?: string | null
+          export_token?: string
+          hotel_id: string
+          id?: string
+          import_url?: string | null
+          imported_count?: number
+          label?: string
+          last_sync_at?: string | null
+          last_sync_message?: string | null
+          last_sync_ok?: boolean | null
+          mode?: Database["public"]["Enums"]["channel_mode"]
+          provider?: Database["public"]["Enums"]["channel_provider"]
+          room_type_id?: string | null
+          status?: Database["public"]["Enums"]["channel_status"]
+          updated_at?: string
+        }
+        Update: {
+          api_config?: Json
+          auto_sync?: boolean
+          created_at?: string
+          created_by?: string | null
+          export_token?: string
+          hotel_id?: string
+          id?: string
+          import_url?: string | null
+          imported_count?: number
+          label?: string
+          last_sync_at?: string | null
+          last_sync_message?: string | null
+          last_sync_ok?: boolean | null
+          mode?: Database["public"]["Enums"]["channel_mode"]
+          provider?: Database["public"]["Enums"]["channel_provider"]
+          room_type_id?: string | null
+          status?: Database["public"]["Enums"]["channel_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_connections_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_connections_room_type_id_fkey"
+            columns: ["room_type_id"]
+            isOneToOne: false
+            referencedRelation: "room_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_sync_logs: {
+        Row: {
+          connection_id: string
+          created_at: string
+          direction: string
+          hotel_id: string
+          id: string
+          imported: number
+          message: string
+          ok: boolean
+          skipped: number
+          updated: number
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          direction?: string
+          hotel_id: string
+          id?: string
+          imported?: number
+          message?: string
+          ok?: boolean
+          skipped?: number
+          updated?: number
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          direction?: string
+          hotel_id?: string
+          id?: string
+          imported?: number
+          message?: string
+          ok?: boolean
+          skipped?: number
+          updated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_sync_logs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "channel_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_sync_logs_hotel_id_fkey"
             columns: ["hotel_id"]
             isOneToOne: false
             referencedRelation: "hotels"
@@ -1360,6 +1566,15 @@ export type Database = {
         | "cancelled"
         | "no_show"
       cash_session_status: "open" | "closed"
+      channel_mode: "ical" | "api"
+      channel_provider:
+        | "booking_com"
+        | "expedia"
+        | "airbnb"
+        | "agoda"
+        | "vrbo"
+        | "other"
+      channel_status: "active" | "paused" | "error" | "awaiting_credentials"
       expense_category:
         | "utilities"
         | "supplies"
@@ -1543,6 +1758,16 @@ export const Constants = {
         "no_show",
       ],
       cash_session_status: ["open", "closed"],
+      channel_mode: ["ical", "api"],
+      channel_provider: [
+        "booking_com",
+        "expedia",
+        "airbnb",
+        "agoda",
+        "vrbo",
+        "other",
+      ],
+      channel_status: ["active", "paused", "error", "awaiting_credentials"],
       expense_category: [
         "utilities",
         "supplies",
