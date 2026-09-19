@@ -40,6 +40,7 @@ import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users
 import { Route as AuthenticatedBookingsIndexRouteImport } from './routes/_authenticated/bookings.index'
 import { Route as AuthenticatedBookingsIdRouteImport } from './routes/_authenticated/bookings.$id'
 import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
+import { Route as ApiPublicIcalTokenRouteImport } from './routes/api/public/ical.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -197,6 +198,11 @@ const ApiPublicPaystackWebhookRoute =
     path: '/api/public/paystack-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicIcalTokenRoute = ApiPublicIcalTokenRouteImport.update({
+  id: '/api/public/ical/$token',
+  path: '/api/public/ical/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/bookings/': typeof AuthenticatedBookingsIndexRoute
+  '/api/public/ical/$token': typeof ApiPublicIcalTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/admin': typeof AdminAdminIndexRoute
   '/bookings': typeof AuthenticatedBookingsIndexRoute
+  '/api/public/ical/$token': typeof ApiPublicIcalTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_authenticated/bookings/': typeof AuthenticatedBookingsIndexRoute
+  '/api/public/ical/$token': typeof ApiPublicIcalTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -326,6 +335,7 @@ export interface FileRouteTypes {
     | '/api/public/paystack-webhook'
     | '/admin/'
     | '/bookings/'
+    | '/api/public/ical/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -357,6 +367,7 @@ export interface FileRouteTypes {
     | '/api/public/paystack-webhook'
     | '/admin'
     | '/bookings'
+    | '/api/public/ical/$token'
   id:
     | '__root__'
     | '/'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/api/public/paystack-webhook'
     | '/_admin/admin/'
     | '/_authenticated/bookings/'
+    | '/api/public/ical/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -403,6 +415,7 @@ export interface RootRouteChildren {
   BookingReferenceRoute: typeof BookingReferenceRoute
   HotelsSlugRoute: typeof HotelsSlugRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
+  ApiPublicIcalTokenRoute: typeof ApiPublicIcalTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -624,6 +637,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaystackWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ical/$token': {
+      id: '/api/public/ical/$token'
+      path: '/api/public/ical/$token'
+      fullPath: '/api/public/ical/$token'
+      preLoaderRoute: typeof ApiPublicIcalTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -698,6 +718,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookingReferenceRoute: BookingReferenceRoute,
   HotelsSlugRoute: HotelsSlugRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
+  ApiPublicIcalTokenRoute: ApiPublicIcalTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
