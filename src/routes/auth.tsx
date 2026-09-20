@@ -288,11 +288,11 @@ function AuthPage() {
 
             <div className="my-6 flex items-center gap-3">
               <span className="h-[3px] flex-1 bg-ink" />
-              <span className="kinetic-label text-[10px] text-muted-foreground">OR</span>
+              {/* <span className="kinetic-label text-[10px] text-muted-foreground">OR</span> */}
               <span className="h-[3px] flex-1 bg-ink" />
             </div>
 
-            <Button
+            {/* <Button
               type="button"
               variant="outline"
               className="kinetic-press h-12 w-full rounded-none border-[3px] border-ink bg-card font-display text-sm font-extrabold uppercase tracking-wider shadow-hard hover:bg-amber hover:text-amber-foreground"
@@ -300,7 +300,7 @@ function AuthPage() {
               disabled={loading}
             >
               Continue with Google
-            </Button>
+            </Button> */}
           </div>
         )}
 
