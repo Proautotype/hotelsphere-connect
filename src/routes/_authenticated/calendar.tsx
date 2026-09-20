@@ -558,7 +558,7 @@ function CalendarPage() {
               {busy ? "Saving…" : "Create booking"}
             </Button>
           </DialogFooter>
-        </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
