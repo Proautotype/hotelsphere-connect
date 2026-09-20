@@ -286,10 +286,12 @@ function BookingDetail({ id }: { id: string }) {
     }
   };
 
+  const submitMomo2 = async () => {};
+
   const openCheckOut = async () => {
     setBusy(true);
     try {
-      const result = await preview_(({ data: { bookingId: booking.id } }));
+      const result = await preview_({ data: { bookingId: booking.id } });
       setPreview(result);
       setRefundMethod(result.netRefund > 0.009 ? "cash" : "none");
       setCheckoutOpen(true);
@@ -545,7 +547,7 @@ function BookingDetail({ id }: { id: string }) {
                       className="flex-1"
                       variant="outline"
                       disabled={busy || closed || fullyPaid}
-                      onClick={submitMomo}
+                      onClick={submitMomo2}
                     >
                       <Smartphone className="mr-1 size-4" /> Mobile Money
                     </Button>

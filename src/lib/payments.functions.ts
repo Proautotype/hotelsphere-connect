@@ -112,7 +112,7 @@ export const initializePaystackPayment = createServerFn({ method: "POST" })
     const secret = await getPaystackSecret();
     if (!secret) {
       throw new Error(
-        "Paystack is not configured. Ask the platform admin to add the PAYSTACK_SECRET_KEY secret.",
+        "MOBILE MONEY IS NOT YET CONFIGURED, THAT FEATURE IS CURRENTLY UNAVAILABLE. TRY AGAIN LATER",
       );
     }
 
