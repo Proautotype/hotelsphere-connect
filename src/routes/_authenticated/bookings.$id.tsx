@@ -131,13 +131,28 @@ interface BookingDetail {
     email: string | null;
     currency: string;
   } | null;
+  source: string;
+  channel_connection_id: string | null;
+  channel_connections: {
+    provider: string;
+    label: string;
+    status: string;
+    last_sync_at: string | null;
+    last_sync_ok: boolean | null;
+    last_sync_message: string | null;
+  } | null;
+  channel_bookings: {
+    external_uid: string;
+    summary: string;
+    last_seen_at: string;
+  }[];
 }
 
 async function fetchBooking(id: string, hotelId: string): Promise<BookingDetail> {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), hotels(name, address, city, phone, email, currency)",
+      "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), hotels(name, address, city, phone, email, currency), channel_connections(provider, label, status, last_sync_at, last_sync_ok, last_sync_message), channel_bookings(external_uid, summary, last_seen_at)",
     )
     .eq("id", id)
     .eq("hotel_id", hotelId)
@@ -411,6 +426,41 @@ function BookingDetail({ id }: { id: string }) {
                   </p>
                 </div>
               </div>
+
+              {booking.channel_connection_id ? (
+                <div className="mt-4 border-[3px] border-ink bg-amber/20 p-3">
+                  <p className="kinetic-label text-[10px] text-muted-foreground">
+                    Came from a travel site
+                  </p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {(booking.channel_connections?.provider ?? "other") === "booking_com"
+                      ? "Booking.com"
+                      : titleCase((booking.channel_connections?.provider ?? "other").replace(/_/g, " "))}
+                    {booking.channel_connections?.label
+                      ? ` · ${booking.channel_connections.label}`
+                      : ""}
+                    {" — "}
+                    {booking.channel_connections?.status === "active"
+                      ? "syncing"
+                      : titleCase(booking.channel_connections?.status ?? "linked")}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.channel_bookings?.[0]?.summary
+                      ? `${booking.channel_bookings[0].summary} · `
+                      : ""}
+                    {booking.channel_connections?.last_sync_at
+                      ? `Last checked ${dateTime(booking.channel_connections.last_sync_at)}`
+                      : "Not synced yet"}
+                  </p>
+                  {booking.channel_connections?.last_sync_ok === false &&
+                  booking.channel_connections?.last_sync_message ? (
+                    <p className="mt-1 text-sm font-medium text-destructive">
+                      {booking.channel_connections.last_sync_message}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
 
               <table className="mt-4 w-full text-sm">
                 <thead>
