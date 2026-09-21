@@ -2,6 +2,8 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   CalendarDays,
+  CalendarRange,
+  Globe,
   BedDouble,
   DoorOpen,
   Sparkles,
@@ -28,6 +30,8 @@ import { initials } from "@/lib/format";
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bookings", label: "Bookings", icon: CalendarDays },
+  { to: "/calendar", label: "Calendar", icon: CalendarRange },
+  { to: "/channels", label: "Travel sites", icon: Globe },
   { to: "/rooms", label: "Rooms", icon: BedDouble },
   { to: "/reception", label: "Reception", icon: DoorOpen },
   { to: "/housekeeping", label: "Housekeeping", icon: Sparkles },

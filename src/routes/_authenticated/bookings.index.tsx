@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, CalendarDays, Plus, Search } from "lucide-react";
-import { money, shortDate, today } from "@/lib/format";
+import { money, shortDate, titleCase, today } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/bookings/")({
   head: () => ({
@@ -37,22 +37,38 @@ interface BookingRow {
   amount_paid: number;
   refunded_amount: number | null;
   created_at: string;
+  source: string;
+  channel_connection_id: string | null;
   guests: { full_name: string; phone: string | null } | null;
   rooms: { id: string; room_number: string } | null;
   room_types: { name: string } | null;
+  channel_connections: {
+    provider: string;
+    label: string;
+    status: string;
+    last_sync_at: string | null;
+  } | null;
 }
 
 async function fetchBookings(hotelId: string) {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, reference, status, check_in, check_out, total, amount_paid, refunded_amount, created_at, guests(full_name, phone), rooms(id, room_number), room_types(name)",
+      "id, reference, status, check_in, check_out, total, amount_paid, refunded_amount, created_at, source, channel_connection_id, guests(full_name, phone), rooms(id, room_number), room_types(name), channel_connections(provider, label, status, last_sync_at)",
     )
     .eq("hotel_id", hotelId)
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as BookingRow[];
+}
+
+export function channelName(row: BookingRow): string | null {
+  if (!row.channel_connection_id) return null;
+  const c = row.channel_connections;
+  const provider = (c?.provider ?? "other").replace(/_/g, " ");
+  const pretty = provider === "booking com" ? "Booking.com" : titleCase(provider);
+  return c?.label ? `${pretty} · ${c.label}` : pretty;
 }
 
 const TABS = [
@@ -107,6 +123,7 @@ function BookingsPage() {
         b.rooms?.room_number ?? "",
         b.room_types?.name ?? "",
         b.status.replace(/_/g, " "),
+        channelName(b) ?? "",
       ]
         .join(" ")
         .toLowerCase()
@@ -225,6 +242,14 @@ function BookingsPage() {
                           </span>
                         )}
                       </div>
+                      {channelName(b) ? (
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest">
+                          {channelName(b)} ·{" "}
+                          {b.channel_connections?.status === "active"
+                            ? "synced"
+                            : titleCase(b.channel_connections?.status ?? "linked")}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-sm opacity-80">
                         {b.guests?.full_name} · {b.room_types?.name}{" "}
                         {b.rooms?.room_number ? `· Room ${b.rooms.room_number}` : ""}
