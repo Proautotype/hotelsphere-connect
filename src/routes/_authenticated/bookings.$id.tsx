@@ -427,6 +427,41 @@ function BookingDetail({ id }: { id: string }) {
                 </div>
               </div>
 
+              {booking.channel_connection_id ? (
+                <div className="mt-4 border-[3px] border-ink bg-amber/20 p-3">
+                  <p className="kinetic-label text-[10px] text-muted-foreground">
+                    Came from a travel site
+                  </p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {(booking.channel_connections?.provider ?? "other") === "booking_com"
+                      ? "Booking.com"
+                      : titleCase((booking.channel_connections?.provider ?? "other").replace(/_/g, " "))}
+                    {booking.channel_connections?.label
+                      ? ` · ${booking.channel_connections.label}`
+                      : ""}
+                    {" — "}
+                    {booking.channel_connections?.status === "active"
+                      ? "syncing"
+                      : titleCase(booking.channel_connections?.status ?? "linked")}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.channel_bookings?.[0]?.summary
+                      ? `${booking.channel_bookings[0].summary} · `
+                      : ""}
+                    {booking.channel_connections?.last_sync_at
+                      ? `Last checked ${dateTime(booking.channel_connections.last_sync_at)}`
+                      : "Not synced yet"}
+                  </p>
+                  {booking.channel_connections?.last_sync_ok === false &&
+                  booking.channel_connections?.last_sync_message ? (
+                    <p className="mt-1 text-sm font-medium text-destructive">
+                      {booking.channel_connections.last_sync_message}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+
               <table className="mt-4 w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-ink text-left">
