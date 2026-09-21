@@ -37,22 +37,38 @@ interface BookingRow {
   amount_paid: number;
   refunded_amount: number | null;
   created_at: string;
+  source: string;
+  channel_connection_id: string | null;
   guests: { full_name: string; phone: string | null } | null;
   rooms: { id: string; room_number: string } | null;
   room_types: { name: string } | null;
+  channel_connections: {
+    provider: string;
+    label: string;
+    status: string;
+    last_sync_at: string | null;
+  } | null;
 }
 
 async function fetchBookings(hotelId: string) {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, reference, status, check_in, check_out, total, amount_paid, refunded_amount, created_at, guests(full_name, phone), rooms(id, room_number), room_types(name)",
+      "id, reference, status, check_in, check_out, total, amount_paid, refunded_amount, created_at, source, channel_connection_id, guests(full_name, phone), rooms(id, room_number), room_types(name), channel_connections(provider, label, status, last_sync_at)",
     )
     .eq("hotel_id", hotelId)
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as BookingRow[];
+}
+
+export function channelName(row: BookingRow): string | null {
+  if (!row.channel_connection_id) return null;
+  const c = row.channel_connections;
+  const provider = (c?.provider ?? "other").replace(/_/g, " ");
+  const pretty = provider === "booking com" ? "Booking.com" : titleCase(provider);
+  return c?.label ? `${pretty} · ${c.label}` : pretty;
 }
 
 const TABS = [
