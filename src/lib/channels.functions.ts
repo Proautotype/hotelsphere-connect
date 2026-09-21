@@ -79,8 +79,13 @@ export function parseIcal(raw: string): IcalEvent[] {
     const value = trimmed.slice(sep + 1);
     if (key === "UID") current.uid = value;
     else if (key.startsWith("SUMMARY")) current.summary = value;
-    else if (key.startsWith("DTSTART")) current.start = icalDate(value) ?? current.start;
-    else if (key.startsWith("DTEND")) current.end = icalDate(value) ?? current.end;
+    else if (key.startsWith("DTSTART")) {
+      const parsed = icalDate(value);
+      if (parsed) current.start = parsed;
+    } else if (key.startsWith("DTEND")) {
+      const parsed = icalDate(value);
+      if (parsed) current.end = parsed;
+    }
   }
   return events;
 }
