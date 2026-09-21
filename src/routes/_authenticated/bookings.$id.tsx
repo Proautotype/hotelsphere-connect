@@ -131,13 +131,28 @@ interface BookingDetail {
     email: string | null;
     currency: string;
   } | null;
+  source: string;
+  channel_connection_id: string | null;
+  channel_connections: {
+    provider: string;
+    label: string;
+    status: string;
+    last_sync_at: string | null;
+    last_sync_ok: boolean | null;
+    last_sync_message: string | null;
+  } | null;
+  channel_bookings: {
+    external_uid: string;
+    summary: string;
+    last_seen_at: string;
+  }[];
 }
 
 async function fetchBooking(id: string, hotelId: string): Promise<BookingDetail> {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), hotels(name, address, city, phone, email, currency)",
+      "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), hotels(name, address, city, phone, email, currency), channel_connections(provider, label, status, last_sync_at, last_sync_ok, last_sync_message), channel_bookings(external_uid, summary, last_seen_at)",
     )
     .eq("id", id)
     .eq("hotel_id", hotelId)
