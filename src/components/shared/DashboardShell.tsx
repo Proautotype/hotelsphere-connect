@@ -2,6 +2,8 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   CalendarDays,
+  CalendarRange,
+  Globe,
   BedDouble,
   DoorOpen,
   Sparkles,
