@@ -150,7 +150,7 @@ export const getPublicHotel = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("room_types")
         .select(
-          "id, name, description, base_price, max_guests, bed_type, bed_count, amenities, images",
+          "id, name, description, base_price, per_stay_price, pricing_model, max_guests, bed_type, bed_count, amenities, images",
         )
         .eq("hotel_id", hotel.id)
         .eq("is_active", true)
@@ -192,17 +192,23 @@ export const getPublicHotel = createServerFn({ method: "GET" })
 
     const roomTypes = (types ?? []).map((t) => {
       const total = inventory[t.id] ?? 0;
-      const available = Math.max(0, total - (booked[t.id] ?? 0));
-      const subtotal = round2(Number(t.base_price) * nights);
+      const isPerStay = t.pricing_model === "per_stay";
+      const available = Math.max(0, total - (isPerStay ? 0 : (booked[t.id] ?? 0)));
+      // Flat per-person fee for the stay (hostel dorms), or nightly rate math.
+      const rate = isPerStay ? Number(t.per_stay_price ?? t.base_price ?? 0) : Number(t.base_price);
+      const subtotal = round2(isPerStay ? rate : rate * nights);
       const tax = round2((subtotal * taxPercent) / 100);
       const serviceCharge = round2((subtotal * servicePercent) / 100);
       return {
         ...t,
         base_price: Number(t.base_price),
+        per_stay_price: t.per_stay_price === null ? null : Number(t.per_stay_price),
+        pricing_model: t.pricing_model,
         rooms_total: total,
         rooms_available: available,
         quote: {
-          nights,
+          nights: isPerStay ? null : nights,
+          isPerStay,
           subtotal,
           tax,
           serviceCharge,
@@ -271,7 +277,7 @@ export const createPublicBooking = createServerFn({ method: "POST" })
 
     const { data: roomType } = await supabaseAdmin
       .from("room_types")
-      .select("id, hotel_id, name, base_price, max_guests, is_active")
+      .select("id, hotel_id, name, base_price, per_stay_price, pricing_model, max_guests, is_active")
       .eq("id", data.roomTypeId)
       .maybeSingle();
     if (!roomType || roomType.hotel_id !== hotel.id || !roomType.is_active)
@@ -279,21 +285,24 @@ export const createPublicBooking = createServerFn({ method: "POST" })
     if (data.guestsCount > roomType.max_guests)
       throw new Error(`This room takes up to ${roomType.max_guests} guests`);
 
-    // Availability check (server-side, authoritative)
+    // Availability check (server-side, authoritative). Per-stay dorm beds are
+    // open-ended, so only physical-room bookings are checked for overlaps.
     const [{ data: rooms }, { data: overlapping }] = await Promise.all([
       supabaseAdmin
         .from("rooms")
         .select("id, status, room_number")
         .eq("room_type_id", roomType.id)
         .order("room_number", { ascending: true }),
-      supabaseAdmin
-        .from("bookings")
-        .select("id, room_id")
-        .eq("hotel_id", hotel.id)
-        .eq("room_type_id", roomType.id)
-        .in("status", ACTIVE_BOOKING_STATUSES)
-        .lt("check_in", data.checkOut)
-        .gt("check_out", data.checkIn),
+      roomType.pricing_model === "per_stay"
+        ? Promise.resolve({ data: [], error: null })
+        : supabaseAdmin
+            .from("bookings")
+            .select("id, room_id")
+            .eq("hotel_id", hotel.id)
+            .eq("room_type_id", roomType.id)
+            .in("status", ACTIVE_BOOKING_STATUSES)
+            .lt("check_in", data.checkOut)
+            .gt("check_out", data.checkIn),
     ]);
     const usableRooms = (rooms ?? []).filter(
       (r) => r.status !== "out_of_service" && r.status !== "maintenance",
@@ -307,9 +316,13 @@ export const createPublicBooking = createServerFn({ method: "POST" })
     );
     const assignedRoom = usableRooms.find((r) => !takenRoomIds.has(r.id)) ?? null;
 
-    const nights = nightsBetween(data.checkIn, data.checkOut);
-    const rate = Number(roomType.base_price);
-    const subtotal = round2(rate * nights);
+    const isPerStay = roomType.pricing_model === "per_stay";
+    const nights = isPerStay ? null : nightsBetween(data.checkIn, data.checkOut);
+    // Per-stay = flat fee per person; per-night = rate × nights (room price).
+    const rate = isPerStay
+      ? Number(roomType.per_stay_price ?? roomType.base_price ?? 0)
+      : Number(roomType.base_price);
+    const subtotal = round2(isPerStay ? rate * data.guestsCount : rate * (nights ?? 1));
     const tax = round2((subtotal * Number(hotel.tax_percent ?? 0)) / 100);
     const serviceCharge = round2((subtotal * Number(hotel.service_charge_percent ?? 0)) / 100);
     const total = round2(subtotal + tax + serviceCharge);
@@ -365,6 +378,7 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         check_out: data.checkOut,
         guests_count: data.guestsCount,
         room_rate: rate,
+        pricing_model: isPerStay ? "per_stay" : "per_night",
         tax_amount: tax,
         service_charge: serviceCharge,
         total,
@@ -388,16 +402,29 @@ export const createPublicBooking = createServerFn({ method: "POST" })
       hotel_id: hotel.id,
       booking_id: booking.id,
       category: "accommodation",
-      description: `${roomType.name} · ${nights} night${nights === 1 ? "" : "s"}`,
-      quantity: nights,
+      description: isPerStay
+        ? `${roomType.name} · ${data.guestsCount} per-stay fee${data.guestsCount === 1 ? "" : "s"}`
+        : `${roomType.name} · ${nights} night${nights === 1 ? "" : "s"}`,
+      quantity: isPerStay ? data.guestsCount : nights,
       unit_price: rate,
       amount: subtotal,
+    });
+
+    await supabaseAdmin.from("occupancies").insert({
+      hotel_id: hotel.id,
+      booking_id: booking.id,
+      guest_id: guestId,
+      room_id: assignedRoom?.id ?? null,
+      price: isPerStay ? rate : round2(rate * (nights ?? 1)),
+      status: "reserved",
     });
 
     await supabaseAdmin.from("notifications").insert({
       hotel_id: hotel.id,
       title: "New online booking",
-      body: `${data.fullName} booked ${roomType.name} (${booking.reference}) for ${nights} night${nights === 1 ? "" : "s"}.`,
+      body: isPerStay
+        ? `${data.fullName} booked ${data.guestsCount} per-stay spot(s) in ${roomType.name} (${booking.reference}).`
+        : `${data.fullName} booked ${roomType.name} (${booking.reference}) for ${nights} night${nights === 1 ? "" : "s"}.`,
       type: "booking",
       link: `/bookings/${booking.id}`,
     });

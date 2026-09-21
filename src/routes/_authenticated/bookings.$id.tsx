@@ -14,6 +14,8 @@ import {
   confirmBooking,
   checkInBooking,
   checkOutBooking,
+  checkInOccupancy,
+  checkOutOccupancy,
   previewCheckOut,
   cancelBooking,
   addFolioCharge,
@@ -94,6 +96,16 @@ interface PaymentRow {
   created_at: string;
 }
 
+interface OccupancyRow {
+  id: string;
+  bed_number: string | null;
+  price: number;
+  status: string;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
+  guests: { full_name: string; phone: string | null; email: string | null } | null;
+}
+
 interface BookingDetail {
   id: string;
   reference: string;
@@ -102,6 +114,7 @@ interface BookingDetail {
   check_out: string;
   nights: number | null;
   guests_count: number;
+  pricing_model: string;
   room_rate: number;
   discount: number;
   tax_amount: number;
@@ -123,6 +136,7 @@ interface BookingDetail {
   room_types: { name: string } | null;
   folio_items: FolioItem[];
   payments: PaymentRow[];
+  occupancies: OccupancyRow[];
   hotels: {
     name: string;
     address: string;
@@ -152,7 +166,7 @@ async function fetchBooking(id: string, hotelId: string): Promise<BookingDetail>
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), hotels(name, address, city, phone, email, currency), channel_connections(provider, label, status, last_sync_at, last_sync_ok, last_sync_message), channel_bookings(external_uid, summary, last_seen_at)",
+      "*, guests(id, full_name, email, phone, country), rooms(room_number), room_types(name), folio_items(*), payments(*), occupancies(*, guests(full_name, phone, email)), hotels(name, address, city, phone, email, currency), channel_connections(provider, label, status, last_sync_at, last_sync_ok, last_sync_message), channel_bookings(external_uid, summary, last_seen_at)",
     )
     .eq("id", id)
     .eq("hotel_id", hotelId)
@@ -187,6 +201,8 @@ function BookingDetail({ id }: { id: string }) {
   const addCharge = useServerFn(addFolioCharge);
   const payCash = useServerFn(recordCashPayment);
   const payMomo = useServerFn(initializePaystackPayment);
+  const occCheckIn = useServerFn(checkInOccupancy);
+  const occCheckOut = useServerFn(checkOutOccupancy);
 
   const [busy, setBusy] = useState(false);
   const [charges, setCharges] = useState([
@@ -415,10 +431,13 @@ function BookingDetail({ id }: { id: string }) {
                 <div className="sm:text-right">
                   <p className="kinetic-label text-[10px] text-muted-foreground">Stay</p>
                   <p className="font-medium text-foreground">
-                    {shortDate(booking.check_in)} → {shortDate(booking.check_out)}
+                    {shortDate(booking.check_in)}{" "}
+                    {booking.check_out ? `→ ${shortDate(booking.check_out)}` : "· open-ended"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {booking.nights ?? 0} night(s) · {booking.guests_count} guest(s)
+                    {booking.pricing_model === "per_stay"
+                      ? `${booking.guests_count} occupant(s) · flat fee per stay`
+                      : `${booking.nights ?? 0} night(s) · ${booking.guests_count} guest(s)`}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {booking.room_types?.name}{" "}
@@ -480,14 +499,22 @@ function BookingDetail({ id }: { id: string }) {
                 <tbody>
                   <tr className="border-b border-border">
                     <td className="py-2 text-foreground">
-                      Accommodation ({booking.nights ?? 0} nights)
+                      {booking.pricing_model === "per_stay"
+                        ? `Accommodation — ${booking.guests_count} per-stay fee${booking.guests_count === 1 ? "" : "s"}`
+                        : `Accommodation (${booking.nights ?? 0} nights)`}
                     </td>
-                    <td className="py-2 text-right text-muted-foreground">{booking.nights ?? 0}</td>
+                    <td className="py-2 text-right text-muted-foreground">
+                      {booking.pricing_model === "per_stay"
+                        ? booking.guests_count
+                        : (booking.nights ?? 0)}
+                    </td>
                     <td className="py-2 text-right text-muted-foreground">
                       {money(booking.room_rate, currency)}
                     </td>
                     <td className="py-2 text-right text-foreground">
-                      {money(Number(booking.room_rate) * Number(booking.nights ?? 0), currency)}
+                      {booking.pricing_model === "per_stay"
+                        ? money(Number(booking.room_rate) * Number(booking.guests_count), currency)
+                        : money(Number(booking.room_rate) * Number(booking.nights ?? 0), currency)}
                     </td>
                   </tr>
                   {(booking.folio_items ?? []).map((item) => (
@@ -536,6 +563,68 @@ function BookingDetail({ id }: { id: string }) {
                   </dd>
                 </div>
               </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <h3 className="kinetic-label text-xs text-foreground">Occupants</h3>
+              {(booking.occupancies ?? []).length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  No occupants recorded for this stay.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {booking.occupancies.map((o) => (
+                    <div
+                      key={o.id}
+                      className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {o.guests?.full_name ?? "Unknown guest"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {money(o.price, currency)}
+                          {o.bed_number ? ` · ${o.bed_number}` : ""}
+                          {o.checked_in_at ? ` · in ${dateTime(o.checked_in_at)}` : ""}
+                          {o.checked_out_at ? ` · out ${dateTime(o.checked_out_at)}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={o.status} />
+                        {o.status === "reserved" && !closed ? (
+                          <Button
+                            size="sm"
+                            disabled={busy}
+                            onClick={() =>
+                              run("Occupant checked in", () =>
+                                occCheckIn({ data: { occupancyId: o.id } }),
+                              )
+                            }
+                          >
+                            Check in
+                          </Button>
+                        ) : null}
+                        {o.status === "checked_in" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() =>
+                              run("Occupant checked out", () =>
+                                occCheckOut({ data: { occupancyId: o.id } }),
+                              )
+                            }
+                          >
+                            Check out
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -794,12 +883,20 @@ function NewBookingForm() {
       room_types: { name: string } | null;
     }[]
   >([]);
-  const [roomTypes, setRoomTypes] = useState<{ id: string; name: string; base_price: number }[]>(
-    [],
-  );
+  const [roomTypes, setRoomTypes] = useState<
+    {
+      id: string;
+      name: string;
+      base_price: number;
+      per_stay_price: number | null;
+      pricing_model: string;
+      max_guests: number;
+    }[]
+  >([]);
   const [guests, setGuests] = useState<
     { id: string; full_name: string; phone: string | null; email: string | null }[]
   >([]);
+  const [occupants, setOccupants] = useState([{ fullName: "", phone: "", email: "" }]);
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -811,7 +908,6 @@ function NewBookingForm() {
     roomTypeId: "",
     checkIn: today(),
     checkOut: "",
-    guestsCount: 1,
     note: "",
   });
 
@@ -833,7 +929,7 @@ function NewBookingForm() {
           .limit(100),
         supabase
           .from("room_types")
-          .select("id, name, base_price")
+          .select("id, name, base_price, per_stay_price, pricing_model, max_guests")
           .eq("hotel_id", activeHotel.id)
           .eq("is_active", true)
           .order("name"),
@@ -845,6 +941,21 @@ function NewBookingForm() {
     void loadLookups();
   }, [activeHotel]);
 
+  const selectedType = roomTypes.find((rt) => rt.id === form.roomTypeId);
+  const isPerStay = selectedType?.pricing_model === "per_stay";
+
+  const setOccupant = (index: number, patch: Partial<{ fullName: string; phone: string; email: string }>) =>
+    setOccupants((prev) => prev.map((o, i) => (i === index ? { ...o, ...patch } : o)));
+
+  const addOccupant = () => {
+    const max = selectedType?.max_guests ?? 20;
+    if (occupants.length >= max) {
+      toast.error(`This room type takes up to ${max} occupants`);
+      return;
+    }
+    setOccupants((prev) => [...prev, { fullName: "", phone: "", email: "" }]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeHotel) {
@@ -855,6 +966,22 @@ function NewBookingForm() {
       toast.error("Select a room or a room type");
       return;
     }
+    const draftOccupants = isPerStay
+      ? occupants
+      : [{ fullName: form.fullName, phone: form.phone, email: form.email }];
+    if (draftOccupants.some((o) => o.fullName.trim().length < 2)) {
+      toast.error("Add a name for every occupant");
+      return;
+    }
+    if (!isPerStay && !form.checkOut) {
+      toast.error("Check-out is required for per-night stays");
+      return;
+    }
+    const toGuest = (o: { fullName: string; phone: string; email: string }) => ({
+      full_name: o.fullName.trim(),
+      phone: o.phone.trim() || undefined,
+      email: o.email.trim() || undefined,
+    });
     setLoading(true);
     try {
       const result = await create({
@@ -862,15 +989,14 @@ function NewBookingForm() {
           hotelId: activeHotel.id,
           guest: {
             id: form.guestId || undefined,
-            full_name: form.fullName.trim(),
-            phone: form.phone.trim() || undefined,
-            email: form.email.trim() || undefined,
+            ...toGuest(draftOccupants[0]!),
           },
+          occupants: draftOccupants.map(toGuest),
           roomId: form.roomId || undefined,
           roomTypeId: form.roomTypeId || undefined,
           checkIn: form.checkIn,
-          checkOut: form.checkOut,
-          guestsCount: form.guestsCount,
+          checkOut: isPerStay ? (form.checkOut || undefined) : form.checkOut,
+          guestsCount: draftOccupants.length,
           notes: form.note.trim() || undefined,
         },
       });
@@ -892,54 +1018,115 @@ function NewBookingForm() {
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label>Returning guest</Label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.guestId}
-                onChange={(e) => {
-                  const g = guests.find((x) => x.id === e.target.value);
-                  setForm((prev) => ({
-                    ...prev,
-                    guestId: e.target.value,
-                    fullName: g?.full_name ?? "",
-                    phone: g?.phone ?? "",
-                    email: g?.email ?? "",
-                  }));
-                }}
-              >
-                <option value="">New guest</option>
-                {guests.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.full_name} {g.phone ? `· ${g.phone}` : ""}
-                  </option>
+              <h3 className="kinetic-label text-xs text-foreground border-b-[3px] border-ink pb-2">
+                Guests
+              </h3>
+            </div>
+            {isPerStay ? (
+              <div className="sm:col-span-2 space-y-3">
+                {occupants.map((o, idx) => (
+                  <div key={idx} className="rounded-md border border-border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-foreground">
+                        Occupant {idx + 1} — pays the room&apos;s flat per-stay fee
+                      </p>
+                      {occupants.length > 1 && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground underline hover:text-destructive"
+                          onClick={() => setOccupants((prev) => prev.filter((_, i) => i !== idx))}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                      <Input
+                        aria-label={`Occupant ${idx + 1} name`}
+                        placeholder="Full name"
+                        required
+                        value={o.fullName}
+                        onChange={(e) => setOccupant(idx, { fullName: e.target.value })}
+                      />
+                      <Input
+                        aria-label={`Occupant ${idx + 1} phone`}
+                        placeholder="Phone (optional)"
+                        value={o.phone}
+                        onChange={(e) => setOccupant(idx, { phone: e.target.value })}
+                      />
+                      <Input
+                        aria-label={`Occupant ${idx + 1} email`}
+                        type="email"
+                        placeholder="Email (optional)"
+                        value={o.email}
+                        onChange={(e) => setOccupant(idx, { email: e.target.value })}
+                      />
+                    </div>
+                  </div>
                 ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="fullName">Guest name</Label>
-              <Input
-                id="fullName"
-                required
-                value={form.fullName}
-                onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={form.phone}
-                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-              />
+                <Button type="button" variant="outline" size="sm" onClick={addOccupant}>
+                  <Plus className="mr-1 size-4" /> Add another occupant
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="sm:col-span-2">
+                  <Label>Returning guest</Label>
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={form.guestId}
+                    onChange={(e) => {
+                      const g = guests.find((x) => x.id === e.target.value);
+                      setForm((prev) => ({
+                        ...prev,
+                        guestId: e.target.value,
+                        fullName: g?.full_name ?? "",
+                        phone: g?.phone ?? "",
+                        email: g?.email ?? "",
+                      }));
+                    }}
+                  >
+                    <option value="">New guest</option>
+                    {guests.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.full_name} {g.phone ? `· ${g.phone}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="fullName">Guest name</Label>
+                  <Input
+                    id="fullName"
+                    required
+                    value={form.fullName}
+                    onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={form.phone}
+                    onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="sm:col-span-2">
+              <h3 className="kinetic-label text-xs text-foreground border-b-[3px] border-ink pb-2">
+                Room & stay
+              </h3>
             </div>
             <div>
               <Label htmlFor="roomId">Room</Label>
@@ -980,10 +1167,19 @@ function NewBookingForm() {
                 <option value="">Select a room type</option>
                 {roomTypes.map((rt) => (
                   <option key={rt.id} value={rt.id}>
-                    {rt.name} · {money(rt.base_price, activeHotel?.currency)}
+                    {rt.name}{" "}
+                    ·{" "}
+                    {rt.pricing_model === "per_stay"
+                      ? `${money(rt.per_stay_price ?? 0, activeHotel?.currency)} per stay`
+                      : `${money(rt.base_price, activeHotel?.currency)} / night`}
                   </option>
                 ))}
               </select>
+              {isPerStay ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Flat fee per person for the whole stay — no nightly rate.
+                </p>
+              ) : null}
             </div>
 
             <div>
@@ -997,26 +1193,15 @@ function NewBookingForm() {
               />
             </div>
             <div>
-              <Label htmlFor="checkOut">Check out</Label>
+              <Label htmlFor="checkOut">
+                Check out {isPerStay ? "(optional — leave blank for open-ended stays)" : ""}
+              </Label>
               <Input
                 id="checkOut"
                 type="date"
-                required
+                required={!isPerStay}
                 value={form.checkOut}
                 onChange={(e) => setForm((p) => ({ ...p, checkOut: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="guestsCount">Guests</Label>
-              <Input
-                id="guestsCount"
-                type="number"
-                min={1}
-                max={20}
-                value={form.guestsCount}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, guestsCount: parseInt(e.target.value || "1", 10) }))
-                }
               />
             </div>
             <div className="sm:col-span-2">

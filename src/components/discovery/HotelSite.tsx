@@ -321,14 +321,20 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
                       {hotel.show_prices && (
                         <>
                           <p className="font-display text-2xl font-extrabold">
-                            {money(room.base_price, hotel.currency)}
+                            {room.quote.isPerStay
+                              ? money(room.per_stay_price ?? room.base_price, hotel.currency)
+                              : money(room.base_price, hotel.currency)}
                           </p>
-                          <p className="text-xs text-muted-foreground">per night</p>
-                          <p className="mt-2 text-sm font-medium">
-                            {money(room.quote.total, hotel.currency)} total · {room.quote.nights}{" "}
-                            night
-                            {room.quote.nights === 1 ? "" : "s"}
+                          <p className="text-xs text-muted-foreground">
+                            {room.quote.isPerStay ? "per person, per stay" : "per night"}
                           </p>
+                          {!room.quote.isPerStay && room.quote.nights ? (
+                            <p className="mt-2 text-sm font-medium">
+                              {money(room.quote.total, hotel.currency)} total ·{" "}
+                              {room.quote.nights} night
+                              {room.quote.nights === 1 ? "" : "s"}
+                            </p>
+                          ) : null}
                         </>
                       )}
                       <Button
@@ -379,12 +385,20 @@ export function HotelSite({ initial, slug }: { initial: HotelSiteData; slug: str
                     <>
                       <p className="font-bold">{selected.name}</p>
                       <p className="text-muted-foreground">
-                        {checkIn} → {checkOut} · {selected.quote.nights} night
-                        {selected.quote.nights === 1 ? "" : "s"}
+                        {selected.quote.isPerStay ? (
+                          `${guestsCount} occupant(s) · ${selected.quote.nights === null ? "open-ended stay" : ""}`
+                        ) : (
+                          <>
+                            {checkIn} → {checkOut} · {selected.quote.nights} night
+                            {selected.quote.nights === 1 ? "" : "s"}
+                          </>
+                        )}
                       </p>
                       <dl className="mt-2 space-y-1 text-xs">
                         <div className="flex justify-between">
-                          <dt className="text-muted-foreground">Rooms</dt>
+                          <dt className="text-muted-foreground">
+                            {selected.quote.isPerStay ? "Fee per person" : "Rooms"}
+                          </dt>
                           <dd>{money(selected.quote.subtotal, hotel.currency)}</dd>
                         </div>
                         <div className="flex justify-between">

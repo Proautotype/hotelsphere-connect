@@ -17,6 +17,32 @@ function generateRef(prefix: string) {
   return `${prefix}-${ts}${rand}`;
 }
 
+type TableClient = { from: (table: string) => any };
+
+/** Count occupants already on a room whose stay overlaps [from, to] (to = null means open-ended). */
+async function countActiveOccupancies(
+  supabase: unknown,
+  roomId: string,
+  fromIso: string,
+  toIso: string | null,
+): Promise<number> {
+  const fallbackEnd = "9999-12-31";
+  const end = toIso ?? fallbackEnd;
+  const { data } = await (supabase as TableClient)
+    .from("occupancies")
+    .select("id, bookings(check_in, check_out)")
+    .eq("room_id", roomId)
+    .in("status", ["reserved", "checked_in"]);
+  let count = 0;
+  (data ?? []).forEach((row: any) => {
+    const b = row.bookings;
+    if (!b) return;
+    const bEnd = b.check_out ?? fallbackEnd;
+    if (b.check_in < end && bEnd > fromIso) count += 1;
+  });
+  return count;
+}
+
 const optionalText = (max: number) =>
   z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
@@ -28,24 +54,29 @@ const optionalEmail = z.preprocess(
   z.string().email().optional(),
 );
 
-const createBookingSchema = z.object({
-  hotelId: z.string().uuid(),
-  guest: z.object({
-    id: z.preprocess(
+const guestSchema = z.object({
+  id: z
+    .preprocess(
       (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
       z.string().uuid().optional(),
-    ),
-    full_name: z.string().min(2),
-    email: optionalEmail,
-    phone: optionalText(30),
-    country: z.string().max(60).default("Ghana"),
-    id_type: optionalText(40),
-    id_number: optionalText(60),
-    address: optionalText(200),
-    city: optionalText(100),
-    emergency_contact: optionalText(100),
-    notes: optionalText(1000),
-  }),
+    )
+    .optional(),
+  full_name: z.string().min(2, "Guest name is required"),
+  email: optionalEmail,
+  phone: optionalText(30),
+  country: z.string().max(60).default("Ghana"),
+  id_type: optionalText(40),
+  id_number: optionalText(60),
+  address: optionalText(200),
+  city: optionalText(100),
+  emergency_contact: optionalText(100),
+  notes: optionalText(1000),
+});
+
+const createBookingSchema = z.object({
+  hotelId: z.string().uuid(),
+  guest: guestSchema.optional(),
+  occupants: z.array(guestSchema).min(1).max(40).optional(),
   roomTypeId: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().uuid().optional(),
@@ -55,7 +86,12 @@ const createBookingSchema = z.object({
     z.string().uuid().optional(),
   ),
   checkIn: z.string().date(),
-  checkOut: z.string().date(),
+  checkOut: z
+    .preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? null : v),
+      z.string().date().nullable().optional(),
+    )
+    .optional(),
   guestsCount: z.number().int().min(1).default(1),
   source: z.enum(["staff", "hotel_website", "discovery", "external"]).default("staff"),
   notes: optionalText(2000),
@@ -76,16 +112,28 @@ export const createBooking = createServerFn({ method: "POST" })
       .single();
     if (!hotel) throw new Error("Hotel not found");
 
-    const checkIn = new Date(data.checkIn);
-    const checkOut = new Date(data.checkOut);
-    if (checkOut.getTime() <= checkIn.getTime())
-      throw new Error("Check-out must be after check-in");
-    const nights = Math.max(
-      1,
-      Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)),
-    );
+    const checkIn = data.checkIn;
+    const checkOut = data.checkOut ?? null;
+    if (checkOut) {
+      const ci = new Date(checkIn);
+      const co = new Date(checkOut);
+      if (co.getTime() <= ci.getTime()) throw new Error("Check-out must be after check-in");
+    }
+
+    // One or more occupants per stay. Backwards compatible: a single `guest`
+    // without `occupants` behaves exactly like a one-person booking.
+    const occupants =
+      data.occupants && data.occupants.length > 0
+        ? data.occupants
+        : data.guest
+          ? [data.guest]
+          : [];
+    if (occupants.length === 0) throw new Error("Add at least one guest to this booking");
+    const people = occupants.length;
 
     let roomRate = 0;
+    let pricingModel = "per_night";
+    let bedCapacity = 20;
     let roomTypeId: string | null = data.roomTypeId ?? null;
     let roomId: string | null = data.roomId ?? null;
 
@@ -105,49 +153,93 @@ export const createBooking = createServerFn({ method: "POST" })
     if (roomTypeId) {
       const { data: rt } = await supabase
         .from("room_types")
-        .select("base_price")
+        .select("pricing_model, per_stay_price, base_price, max_guests")
         .eq("id", roomTypeId)
         .single();
-      roomRate = Number(rt?.base_price ?? 0);
+      pricingModel = rt?.pricing_model ?? "per_night";
+      bedCapacity = Number(rt?.max_guests ?? 20);
+      roomRate = pricingModel === "per_stay"
+        ? Number(rt?.per_stay_price ?? rt?.base_price ?? 0)
+        : Number(rt?.base_price ?? 0);
     }
-    if (!roomRate)
-      throw new Error("Could not determine room rate — set a base price on the room type");
 
-    const subtotal = round2(roomRate * nights);
+    // Hostel beds cannot be double-booked: enforce room capacity server-side.
+    if (roomId) {
+      const used = await countActiveOccupancies(supabase, roomId, checkIn, checkOut);
+      if (bedCapacity > 0 && used + people > bedCapacity)
+        throw new Error(
+          `This room sleeps ${bedCapacity} and already has ${Math.max(0, bedCapacity - (bedCapacity - used))} occupant${used === 1 ? "" : "s"} — only ${Math.max(0, bedCapacity - used)} more can be added for these dates`,
+        );
+    }
+
+    let subtotal = 0;
+    let folioQty = 0;
+    let folioUnit = 0;
+    let folioDesc = "";
+
+    if (pricingModel === "per_stay") {
+      // Flat price per person for the whole stay — no nightly math.
+      if (roomRate <= 0)
+        throw new Error("Set a per-stay price on this room type before adding occupants");
+      subtotal = round2(roomRate * people);
+      folioQty = people;
+      folioUnit = roomRate;
+      folioDesc = `Accommodation: ${people} per-stay fee${people === 1 ? "" : "s"}`;
+    } else {
+      if (!checkOut) throw new Error("Check-out is required for per-night stays");
+      const nights = Math.max(
+        1,
+        Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000),
+      );
+      if (roomRate <= 0)
+        throw new Error("Could not determine room rate — set a base price on the room type");
+      subtotal = round2(roomRate * nights);
+      folioQty = nights;
+      folioUnit = roomRate;
+      folioDesc = `Accommodation: ${nights} night${nights === 1 ? "" : "s"}`;
+    }
+
     const tax = round2(subtotal * (Number(hotel.tax_percent) / 100));
     const serviceCharge = round2(subtotal * (Number(hotel.service_charge_percent) / 100));
     const total = round2(subtotal + tax + serviceCharge);
 
-    let guestId = data.guest.id ?? null;
-    if (guestId) {
-      const { data: existing } = await supabase
-        .from("guests")
-        .select("id")
-        .eq("id", guestId)
-        .eq("hotel_id", data.hotelId)
-        .maybeSingle();
-      if (!existing) guestId = null;
-    }
-    if (!guestId) {
-      const { data: guest, error: guestError } = await supabase
-        .from("guests")
-        .insert({
-          hotel_id: data.hotelId,
-          full_name: data.guest.full_name,
-          email: data.guest.email ?? null,
-          phone: data.guest.phone ?? null,
-          country: data.guest.country,
-          id_type: data.guest.id_type ?? null,
-          id_number: data.guest.id_number ?? null,
-          address: data.guest.address ?? null,
-          city: data.guest.city ?? null,
-          emergency_contact: data.guest.emergency_contact ?? null,
-          notes: data.guest.notes ?? "",
-        })
-        .select("id")
-        .single();
-      if (guestError || !guest) throw new Error(guestError?.message ?? "Guest creation failed");
-      guestId = guest.id;
+    // Suggested per-person price shown on the stay (sums to the booking total).
+    const occupancyPrice = pricingModel === "per_stay" ? roomRate : round2(subtotal / people);
+
+    const guestIds: string[] = [];
+    for (const occupant of occupants) {
+      let guestId = occupant.id ?? null;
+      if (guestId) {
+        const { data: existing } = await supabase
+          .from("guests")
+          .select("id")
+          .eq("id", guestId)
+          .eq("hotel_id", data.hotelId)
+          .maybeSingle();
+        if (!existing) guestId = null;
+      }
+      if (!guestId) {
+        const { data: guest, error: guestError } = await supabase
+          .from("guests")
+          .insert({
+            hotel_id: data.hotelId,
+            full_name: occupant.full_name,
+            email: occupant.email ?? null,
+            phone: occupant.phone ?? null,
+            country: occupant.country,
+            id_type: occupant.id_type ?? null,
+            id_number: occupant.id_number ?? null,
+            address: occupant.address ?? null,
+            city: occupant.city ?? null,
+            emergency_contact: occupant.emergency_contact ?? null,
+            notes: occupant.notes ?? "",
+          })
+          .select("id")
+          .single();
+        if (guestError || !guest) throw new Error(guestError?.message ?? "Guest creation failed");
+        guestId = guest.id;
+      }
+      guestIds.push(guestId);
     }
 
     const reference = generateRef("RES");
@@ -155,13 +247,14 @@ export const createBooking = createServerFn({ method: "POST" })
       .from("bookings")
       .insert({
         hotel_id: data.hotelId,
-        guest_id: guestId,
+        guest_id: guestIds[0]!,
         room_type_id: roomTypeId,
         room_id: roomId,
-        check_in: data.checkIn,
-        check_out: data.checkOut,
-        guests_count: data.guestsCount,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests_count: people,
         room_rate: roomRate,
+        pricing_model: pricingModel,
         tax_amount: tax,
         service_charge: serviceCharge,
         services_total: 0,
@@ -178,13 +271,27 @@ export const createBooking = createServerFn({ method: "POST" })
     if (bookingError || !booking)
       throw new Error(bookingError?.message ?? "Booking creation failed");
 
+    const occupancyRows = guestIds.map((guestId) => ({
+      hotel_id: data.hotelId,
+      booking_id: booking.id,
+      guest_id: guestId,
+      room_id: roomId,
+      price: occupancyPrice,
+      status: "reserved",
+      created_by: userId,
+    }));
+    const { error: occupancyError } = await supabase
+      .from("occupancies")
+      .insert(occupancyRows);
+    if (occupancyError) throw new Error(occupancyError.message);
+
     await supabase.from("folio_items").insert({
       hotel_id: data.hotelId,
       booking_id: booking.id,
       category: "accommodation",
-      description: `Accommodation: ${nights} night${nights === 1 ? "" : "s"}`,
-      quantity: nights,
-      unit_price: roomRate,
+      description: folioDesc,
+      quantity: folioQty,
+      unit_price: folioUnit,
       amount: subtotal,
       created_by: userId,
     });
@@ -383,6 +490,13 @@ export const checkInBooking = createServerFn({ method: "POST" })
       checked_in_at: new Date().toISOString(),
     });
 
+    const nowIso = new Date().toISOString();
+    await supabase
+      .from("occupancies")
+      .update({ status: "checked_in", checked_in_at: nowIso })
+      .eq("booking_id", data.bookingId)
+      .eq("status", "reserved");
+
     if (booking.room_id) {
       await supabase.from("rooms").update({ status: "occupied" }).eq("id", booking.room_id);
     }
@@ -393,6 +507,104 @@ export const checkInBooking = createServerFn({ method: "POST" })
       action: "booking.check_in",
       resource: "booking",
       resource_id: booking.id,
+    });
+
+    return { ok: true };
+  });
+
+const occupancyActionSchema = z.object({ occupancyId: z.string().uuid() });
+
+/** Check a single occupant (dorm bed) into a stay without checking in the whole room. */
+export const checkInOccupancy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => occupancyActionSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: occ } = await supabase
+      .from("occupancies")
+      .select("*, bookings(id, hotel_id, status, room_id)")
+      .eq("id", data.occupancyId)
+      .single();
+    if (!occ) throw new Error("Occupant not found");
+    const booking = occ.bookings;
+    await assertHotelAccess(supabase, booking.hotel_id);
+    if (occ.status === "checked_in") throw new Error("This occupant is already checked in");
+    if (["cancelled", "checked_out"].includes(booking.status))
+      throw new Error("This booking is closed");
+
+    await supabase
+      .from("occupancies")
+      .update({ status: "checked_in", checked_in_at: new Date().toISOString() })
+      .eq("id", occ.id);
+
+    if (booking.status === "confirmed") {
+      await transitionStatus(supabase, booking.id, "confirmed", "checked_in", {
+        checked_in_at: new Date().toISOString(),
+      });
+    }
+    if (booking.room_id) {
+      await supabase.from("rooms").update({ status: "occupied" }).eq("id", booking.room_id);
+    }
+
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: booking.hotel_id,
+      user_id: userId,
+      action: "occupancy.check_in",
+      resource: "booking",
+      resource_id: booking.id,
+      new_value: { occupancy_id: occ.id },
+    });
+
+    return { ok: true };
+  });
+
+/** Check a single occupant out; the stay auto-closes when they are the last person in the room. */
+export const checkOutOccupancy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => occupancyActionSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: occ } = await supabase
+      .from("occupancies")
+      .select("*, bookings(id, hotel_id, status, room_id)")
+      .eq("id", data.occupancyId)
+      .single();
+    if (!occ) throw new Error("Occupant not found");
+    const booking = occ.bookings;
+    await assertHotelAccess(supabase, booking.hotel_id);
+    if (occ.status !== "checked_in") throw new Error("This occupant is not checked in");
+
+    await supabase
+      .from("occupancies")
+      .update({ status: "checked_out", checked_out_at: new Date().toISOString() })
+      .eq("id", occ.id);
+
+    const { data: remaining } = await supabase
+      .from("occupancies")
+      .select("id")
+      .eq("booking_id", booking.id)
+      .in("status", ["reserved", "checked_in"]);
+
+    if (!remaining || remaining.length === 0) {
+      await transitionStatus(supabase, booking.id, "checked_in", "checked_out", {
+        checked_out_at: new Date().toISOString(),
+      });
+      if (booking.room_id) {
+        await supabase.from("rooms").update({ status: "dirty" }).eq("id", booking.room_id);
+      }
+    }
+
+    await supabaseAdmin.from("audit_logs").insert({
+      hotel_id: booking.hotel_id,
+      user_id: userId,
+      action: "occupancy.check_out",
+      resource: "booking",
+      resource_id: booking.id,
+      new_value: { occupancy_id: occ.id },
     });
 
     return { ok: true };
@@ -420,7 +632,7 @@ interface CheckOutMath {
 
 function checkOutMath(
   booking: {
-    check_out: string;
+    check_out: string | null;
     room_rate: number | string;
     total: number | string;
     amount_paid: number | string;
@@ -431,7 +643,9 @@ function checkOutMath(
   },
   todayIso: string,
 ): CheckOutMath {
-  const unusedNights = nightsBetween(todayIso, booking.check_out);
+  // Long-term / per-stay stays have no fixed end date, so there are no
+  // "unused nights" to refund on early leave.
+  const unusedNights = booking.check_out ? nightsBetween(todayIso, booking.check_out) : 0;
   const unusedValue = round2(Number(booking.room_rate) * unusedNights);
   const adjustedTotal = Math.max(0, round2(Number(booking.total) - unusedValue));
   const paid = Number(booking.amount_paid);
@@ -536,6 +750,18 @@ export const checkOutBooking = createServerFn({ method: "POST" })
     await transitionStatus(supabase, data.bookingId, "checked_in", "checked_out", {
       checked_out_at: new Date().toISOString(),
     });
+
+    const occOutAt = new Date().toISOString();
+    await supabase
+      .from("occupancies")
+      .update({ status: "checked_out", checked_out_at: occOutAt })
+      .eq("booking_id", data.bookingId)
+      .eq("status", "checked_in");
+    await supabase
+      .from("occupancies")
+      .update({ status: "cancelled" })
+      .eq("booking_id", data.bookingId)
+      .eq("status", "reserved");
 
     let refundedAmount = 0;
     let refundNote = "";

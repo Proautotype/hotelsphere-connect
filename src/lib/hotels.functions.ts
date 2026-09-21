@@ -108,6 +108,7 @@ export const registerHotel = createServerFn({ method: "POST" })
         service_charge_percent: data.service_charge_percent,
         amenities: data.amenities,
         owner_id: userId,
+        operating_mode: data.hotel_type === "hostel" ? "flexible" : "short_term",
         status: "pending",
         onboarding_completed: false,
         onboarding_step: 1,
@@ -245,6 +246,7 @@ const hotelSettingsSchema = z.object({
   showAvailability: z.boolean().optional(),
   earlyCheckoutWithholdPercent: z.number().min(0).max(100).optional(),
   earlyCheckoutWithholdFlat: z.number().min(0).max(1_000_000).optional(),
+  operatingMode: z.enum(["short_term", "long_term", "flexible"]).optional(),
 });
 
 export const updateHotelSettings = createServerFn({ method: "POST" })
@@ -276,6 +278,7 @@ export const updateHotelSettings = createServerFn({ method: "POST" })
       showAvailability: "show_availability",
       earlyCheckoutWithholdPercent: "early_checkout_withhold_percent",
       earlyCheckoutWithholdFlat: "early_checkout_withhold_flat",
+      operatingMode: "operating_mode",
     };
 
     const update: Record<string, unknown> = {};
