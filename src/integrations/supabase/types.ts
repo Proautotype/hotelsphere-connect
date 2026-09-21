@@ -1,1580 +1,1561 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
       ad_requests: {
         Row: {
-          created_at: string
-          decision_reason: string
-          end_date: string
-          hotel_id: string
-          id: string
-          is_paid: boolean
-          message: string
-          placement: string
-          quoted_price: number
-          requested_by: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          start_date: string
-          status: string
-          updated_at: string
-        }
+          created_at: string;
+          decision_reason: string;
+          end_date: string;
+          hotel_id: string;
+          id: string;
+          is_paid: boolean;
+          message: string;
+          placement: string;
+          quoted_price: number;
+          requested_by: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          start_date: string;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          decision_reason?: string
-          end_date: string
-          hotel_id: string
-          id?: string
-          is_paid?: boolean
-          message?: string
-          placement: string
-          quoted_price?: number
-          requested_by?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          start_date: string
-          status?: string
-          updated_at?: string
-        }
+          created_at?: string;
+          decision_reason?: string;
+          end_date: string;
+          hotel_id: string;
+          id?: string;
+          is_paid?: boolean;
+          message?: string;
+          placement: string;
+          quoted_price?: number;
+          requested_by?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          start_date: string;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          decision_reason?: string
-          end_date?: string
-          hotel_id?: string
-          id?: string
-          is_paid?: boolean
-          message?: string
-          placement?: string
-          quoted_price?: number
-          requested_by?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          start_date?: string
-          status?: string
-          updated_at?: string
-        }
+          created_at?: string;
+          decision_reason?: string;
+          end_date?: string;
+          hotel_id?: string;
+          id?: string;
+          is_paid?: boolean;
+          message?: string;
+          placement?: string;
+          quoted_price?: number;
+          requested_by?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          start_date?: string;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ad_requests_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "ad_requests_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       audit_logs: {
         Row: {
-          action: string
-          actor_name: string
-          created_at: string
-          hotel_id: string | null
-          id: string
-          new_value: Json | null
-          old_value: Json | null
-          resource: string
-          resource_id: string | null
-          user_id: string | null
-        }
+          action: string;
+          actor_name: string;
+          created_at: string;
+          hotel_id: string | null;
+          id: string;
+          new_value: Json | null;
+          old_value: Json | null;
+          resource: string;
+          resource_id: string | null;
+          user_id: string | null;
+        };
         Insert: {
-          action: string
-          actor_name?: string
-          created_at?: string
-          hotel_id?: string | null
-          id?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          resource: string
-          resource_id?: string | null
-          user_id?: string | null
-        }
+          action: string;
+          actor_name?: string;
+          created_at?: string;
+          hotel_id?: string | null;
+          id?: string;
+          new_value?: Json | null;
+          old_value?: Json | null;
+          resource: string;
+          resource_id?: string | null;
+          user_id?: string | null;
+        };
         Update: {
-          action?: string
-          actor_name?: string
-          created_at?: string
-          hotel_id?: string | null
-          id?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          resource?: string
-          resource_id?: string | null
-          user_id?: string | null
-        }
+          action?: string;
+          actor_name?: string;
+          created_at?: string;
+          hotel_id?: string | null;
+          id?: string;
+          new_value?: Json | null;
+          old_value?: Json | null;
+          resource?: string;
+          resource_id?: string | null;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "audit_logs_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "audit_logs_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       bookings: {
         Row: {
-          amount_paid: number
-          cancelled_at: string | null
-          channel_connection_id: string | null
-          check_in: string
-          check_out: string
-          checked_in_at: string | null
-          checked_out_at: string | null
-          commission_amount: number
-          commission_percent: number
-          created_at: string
-          created_by: string | null
-          customer_user_id: string | null
-          discount: number
-          early_checkout: boolean
-          guest_id: string
-          guests_count: number
-          hotel_id: string
-          id: string
-          nights: number | null
-          notes: string
-          reference: string
-          refunded_amount: number
-          room_id: string | null
-          room_rate: number
-          room_type_id: string | null
-          service_charge: number
-          services_total: number
-          source: Database["public"]["Enums"]["booking_source"]
-          status: Database["public"]["Enums"]["booking_status"]
-          tax_amount: number
-          total: number
-          updated_at: string
-          withheld_amount: number
-        }
+          amount_paid: number;
+          cancelled_at: string | null;
+          channel_connection_id: string | null;
+          check_in: string;
+          check_out: string;
+          checked_in_at: string | null;
+          checked_out_at: string | null;
+          commission_amount: number;
+          commission_percent: number;
+          created_at: string;
+          created_by: string | null;
+          customer_user_id: string | null;
+          discount: number;
+          early_checkout: boolean;
+          guest_id: string;
+          guests_count: number;
+          hotel_id: string;
+          id: string;
+          nights: number | null;
+          notes: string;
+          reference: string;
+          refunded_amount: number;
+          room_id: string | null;
+          room_rate: number;
+          room_type_id: string | null;
+          service_charge: number;
+          services_total: number;
+          source: Database["public"]["Enums"]["booking_source"];
+          status: Database["public"]["Enums"]["booking_status"];
+          tax_amount: number;
+          total: number;
+          updated_at: string;
+          withheld_amount: number;
+        };
         Insert: {
-          amount_paid?: number
-          cancelled_at?: string | null
-          channel_connection_id?: string | null
-          check_in: string
-          check_out: string
-          checked_in_at?: string | null
-          checked_out_at?: string | null
-          commission_amount?: number
-          commission_percent?: number
-          created_at?: string
-          created_by?: string | null
-          customer_user_id?: string | null
-          discount?: number
-          early_checkout?: boolean
-          guest_id: string
-          guests_count?: number
-          hotel_id: string
-          id?: string
-          nights?: number | null
-          notes?: string
-          reference?: string
-          refunded_amount?: number
-          room_id?: string | null
-          room_rate?: number
-          room_type_id?: string | null
-          service_charge?: number
-          services_total?: number
-          source?: Database["public"]["Enums"]["booking_source"]
-          status?: Database["public"]["Enums"]["booking_status"]
-          tax_amount?: number
-          total?: number
-          updated_at?: string
-          withheld_amount?: number
-        }
+          amount_paid?: number;
+          cancelled_at?: string | null;
+          channel_connection_id?: string | null;
+          check_in: string;
+          check_out: string;
+          checked_in_at?: string | null;
+          checked_out_at?: string | null;
+          commission_amount?: number;
+          commission_percent?: number;
+          created_at?: string;
+          created_by?: string | null;
+          customer_user_id?: string | null;
+          discount?: number;
+          early_checkout?: boolean;
+          guest_id: string;
+          guests_count?: number;
+          hotel_id: string;
+          id?: string;
+          nights?: number | null;
+          notes?: string;
+          reference?: string;
+          refunded_amount?: number;
+          room_id?: string | null;
+          room_rate?: number;
+          room_type_id?: string | null;
+          service_charge?: number;
+          services_total?: number;
+          source?: Database["public"]["Enums"]["booking_source"];
+          status?: Database["public"]["Enums"]["booking_status"];
+          tax_amount?: number;
+          total?: number;
+          updated_at?: string;
+          withheld_amount?: number;
+        };
         Update: {
-          amount_paid?: number
-          cancelled_at?: string | null
-          channel_connection_id?: string | null
-          check_in?: string
-          check_out?: string
-          checked_in_at?: string | null
-          checked_out_at?: string | null
-          commission_amount?: number
-          commission_percent?: number
-          created_at?: string
-          created_by?: string | null
-          customer_user_id?: string | null
-          discount?: number
-          early_checkout?: boolean
-          guest_id?: string
-          guests_count?: number
-          hotel_id?: string
-          id?: string
-          nights?: number | null
-          notes?: string
-          reference?: string
-          refunded_amount?: number
-          room_id?: string | null
-          room_rate?: number
-          room_type_id?: string | null
-          service_charge?: number
-          services_total?: number
-          source?: Database["public"]["Enums"]["booking_source"]
-          status?: Database["public"]["Enums"]["booking_status"]
-          tax_amount?: number
-          total?: number
-          updated_at?: string
-          withheld_amount?: number
-        }
+          amount_paid?: number;
+          cancelled_at?: string | null;
+          channel_connection_id?: string | null;
+          check_in?: string;
+          check_out?: string;
+          checked_in_at?: string | null;
+          checked_out_at?: string | null;
+          commission_amount?: number;
+          commission_percent?: number;
+          created_at?: string;
+          created_by?: string | null;
+          customer_user_id?: string | null;
+          discount?: number;
+          early_checkout?: boolean;
+          guest_id?: string;
+          guests_count?: number;
+          hotel_id?: string;
+          id?: string;
+          nights?: number | null;
+          notes?: string;
+          reference?: string;
+          refunded_amount?: number;
+          room_id?: string | null;
+          room_rate?: number;
+          room_type_id?: string | null;
+          service_charge?: number;
+          services_total?: number;
+          source?: Database["public"]["Enums"]["booking_source"];
+          status?: Database["public"]["Enums"]["booking_status"];
+          tax_amount?: number;
+          total?: number;
+          updated_at?: string;
+          withheld_amount?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "bookings_channel_connection_id_fkey"
-            columns: ["channel_connection_id"]
-            isOneToOne: false
-            referencedRelation: "channel_connections"
-            referencedColumns: ["id"]
+            foreignKeyName: "bookings_channel_connection_id_fkey";
+            columns: ["channel_connection_id"];
+            isOneToOne: false;
+            referencedRelation: "channel_connections";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "bookings_guest_id_fkey"
-            columns: ["guest_id"]
-            isOneToOne: false
-            referencedRelation: "guests"
-            referencedColumns: ["id"]
+            foreignKeyName: "bookings_guest_id_fkey";
+            columns: ["guest_id"];
+            isOneToOne: false;
+            referencedRelation: "guests";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "bookings_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "bookings_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "bookings_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "rooms"
-            referencedColumns: ["id"]
+            foreignKeyName: "bookings_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "bookings_room_type_id_fkey"
-            columns: ["room_type_id"]
-            isOneToOne: false
-            referencedRelation: "room_types"
-            referencedColumns: ["id"]
+            foreignKeyName: "bookings_room_type_id_fkey";
+            columns: ["room_type_id"];
+            isOneToOne: false;
+            referencedRelation: "room_types";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       cash_sessions: {
         Row: {
-          actual_cash: number | null
-          cashier_name: string
-          closed_at: string | null
-          difference: number | null
-          expected_cash: number | null
-          hotel_id: string
-          id: string
-          notes: string
-          opened_at: string
-          opening_balance: number
-          status: Database["public"]["Enums"]["cash_session_status"]
-          user_id: string | null
-        }
+          actual_cash: number | null;
+          cashier_name: string;
+          closed_at: string | null;
+          difference: number | null;
+          expected_cash: number | null;
+          hotel_id: string;
+          id: string;
+          notes: string;
+          opened_at: string;
+          opening_balance: number;
+          status: Database["public"]["Enums"]["cash_session_status"];
+          user_id: string | null;
+        };
         Insert: {
-          actual_cash?: number | null
-          cashier_name?: string
-          closed_at?: string | null
-          difference?: number | null
-          expected_cash?: number | null
-          hotel_id: string
-          id?: string
-          notes?: string
-          opened_at?: string
-          opening_balance?: number
-          status?: Database["public"]["Enums"]["cash_session_status"]
-          user_id?: string | null
-        }
+          actual_cash?: number | null;
+          cashier_name?: string;
+          closed_at?: string | null;
+          difference?: number | null;
+          expected_cash?: number | null;
+          hotel_id: string;
+          id?: string;
+          notes?: string;
+          opened_at?: string;
+          opening_balance?: number;
+          status?: Database["public"]["Enums"]["cash_session_status"];
+          user_id?: string | null;
+        };
         Update: {
-          actual_cash?: number | null
-          cashier_name?: string
-          closed_at?: string | null
-          difference?: number | null
-          expected_cash?: number | null
-          hotel_id?: string
-          id?: string
-          notes?: string
-          opened_at?: string
-          opening_balance?: number
-          status?: Database["public"]["Enums"]["cash_session_status"]
-          user_id?: string | null
-        }
+          actual_cash?: number | null;
+          cashier_name?: string;
+          closed_at?: string | null;
+          difference?: number | null;
+          expected_cash?: number | null;
+          hotel_id?: string;
+          id?: string;
+          notes?: string;
+          opened_at?: string;
+          opening_balance?: number;
+          status?: Database["public"]["Enums"]["cash_session_status"];
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "cash_sessions_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "cash_sessions_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       channel_bookings: {
         Row: {
-          booking_id: string | null
-          check_in: string
-          check_out: string
-          connection_id: string
-          created_at: string
-          external_uid: string
-          hotel_id: string
-          id: string
-          last_seen_at: string
-          summary: string
-          updated_at: string
-        }
+          booking_id: string | null;
+          check_in: string;
+          check_out: string;
+          connection_id: string;
+          created_at: string;
+          external_uid: string;
+          hotel_id: string;
+          id: string;
+          last_seen_at: string;
+          summary: string;
+          updated_at: string;
+        };
         Insert: {
-          booking_id?: string | null
-          check_in: string
-          check_out: string
-          connection_id: string
-          created_at?: string
-          external_uid: string
-          hotel_id: string
-          id?: string
-          last_seen_at?: string
-          summary?: string
-          updated_at?: string
-        }
+          booking_id?: string | null;
+          check_in: string;
+          check_out: string;
+          connection_id: string;
+          created_at?: string;
+          external_uid: string;
+          hotel_id: string;
+          id?: string;
+          last_seen_at?: string;
+          summary?: string;
+          updated_at?: string;
+        };
         Update: {
-          booking_id?: string | null
-          check_in?: string
-          check_out?: string
-          connection_id?: string
-          created_at?: string
-          external_uid?: string
-          hotel_id?: string
-          id?: string
-          last_seen_at?: string
-          summary?: string
-          updated_at?: string
-        }
+          booking_id?: string | null;
+          check_in?: string;
+          check_out?: string;
+          connection_id?: string;
+          created_at?: string;
+          external_uid?: string;
+          hotel_id?: string;
+          id?: string;
+          last_seen_at?: string;
+          summary?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "channel_bookings_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_bookings_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "channel_bookings_connection_id_fkey"
-            columns: ["connection_id"]
-            isOneToOne: false
-            referencedRelation: "channel_connections"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_bookings_connection_id_fkey";
+            columns: ["connection_id"];
+            isOneToOne: false;
+            referencedRelation: "channel_connections";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "channel_bookings_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_bookings_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       channel_connections: {
         Row: {
-          api_config: Json
-          auto_sync: boolean
-          created_at: string
-          created_by: string | null
-          export_token: string
-          hotel_id: string
-          id: string
-          import_url: string | null
-          imported_count: number
-          label: string
-          last_sync_at: string | null
-          last_sync_message: string | null
-          last_sync_ok: boolean | null
-          mode: Database["public"]["Enums"]["channel_mode"]
-          provider: Database["public"]["Enums"]["channel_provider"]
-          room_type_id: string | null
-          status: Database["public"]["Enums"]["channel_status"]
-          updated_at: string
-        }
+          api_config: Json;
+          auto_sync: boolean;
+          created_at: string;
+          created_by: string | null;
+          export_token: string;
+          hotel_id: string;
+          id: string;
+          import_url: string | null;
+          imported_count: number;
+          label: string;
+          last_sync_at: string | null;
+          last_sync_message: string | null;
+          last_sync_ok: boolean | null;
+          mode: Database["public"]["Enums"]["channel_mode"];
+          provider: Database["public"]["Enums"]["channel_provider"];
+          room_type_id: string | null;
+          status: Database["public"]["Enums"]["channel_status"];
+          updated_at: string;
+        };
         Insert: {
-          api_config?: Json
-          auto_sync?: boolean
-          created_at?: string
-          created_by?: string | null
-          export_token?: string
-          hotel_id: string
-          id?: string
-          import_url?: string | null
-          imported_count?: number
-          label?: string
-          last_sync_at?: string | null
-          last_sync_message?: string | null
-          last_sync_ok?: boolean | null
-          mode?: Database["public"]["Enums"]["channel_mode"]
-          provider?: Database["public"]["Enums"]["channel_provider"]
-          room_type_id?: string | null
-          status?: Database["public"]["Enums"]["channel_status"]
-          updated_at?: string
-        }
+          api_config?: Json;
+          auto_sync?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          export_token?: string;
+          hotel_id: string;
+          id?: string;
+          import_url?: string | null;
+          imported_count?: number;
+          label?: string;
+          last_sync_at?: string | null;
+          last_sync_message?: string | null;
+          last_sync_ok?: boolean | null;
+          mode?: Database["public"]["Enums"]["channel_mode"];
+          provider?: Database["public"]["Enums"]["channel_provider"];
+          room_type_id?: string | null;
+          status?: Database["public"]["Enums"]["channel_status"];
+          updated_at?: string;
+        };
         Update: {
-          api_config?: Json
-          auto_sync?: boolean
-          created_at?: string
-          created_by?: string | null
-          export_token?: string
-          hotel_id?: string
-          id?: string
-          import_url?: string | null
-          imported_count?: number
-          label?: string
-          last_sync_at?: string | null
-          last_sync_message?: string | null
-          last_sync_ok?: boolean | null
-          mode?: Database["public"]["Enums"]["channel_mode"]
-          provider?: Database["public"]["Enums"]["channel_provider"]
-          room_type_id?: string | null
-          status?: Database["public"]["Enums"]["channel_status"]
-          updated_at?: string
-        }
+          api_config?: Json;
+          auto_sync?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          export_token?: string;
+          hotel_id?: string;
+          id?: string;
+          import_url?: string | null;
+          imported_count?: number;
+          label?: string;
+          last_sync_at?: string | null;
+          last_sync_message?: string | null;
+          last_sync_ok?: boolean | null;
+          mode?: Database["public"]["Enums"]["channel_mode"];
+          provider?: Database["public"]["Enums"]["channel_provider"];
+          room_type_id?: string | null;
+          status?: Database["public"]["Enums"]["channel_status"];
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "channel_connections_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_connections_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "channel_connections_room_type_id_fkey"
-            columns: ["room_type_id"]
-            isOneToOne: false
-            referencedRelation: "room_types"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_connections_room_type_id_fkey";
+            columns: ["room_type_id"];
+            isOneToOne: false;
+            referencedRelation: "room_types";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       channel_sync_logs: {
         Row: {
-          connection_id: string
-          created_at: string
-          direction: string
-          hotel_id: string
-          id: string
-          imported: number
-          message: string
-          ok: boolean
-          skipped: number
-          updated: number
-        }
+          connection_id: string;
+          created_at: string;
+          direction: string;
+          hotel_id: string;
+          id: string;
+          imported: number;
+          message: string;
+          ok: boolean;
+          skipped: number;
+          updated: number;
+        };
         Insert: {
-          connection_id: string
-          created_at?: string
-          direction?: string
-          hotel_id: string
-          id?: string
-          imported?: number
-          message?: string
-          ok?: boolean
-          skipped?: number
-          updated?: number
-        }
+          connection_id: string;
+          created_at?: string;
+          direction?: string;
+          hotel_id: string;
+          id?: string;
+          imported?: number;
+          message?: string;
+          ok?: boolean;
+          skipped?: number;
+          updated?: number;
+        };
         Update: {
-          connection_id?: string
-          created_at?: string
-          direction?: string
-          hotel_id?: string
-          id?: string
-          imported?: number
-          message?: string
-          ok?: boolean
-          skipped?: number
-          updated?: number
-        }
+          connection_id?: string;
+          created_at?: string;
+          direction?: string;
+          hotel_id?: string;
+          id?: string;
+          imported?: number;
+          message?: string;
+          ok?: boolean;
+          skipped?: number;
+          updated?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "channel_sync_logs_connection_id_fkey"
-            columns: ["connection_id"]
-            isOneToOne: false
-            referencedRelation: "channel_connections"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_sync_logs_connection_id_fkey";
+            columns: ["connection_id"];
+            isOneToOne: false;
+            referencedRelation: "channel_connections";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "channel_sync_logs_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "channel_sync_logs_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       data_requests: {
         Row: {
-          created_at: string
-          decided_at: string | null
-          decided_by: string | null
-          hotel_id: string
-          id: string
-          kind: string
-          note: string
-          requested_by: string | null
-          response_note: string
-          scope: string
-          status: string
-          updated_at: string
-        }
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          hotel_id: string;
+          id: string;
+          kind: string;
+          note: string;
+          requested_by: string | null;
+          response_note: string;
+          scope: string;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          hotel_id: string
-          id?: string
-          kind: string
-          note?: string
-          requested_by?: string | null
-          response_note?: string
-          scope?: string
-          status?: string
-          updated_at?: string
-        }
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          hotel_id: string;
+          id?: string;
+          kind: string;
+          note?: string;
+          requested_by?: string | null;
+          response_note?: string;
+          scope?: string;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          hotel_id?: string
-          id?: string
-          kind?: string
-          note?: string
-          requested_by?: string | null
-          response_note?: string
-          scope?: string
-          status?: string
-          updated_at?: string
-        }
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          hotel_id?: string;
+          id?: string;
+          kind?: string;
+          note?: string;
+          requested_by?: string | null;
+          response_note?: string;
+          scope?: string;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "data_requests_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "data_requests_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       expenses: {
         Row: {
-          amount: number
-          cash_session_id: string | null
-          category: Database["public"]["Enums"]["expense_category"]
-          created_at: string
-          created_by: string | null
-          description: string
-          hotel_id: string
-          id: string
-          method: Database["public"]["Enums"]["payment_method"]
-          note: string
-          reference: string
-          spent_on: string
-          updated_at: string
-          vendor: string
-        }
+          amount: number;
+          cash_session_id: string | null;
+          category: Database["public"]["Enums"]["expense_category"];
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          hotel_id: string;
+          id: string;
+          method: Database["public"]["Enums"]["payment_method"];
+          note: string;
+          reference: string;
+          spent_on: string;
+          updated_at: string;
+          vendor: string;
+        };
         Insert: {
-          amount: number
-          cash_session_id?: string | null
-          category?: Database["public"]["Enums"]["expense_category"]
-          created_at?: string
-          created_by?: string | null
-          description: string
-          hotel_id: string
-          id?: string
-          method?: Database["public"]["Enums"]["payment_method"]
-          note?: string
-          reference?: string
-          spent_on?: string
-          updated_at?: string
-          vendor?: string
-        }
+          amount: number;
+          cash_session_id?: string | null;
+          category?: Database["public"]["Enums"]["expense_category"];
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          hotel_id: string;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          note?: string;
+          reference?: string;
+          spent_on?: string;
+          updated_at?: string;
+          vendor?: string;
+        };
         Update: {
-          amount?: number
-          cash_session_id?: string | null
-          category?: Database["public"]["Enums"]["expense_category"]
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          hotel_id?: string
-          id?: string
-          method?: Database["public"]["Enums"]["payment_method"]
-          note?: string
-          reference?: string
-          spent_on?: string
-          updated_at?: string
-          vendor?: string
-        }
+          amount?: number;
+          cash_session_id?: string | null;
+          category?: Database["public"]["Enums"]["expense_category"];
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          hotel_id?: string;
+          id?: string;
+          method?: Database["public"]["Enums"]["payment_method"];
+          note?: string;
+          reference?: string;
+          spent_on?: string;
+          updated_at?: string;
+          vendor?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "expenses_cash_session_id_fkey"
-            columns: ["cash_session_id"]
-            isOneToOne: false
-            referencedRelation: "cash_sessions"
-            referencedColumns: ["id"]
+            foreignKeyName: "expenses_cash_session_id_fkey";
+            columns: ["cash_session_id"];
+            isOneToOne: false;
+            referencedRelation: "cash_sessions";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "expenses_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "expenses_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       folio_items: {
         Row: {
-          amount: number
-          booking_id: string
-          category: string
-          created_at: string
-          created_by: string | null
-          description: string
-          hotel_id: string
-          id: string
-          quantity: number
-          unit_price: number
-        }
+          amount: number;
+          booking_id: string;
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          hotel_id: string;
+          id: string;
+          quantity: number;
+          unit_price: number;
+        };
         Insert: {
-          amount?: number
-          booking_id: string
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          description: string
-          hotel_id: string
-          id?: string
-          quantity?: number
-          unit_price?: number
-        }
+          amount?: number;
+          booking_id: string;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          hotel_id: string;
+          id?: string;
+          quantity?: number;
+          unit_price?: number;
+        };
         Update: {
-          amount?: number
-          booking_id?: string
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          hotel_id?: string
-          id?: string
-          quantity?: number
-          unit_price?: number
-        }
+          amount?: number;
+          booking_id?: string;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          hotel_id?: string;
+          id?: string;
+          quantity?: number;
+          unit_price?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "folio_items_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "folio_items_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "folio_items_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "folio_items_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       guests: {
         Row: {
-          address: string | null
-          city: string | null
-          country: string
-          created_at: string
-          email: string | null
-          emergency_contact: string | null
-          full_name: string
-          hotel_id: string
-          id: string
-          id_number: string | null
-          id_type: string | null
-          notes: string
-          phone: string | null
-          updated_at: string
-          user_id: string | null
-        }
+          address: string | null;
+          city: string | null;
+          country: string;
+          created_at: string;
+          email: string | null;
+          emergency_contact: string | null;
+          full_name: string;
+          hotel_id: string;
+          id: string;
+          id_number: string | null;
+          id_type: string | null;
+          notes: string;
+          phone: string | null;
+          updated_at: string;
+          user_id: string | null;
+        };
         Insert: {
-          address?: string | null
-          city?: string | null
-          country?: string
-          created_at?: string
-          email?: string | null
-          emergency_contact?: string | null
-          full_name: string
-          hotel_id: string
-          id?: string
-          id_number?: string | null
-          id_type?: string | null
-          notes?: string
-          phone?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
+          address?: string | null;
+          city?: string | null;
+          country?: string;
+          created_at?: string;
+          email?: string | null;
+          emergency_contact?: string | null;
+          full_name: string;
+          hotel_id: string;
+          id?: string;
+          id_number?: string | null;
+          id_type?: string | null;
+          notes?: string;
+          phone?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
         Update: {
-          address?: string | null
-          city?: string | null
-          country?: string
-          created_at?: string
-          email?: string | null
-          emergency_contact?: string | null
-          full_name?: string
-          hotel_id?: string
-          id?: string
-          id_number?: string | null
-          id_type?: string | null
-          notes?: string
-          phone?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
+          address?: string | null;
+          city?: string | null;
+          country?: string;
+          created_at?: string;
+          email?: string | null;
+          emergency_contact?: string | null;
+          full_name?: string;
+          hotel_id?: string;
+          id?: string;
+          id_number?: string | null;
+          id_type?: string | null;
+          notes?: string;
+          phone?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "guests_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "guests_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       hotel_members: {
         Row: {
-          created_at: string
-          full_name: string
-          hotel_id: string
-          id: string
-          invited_email: string | null
-          is_active: boolean
-          permissions: string[]
-          staff_role: Database["public"]["Enums"]["staff_role"]
-          updated_at: string
-          user_id: string | null
-        }
+          created_at: string;
+          full_name: string;
+          hotel_id: string;
+          id: string;
+          invite_status: string;
+          invited_email: string | null;
+          is_active: boolean;
+          permissions: string[];
+          staff_role: Database["public"]["Enums"]["staff_role"];
+          updated_at: string;
+          user_id: string | null;
+        };
         Insert: {
-          created_at?: string
-          full_name?: string
-          hotel_id: string
-          id?: string
-          invited_email?: string | null
-          is_active?: boolean
-          permissions?: string[]
-          staff_role?: Database["public"]["Enums"]["staff_role"]
-          updated_at?: string
-          user_id?: string | null
-        }
+          created_at?: string;
+          full_name?: string;
+          hotel_id: string;
+          id?: string;
+          invite_status?: string;
+          invited_email?: string | null;
+          is_active?: boolean;
+          permissions?: string[];
+          staff_role?: Database["public"]["Enums"]["staff_role"];
+          updated_at?: string;
+          user_id?: string | null;
+        };
         Update: {
-          created_at?: string
-          full_name?: string
-          hotel_id?: string
-          id?: string
-          invited_email?: string | null
-          is_active?: boolean
-          permissions?: string[]
-          staff_role?: Database["public"]["Enums"]["staff_role"]
-          updated_at?: string
-          user_id?: string | null
-        }
+          created_at?: string;
+          full_name?: string;
+          hotel_id?: string;
+          id?: string;
+          invite_status?: string;
+          invited_email?: string | null;
+          is_active?: boolean;
+          permissions?: string[];
+          staff_role?: Database["public"]["Enums"]["staff_role"];
+          updated_at?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "hotel_members_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "hotel_members_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       hotel_payment_methods: {
         Row: {
-          config: Json
-          hotel_id: string
-          id: string
-          is_enabled: boolean
-          method: Database["public"]["Enums"]["payment_method"]
-          provider: string
-        }
+          config: Json;
+          hotel_id: string;
+          id: string;
+          is_enabled: boolean;
+          method: Database["public"]["Enums"]["payment_method"];
+          provider: string;
+        };
         Insert: {
-          config?: Json
-          hotel_id: string
-          id?: string
-          is_enabled?: boolean
-          method: Database["public"]["Enums"]["payment_method"]
-          provider?: string
-        }
+          config?: Json;
+          hotel_id: string;
+          id?: string;
+          is_enabled?: boolean;
+          method: Database["public"]["Enums"]["payment_method"];
+          provider?: string;
+        };
         Update: {
-          config?: Json
-          hotel_id?: string
-          id?: string
-          is_enabled?: boolean
-          method?: Database["public"]["Enums"]["payment_method"]
-          provider?: string
-        }
+          config?: Json;
+          hotel_id?: string;
+          id?: string;
+          is_enabled?: boolean;
+          method?: Database["public"]["Enums"]["payment_method"];
+          provider?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "hotel_payment_methods_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "hotel_payment_methods_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       hotel_subscriptions: {
         Row: {
-          commission_percent_override: number | null
-          created_at: string
-          current_period_end: string | null
-          hotel_id: string
-          id: string
-          notes: string
-          plan_id: string | null
-          registration_fee_paid: boolean
-          started_at: string
-          status: string
-          updated_at: string
-        }
+          commission_percent_override: number | null;
+          created_at: string;
+          current_period_end: string | null;
+          hotel_id: string;
+          id: string;
+          notes: string;
+          plan_id: string | null;
+          registration_fee_paid: boolean;
+          started_at: string;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          commission_percent_override?: number | null
-          created_at?: string
-          current_period_end?: string | null
-          hotel_id: string
-          id?: string
-          notes?: string
-          plan_id?: string | null
-          registration_fee_paid?: boolean
-          started_at?: string
-          status?: string
-          updated_at?: string
-        }
+          commission_percent_override?: number | null;
+          created_at?: string;
+          current_period_end?: string | null;
+          hotel_id: string;
+          id?: string;
+          notes?: string;
+          plan_id?: string | null;
+          registration_fee_paid?: boolean;
+          started_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          commission_percent_override?: number | null
-          created_at?: string
-          current_period_end?: string | null
-          hotel_id?: string
-          id?: string
-          notes?: string
-          plan_id?: string | null
-          registration_fee_paid?: boolean
-          started_at?: string
-          status?: string
-          updated_at?: string
-        }
+          commission_percent_override?: number | null;
+          created_at?: string;
+          current_period_end?: string | null;
+          hotel_id?: string;
+          id?: string;
+          notes?: string;
+          plan_id?: string | null;
+          registration_fee_paid?: boolean;
+          started_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "hotel_subscriptions_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: true
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "hotel_subscriptions_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: true;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "hotel_subscriptions_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
+            foreignKeyName: "hotel_subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "plans";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       hotels: {
         Row: {
-          accept_online_bookings: boolean
-          address: string
-          amenities: string[]
-          cancellation_policy: string
-          check_in_time: string
-          check_out_time: string
-          city: string
-          country: string
-          cover_url: string | null
-          created_at: string
-          currency: string
-          description: string
-          early_checkout_withhold_flat: number
-          early_checkout_withhold_percent: number
-          email: string | null
-          hotel_type: string
-          id: string
-          is_demo: boolean
-          is_featured: boolean
-          is_public_listed: boolean
-          latitude: number | null
-          logo_url: string | null
-          longitude: number | null
-          name: string
-          onboarding_completed: boolean
-          onboarding_step: number
-          owner_id: string | null
-          phone: string | null
-          photos: string[]
-          rating: number
-          region: string
-          rejection_reason: string | null
-          room_count: number
-          service_charge_percent: number
-          show_availability: boolean
-          show_prices: boolean
-          slug: string
-          status: Database["public"]["Enums"]["hotel_status"]
-          tax_percent: number
-          timezone: string
-          tour_video_path: string
-          updated_at: string
-          videos: string[]
-          website: string | null
-        }
+          accept_online_bookings: boolean;
+          address: string;
+          amenities: string[];
+          cancellation_policy: string;
+          check_in_time: string;
+          check_out_time: string;
+          city: string;
+          country: string;
+          cover_url: string | null;
+          created_at: string;
+          currency: string;
+          description: string;
+          early_checkout_withhold_flat: number;
+          early_checkout_withhold_percent: number;
+          email: string | null;
+          hotel_type: string;
+          id: string;
+          is_demo: boolean;
+          is_featured: boolean;
+          is_public_listed: boolean;
+          latitude: number | null;
+          logo_url: string | null;
+          longitude: number | null;
+          name: string;
+          onboarding_completed: boolean;
+          onboarding_step: number;
+          owner_id: string | null;
+          phone: string | null;
+          photos: string[];
+          rating: number;
+          region: string;
+          rejection_reason: string | null;
+          room_count: number;
+          service_charge_percent: number;
+          show_availability: boolean;
+          show_prices: boolean;
+          slug: string;
+          status: Database["public"]["Enums"]["hotel_status"];
+          tax_percent: number;
+          timezone: string;
+          tour_video_path: string;
+          updated_at: string;
+          videos: string[];
+          website: string | null;
+        };
         Insert: {
-          accept_online_bookings?: boolean
-          address?: string
-          amenities?: string[]
-          cancellation_policy?: string
-          check_in_time?: string
-          check_out_time?: string
-          city?: string
-          country?: string
-          cover_url?: string | null
-          created_at?: string
-          currency?: string
-          description?: string
-          early_checkout_withhold_flat?: number
-          early_checkout_withhold_percent?: number
-          email?: string | null
-          hotel_type?: string
-          id?: string
-          is_demo?: boolean
-          is_featured?: boolean
-          is_public_listed?: boolean
-          latitude?: number | null
-          logo_url?: string | null
-          longitude?: number | null
-          name: string
-          onboarding_completed?: boolean
-          onboarding_step?: number
-          owner_id?: string | null
-          phone?: string | null
-          photos?: string[]
-          rating?: number
-          region?: string
-          rejection_reason?: string | null
-          room_count?: number
-          service_charge_percent?: number
-          show_availability?: boolean
-          show_prices?: boolean
-          slug: string
-          status?: Database["public"]["Enums"]["hotel_status"]
-          tax_percent?: number
-          timezone?: string
-          tour_video_path?: string
-          updated_at?: string
-          videos?: string[]
-          website?: string | null
-        }
+          accept_online_bookings?: boolean;
+          address?: string;
+          amenities?: string[];
+          cancellation_policy?: string;
+          check_in_time?: string;
+          check_out_time?: string;
+          city?: string;
+          country?: string;
+          cover_url?: string | null;
+          created_at?: string;
+          currency?: string;
+          description?: string;
+          early_checkout_withhold_flat?: number;
+          early_checkout_withhold_percent?: number;
+          email?: string | null;
+          hotel_type?: string;
+          id?: string;
+          is_demo?: boolean;
+          is_featured?: boolean;
+          is_public_listed?: boolean;
+          latitude?: number | null;
+          logo_url?: string | null;
+          longitude?: number | null;
+          name: string;
+          onboarding_completed?: boolean;
+          onboarding_step?: number;
+          owner_id?: string | null;
+          phone?: string | null;
+          photos?: string[];
+          rating?: number;
+          region?: string;
+          rejection_reason?: string | null;
+          room_count?: number;
+          service_charge_percent?: number;
+          show_availability?: boolean;
+          show_prices?: boolean;
+          slug: string;
+          status?: Database["public"]["Enums"]["hotel_status"];
+          tax_percent?: number;
+          timezone?: string;
+          tour_video_path?: string;
+          updated_at?: string;
+          videos?: string[];
+          website?: string | null;
+        };
         Update: {
-          accept_online_bookings?: boolean
-          address?: string
-          amenities?: string[]
-          cancellation_policy?: string
-          check_in_time?: string
-          check_out_time?: string
-          city?: string
-          country?: string
-          cover_url?: string | null
-          created_at?: string
-          currency?: string
-          description?: string
-          early_checkout_withhold_flat?: number
-          early_checkout_withhold_percent?: number
-          email?: string | null
-          hotel_type?: string
-          id?: string
-          is_demo?: boolean
-          is_featured?: boolean
-          is_public_listed?: boolean
-          latitude?: number | null
-          logo_url?: string | null
-          longitude?: number | null
-          name?: string
-          onboarding_completed?: boolean
-          onboarding_step?: number
-          owner_id?: string | null
-          phone?: string | null
-          photos?: string[]
-          rating?: number
-          region?: string
-          rejection_reason?: string | null
-          room_count?: number
-          service_charge_percent?: number
-          show_availability?: boolean
-          show_prices?: boolean
-          slug?: string
-          status?: Database["public"]["Enums"]["hotel_status"]
-          tax_percent?: number
-          timezone?: string
-          tour_video_path?: string
-          updated_at?: string
-          videos?: string[]
-          website?: string | null
-        }
-        Relationships: []
-      }
+          accept_online_bookings?: boolean;
+          address?: string;
+          amenities?: string[];
+          cancellation_policy?: string;
+          check_in_time?: string;
+          check_out_time?: string;
+          city?: string;
+          country?: string;
+          cover_url?: string | null;
+          created_at?: string;
+          currency?: string;
+          description?: string;
+          early_checkout_withhold_flat?: number;
+          early_checkout_withhold_percent?: number;
+          email?: string | null;
+          hotel_type?: string;
+          id?: string;
+          is_demo?: boolean;
+          is_featured?: boolean;
+          is_public_listed?: boolean;
+          latitude?: number | null;
+          logo_url?: string | null;
+          longitude?: number | null;
+          name?: string;
+          onboarding_completed?: boolean;
+          onboarding_step?: number;
+          owner_id?: string | null;
+          phone?: string | null;
+          photos?: string[];
+          rating?: number;
+          region?: string;
+          rejection_reason?: string | null;
+          room_count?: number;
+          service_charge_percent?: number;
+          show_availability?: boolean;
+          show_prices?: boolean;
+          slug?: string;
+          status?: Database["public"]["Enums"]["hotel_status"];
+          tax_percent?: number;
+          timezone?: string;
+          tour_video_path?: string;
+          updated_at?: string;
+          videos?: string[];
+          website?: string | null;
+        };
+        Relationships: [];
+      };
       invoices: {
         Row: {
-          amount: number
-          created_at: string
-          currency: string
-          description: string
-          due_date: string | null
-          hotel_id: string
-          id: string
-          kind: string
-          number: string
-          paid_at: string | null
-          period_end: string | null
-          period_start: string | null
-          status: string
-          updated_at: string
-        }
+          amount: number;
+          created_at: string;
+          currency: string;
+          description: string;
+          due_date: string | null;
+          hotel_id: string;
+          id: string;
+          kind: string;
+          number: string;
+          paid_at: string | null;
+          period_end: string | null;
+          period_start: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          amount?: number
-          created_at?: string
-          currency?: string
-          description?: string
-          due_date?: string | null
-          hotel_id: string
-          id?: string
-          kind: string
-          number: string
-          paid_at?: string | null
-          period_end?: string | null
-          period_start?: string | null
-          status?: string
-          updated_at?: string
-        }
+          amount?: number;
+          created_at?: string;
+          currency?: string;
+          description?: string;
+          due_date?: string | null;
+          hotel_id: string;
+          id?: string;
+          kind: string;
+          number: string;
+          paid_at?: string | null;
+          period_end?: string | null;
+          period_start?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          amount?: number
-          created_at?: string
-          currency?: string
-          description?: string
-          due_date?: string | null
-          hotel_id?: string
-          id?: string
-          kind?: string
-          number?: string
-          paid_at?: string | null
-          period_end?: string | null
-          period_start?: string | null
-          status?: string
-          updated_at?: string
-        }
+          amount?: number;
+          created_at?: string;
+          currency?: string;
+          description?: string;
+          due_date?: string | null;
+          hotel_id?: string;
+          id?: string;
+          kind?: string;
+          number?: string;
+          paid_at?: string | null;
+          period_end?: string | null;
+          period_start?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "invoices_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "invoices_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       notifications: {
         Row: {
-          body: string
-          created_at: string
-          hotel_id: string | null
-          id: string
-          is_read: boolean
-          link: string | null
-          title: string
-          type: string
-          user_id: string | null
-        }
+          body: string;
+          created_at: string;
+          hotel_id: string | null;
+          id: string;
+          is_read: boolean;
+          link: string | null;
+          title: string;
+          type: string;
+          user_id: string | null;
+        };
         Insert: {
-          body?: string
-          created_at?: string
-          hotel_id?: string | null
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          title: string
-          type?: string
-          user_id?: string | null
-        }
+          body?: string;
+          created_at?: string;
+          hotel_id?: string | null;
+          id?: string;
+          is_read?: boolean;
+          link?: string | null;
+          title: string;
+          type?: string;
+          user_id?: string | null;
+        };
         Update: {
-          body?: string
-          created_at?: string
-          hotel_id?: string | null
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          title?: string
-          type?: string
-          user_id?: string | null
-        }
+          body?: string;
+          created_at?: string;
+          hotel_id?: string | null;
+          id?: string;
+          is_read?: boolean;
+          link?: string | null;
+          title?: string;
+          type?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "notifications_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "notifications_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       payments: {
         Row: {
-          amount: number
-          booking_id: string | null
-          cash_session_id: string | null
-          created_at: string
-          currency: string
-          guest_id: string | null
-          hotel_id: string
-          id: string
-          kind: string
-          metadata: Json
-          method: Database["public"]["Enums"]["payment_method"]
-          paid_at: string | null
-          provider: string
-          provider_reference: string | null
-          reason: string
-          receipt_number: string
-          received_by: string | null
-          reference: string
-          status: Database["public"]["Enums"]["payment_status"]
-          updated_at: string
-        }
+          amount: number;
+          booking_id: string | null;
+          cash_session_id: string | null;
+          created_at: string;
+          currency: string;
+          guest_id: string | null;
+          hotel_id: string;
+          id: string;
+          kind: string;
+          metadata: Json;
+          method: Database["public"]["Enums"]["payment_method"];
+          paid_at: string | null;
+          provider: string;
+          provider_reference: string | null;
+          reason: string;
+          receipt_number: string;
+          received_by: string | null;
+          reference: string;
+          status: Database["public"]["Enums"]["payment_status"];
+          updated_at: string;
+        };
         Insert: {
-          amount: number
-          booking_id?: string | null
-          cash_session_id?: string | null
-          created_at?: string
-          currency?: string
-          guest_id?: string | null
-          hotel_id: string
-          id?: string
-          kind?: string
-          metadata?: Json
-          method: Database["public"]["Enums"]["payment_method"]
-          paid_at?: string | null
-          provider?: string
-          provider_reference?: string | null
-          reason?: string
-          receipt_number?: string
-          received_by?: string | null
-          reference?: string
-          status?: Database["public"]["Enums"]["payment_status"]
-          updated_at?: string
-        }
+          amount: number;
+          booking_id?: string | null;
+          cash_session_id?: string | null;
+          created_at?: string;
+          currency?: string;
+          guest_id?: string | null;
+          hotel_id: string;
+          id?: string;
+          kind?: string;
+          metadata?: Json;
+          method: Database["public"]["Enums"]["payment_method"];
+          paid_at?: string | null;
+          provider?: string;
+          provider_reference?: string | null;
+          reason?: string;
+          receipt_number?: string;
+          received_by?: string | null;
+          reference?: string;
+          status?: Database["public"]["Enums"]["payment_status"];
+          updated_at?: string;
+        };
         Update: {
-          amount?: number
-          booking_id?: string | null
-          cash_session_id?: string | null
-          created_at?: string
-          currency?: string
-          guest_id?: string | null
-          hotel_id?: string
-          id?: string
-          kind?: string
-          metadata?: Json
-          method?: Database["public"]["Enums"]["payment_method"]
-          paid_at?: string | null
-          provider?: string
-          provider_reference?: string | null
-          reason?: string
-          receipt_number?: string
-          received_by?: string | null
-          reference?: string
-          status?: Database["public"]["Enums"]["payment_status"]
-          updated_at?: string
-        }
+          amount?: number;
+          booking_id?: string | null;
+          cash_session_id?: string | null;
+          created_at?: string;
+          currency?: string;
+          guest_id?: string | null;
+          hotel_id?: string;
+          id?: string;
+          kind?: string;
+          metadata?: Json;
+          method?: Database["public"]["Enums"]["payment_method"];
+          paid_at?: string | null;
+          provider?: string;
+          provider_reference?: string | null;
+          reason?: string;
+          receipt_number?: string;
+          received_by?: string | null;
+          reference?: string;
+          status?: Database["public"]["Enums"]["payment_status"];
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "payments_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
+            foreignKeyName: "payments_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "payments_cash_session_id_fkey"
-            columns: ["cash_session_id"]
-            isOneToOne: false
-            referencedRelation: "cash_sessions"
-            referencedColumns: ["id"]
+            foreignKeyName: "payments_cash_session_id_fkey";
+            columns: ["cash_session_id"];
+            isOneToOne: false;
+            referencedRelation: "cash_sessions";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "payments_guest_id_fkey"
-            columns: ["guest_id"]
-            isOneToOne: false
-            referencedRelation: "guests"
-            referencedColumns: ["id"]
+            foreignKeyName: "payments_guest_id_fkey";
+            columns: ["guest_id"];
+            isOneToOne: false;
+            referencedRelation: "guests";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "payments_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "payments_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       plans: {
         Row: {
-          billing_period: string
-          commission_percent: number
-          created_at: string
-          description: string
-          features: string[]
-          id: string
-          is_active: boolean
-          max_rooms: number | null
-          name: string
-          price: number
-          registration_fee: number
-          slug: string
-          sort_order: number
-          updated_at: string
-        }
+          billing_period: string;
+          commission_percent: number;
+          created_at: string;
+          description: string;
+          features: string[];
+          id: string;
+          is_active: boolean;
+          max_rooms: number | null;
+          name: string;
+          price: number;
+          registration_fee: number;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
         Insert: {
-          billing_period?: string
-          commission_percent?: number
-          created_at?: string
-          description?: string
-          features?: string[]
-          id?: string
-          is_active?: boolean
-          max_rooms?: number | null
-          name: string
-          price?: number
-          registration_fee?: number
-          slug: string
-          sort_order?: number
-          updated_at?: string
-        }
+          billing_period?: string;
+          commission_percent?: number;
+          created_at?: string;
+          description?: string;
+          features?: string[];
+          id?: string;
+          is_active?: boolean;
+          max_rooms?: number | null;
+          name: string;
+          price?: number;
+          registration_fee?: number;
+          slug: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
         Update: {
-          billing_period?: string
-          commission_percent?: number
-          created_at?: string
-          description?: string
-          features?: string[]
-          id?: string
-          is_active?: boolean
-          max_rooms?: number | null
-          name?: string
-          price?: number
-          registration_fee?: number
-          slug?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          billing_period?: string;
+          commission_percent?: number;
+          created_at?: string;
+          description?: string;
+          features?: string[];
+          id?: string;
+          is_active?: boolean;
+          max_rooms?: number | null;
+          name?: string;
+          price?: number;
+          registration_fee?: number;
+          slug?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       platform_settings: {
         Row: {
-          ad_price_banner: number
-          ad_price_home_featured: number
-          ad_price_search_top: number
-          auto_approve_hotels: boolean
-          commission_percent: number
-          id: boolean
-          platform_name: string
-          registration_fee: number
-          support_email: string
-          updated_at: string
-        }
+          ad_price_banner: number;
+          ad_price_home_featured: number;
+          ad_price_search_top: number;
+          auto_approve_hotels: boolean;
+          commission_percent: number;
+          id: boolean;
+          platform_name: string;
+          registration_fee: number;
+          support_email: string;
+          updated_at: string;
+        };
         Insert: {
-          ad_price_banner?: number
-          ad_price_home_featured?: number
-          ad_price_search_top?: number
-          auto_approve_hotels?: boolean
-          commission_percent?: number
-          id?: boolean
-          platform_name?: string
-          registration_fee?: number
-          support_email?: string
-          updated_at?: string
-        }
+          ad_price_banner?: number;
+          ad_price_home_featured?: number;
+          ad_price_search_top?: number;
+          auto_approve_hotels?: boolean;
+          commission_percent?: number;
+          id?: boolean;
+          platform_name?: string;
+          registration_fee?: number;
+          support_email?: string;
+          updated_at?: string;
+        };
         Update: {
-          ad_price_banner?: number
-          ad_price_home_featured?: number
-          ad_price_search_top?: number
-          auto_approve_hotels?: boolean
-          commission_percent?: number
-          id?: boolean
-          platform_name?: string
-          registration_fee?: number
-          support_email?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          ad_price_banner?: number;
+          ad_price_home_featured?: number;
+          ad_price_search_top?: number;
+          auto_approve_hotels?: boolean;
+          commission_percent?: number;
+          id?: boolean;
+          platform_name?: string;
+          registration_fee?: number;
+          support_email?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
-          avatar_url: string | null
-          created_at: string
-          email: string | null
-          full_name: string
-          id: string
-          phone: string | null
-          updated_at: string
-        }
+          avatar_url: string | null;
+          created_at: string;
+          email: string | null;
+          full_name: string;
+          id: string;
+          phone: string | null;
+          updated_at: string;
+        };
         Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          email?: string | null
-          full_name?: string
-          id: string
-          phone?: string | null
-          updated_at?: string
-        }
+          avatar_url?: string | null;
+          created_at?: string;
+          email?: string | null;
+          full_name?: string;
+          id: string;
+          phone?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          avatar_url?: string | null
-          created_at?: string
-          email?: string | null
-          full_name?: string
-          id?: string
-          phone?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          avatar_url?: string | null;
+          created_at?: string;
+          email?: string | null;
+          full_name?: string;
+          id?: string;
+          phone?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       room_types: {
         Row: {
-          amenities: string[]
-          base_price: number
-          bed_count: number
-          bed_type: string
-          created_at: string
-          description: string
-          hotel_id: string
-          id: string
-          images: string[]
-          is_active: boolean
-          max_guests: number
-          name: string
-          updated_at: string
-        }
+          amenities: string[];
+          base_price: number;
+          bed_count: number;
+          bed_type: string;
+          created_at: string;
+          description: string;
+          hotel_id: string;
+          id: string;
+          images: string[];
+          is_active: boolean;
+          max_guests: number;
+          name: string;
+          updated_at: string;
+        };
         Insert: {
-          amenities?: string[]
-          base_price?: number
-          bed_count?: number
-          bed_type?: string
-          created_at?: string
-          description?: string
-          hotel_id: string
-          id?: string
-          images?: string[]
-          is_active?: boolean
-          max_guests?: number
-          name: string
-          updated_at?: string
-        }
+          amenities?: string[];
+          base_price?: number;
+          bed_count?: number;
+          bed_type?: string;
+          created_at?: string;
+          description?: string;
+          hotel_id: string;
+          id?: string;
+          images?: string[];
+          is_active?: boolean;
+          max_guests?: number;
+          name: string;
+          updated_at?: string;
+        };
         Update: {
-          amenities?: string[]
-          base_price?: number
-          bed_count?: number
-          bed_type?: string
-          created_at?: string
-          description?: string
-          hotel_id?: string
-          id?: string
-          images?: string[]
-          is_active?: boolean
-          max_guests?: number
-          name?: string
-          updated_at?: string
-        }
+          amenities?: string[];
+          base_price?: number;
+          bed_count?: number;
+          bed_type?: string;
+          created_at?: string;
+          description?: string;
+          hotel_id?: string;
+          id?: string;
+          images?: string[];
+          is_active?: boolean;
+          max_guests?: number;
+          name?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "room_types_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "room_types_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       rooms: {
         Row: {
-          created_at: string
-          floor: string
-          hotel_id: string
-          id: string
-          notes: string
-          room_number: string
-          room_type_id: string | null
-          status: Database["public"]["Enums"]["room_status"]
-          updated_at: string
-        }
+          created_at: string;
+          floor: string;
+          hotel_id: string;
+          id: string;
+          notes: string;
+          room_number: string;
+          room_type_id: string | null;
+          status: Database["public"]["Enums"]["room_status"];
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          floor?: string
-          hotel_id: string
-          id?: string
-          notes?: string
-          room_number: string
-          room_type_id?: string | null
-          status?: Database["public"]["Enums"]["room_status"]
-          updated_at?: string
-        }
+          created_at?: string;
+          floor?: string;
+          hotel_id: string;
+          id?: string;
+          notes?: string;
+          room_number: string;
+          room_type_id?: string | null;
+          status?: Database["public"]["Enums"]["room_status"];
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          floor?: string
-          hotel_id?: string
-          id?: string
-          notes?: string
-          room_number?: string
-          room_type_id?: string | null
-          status?: Database["public"]["Enums"]["room_status"]
-          updated_at?: string
-        }
+          created_at?: string;
+          floor?: string;
+          hotel_id?: string;
+          id?: string;
+          notes?: string;
+          room_number?: string;
+          room_type_id?: string | null;
+          status?: Database["public"]["Enums"]["room_status"];
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "rooms_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "rooms_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "rooms_room_type_id_fkey"
-            columns: ["room_type_id"]
-            isOneToOne: false
-            referencedRelation: "room_types"
-            referencedColumns: ["id"]
+            foreignKeyName: "rooms_room_type_id_fkey";
+            columns: ["room_type_id"];
+            isOneToOne: false;
+            referencedRelation: "room_types";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       services: {
         Row: {
-          category: string
-          created_at: string
-          description: string
-          hotel_id: string
-          id: string
-          is_active: boolean
-          name: string
-          price: number
-          updated_at: string
-        }
+          category: string;
+          created_at: string;
+          description: string;
+          hotel_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          price: number;
+          updated_at: string;
+        };
         Insert: {
-          category?: string
-          created_at?: string
-          description?: string
-          hotel_id: string
-          id?: string
-          is_active?: boolean
-          name: string
-          price?: number
-          updated_at?: string
-        }
+          category?: string;
+          created_at?: string;
+          description?: string;
+          hotel_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          price?: number;
+          updated_at?: string;
+        };
         Update: {
-          category?: string
-          created_at?: string
-          description?: string
-          hotel_id?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          price?: number
-          updated_at?: string
-        }
+          category?: string;
+          created_at?: string;
+          description?: string;
+          hotel_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          price?: number;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "services_hotel_id_fkey"
-            columns: ["hotel_id"]
-            isOneToOne: false
-            referencedRelation: "hotels"
-            referencedColumns: ["id"]
+            foreignKeyName: "services_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       user_roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-    }
+          created_at?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      has_hotel_access: { Args: { _hotel_id: string }; Returns: boolean }
+      has_hotel_access: { Args: { _hotel_id: string }; Returns: boolean };
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      hotel_commission_percent: { Args: { _hotel_id: string }; Returns: number }
-      hotel_is_public: { Args: { _hotel_id: string }; Returns: boolean }
-      is_demo_hotel: { Args: { _hotel_id: string }; Returns: boolean }
-      is_platform_admin: { Args: never; Returns: boolean }
-      is_platform_team: { Args: never; Returns: boolean }
-      owns_hotel: { Args: { _hotel_id: string }; Returns: boolean }
+          _role: Database["public"]["Enums"]["app_role"];
+          _user_id: string;
+        };
+        Returns: boolean;
+      };
+      hotel_commission_percent: { Args: { _hotel_id: string }; Returns: number };
+      hotel_is_public: { Args: { _hotel_id: string }; Returns: boolean };
+      is_demo_hotel: { Args: { _hotel_id: string }; Returns: boolean };
+      is_platform_admin: { Args: never; Returns: boolean };
+      is_platform_team: { Args: never; Returns: boolean };
+      owns_hotel: { Args: { _hotel_id: string }; Returns: boolean };
       seed_platform_admin: {
-        Args: { target_email: string }
-        Returns: undefined
-      }
-      user_is_hotel_person: { Args: { _user_id: string }; Returns: boolean }
-      user_is_platform_team: { Args: { _user_id: string }; Returns: boolean }
-    }
+        Args: { target_email: string };
+        Returns: undefined;
+      };
+      user_is_hotel_person: { Args: { _user_id: string }; Returns: boolean };
+      user_is_platform_team: { Args: { _user_id: string }; Returns: boolean };
+    };
     Enums: {
-      app_role:
-        | "platform_admin"
-        | "hotel_owner"
-        | "hotel_staff"
-        | "customer"
-        | "platform_support"
-      booking_source: "staff" | "hotel_website" | "discovery" | "external"
+      app_role: "platform_admin" | "hotel_owner" | "hotel_staff" | "customer" | "platform_support";
+      booking_source: "staff" | "hotel_website" | "discovery" | "external";
       booking_status:
-        | "pending"
-        | "confirmed"
-        | "checked_in"
-        | "checked_out"
-        | "cancelled"
-        | "no_show"
-      cash_session_status: "open" | "closed"
-      channel_mode: "ical" | "api"
-      channel_provider:
-        | "booking_com"
-        | "expedia"
-        | "airbnb"
-        | "agoda"
-        | "vrbo"
-        | "other"
-      channel_status: "active" | "paused" | "error" | "awaiting_credentials"
+        "pending" | "confirmed" | "checked_in" | "checked_out" | "cancelled" | "no_show";
+      cash_session_status: "open" | "closed";
+      channel_mode: "ical" | "api";
+      channel_provider: "booking_com" | "expedia" | "airbnb" | "agoda" | "vrbo" | "other";
+      channel_status: "active" | "paused" | "error" | "awaiting_credentials";
       expense_category:
         | "utilities"
         | "supplies"
@@ -1585,9 +1566,9 @@ export type Database = {
         | "marketing"
         | "rent"
         | "taxes_fees"
-        | "other"
-      hotel_status: "pending" | "active" | "suspended" | "rejected" | "archived"
-      payment_method: "mobile_money" | "cash" | "bank_transfer" | "card"
+        | "other";
+      hotel_status: "pending" | "active" | "suspended" | "rejected" | "archived";
+      payment_method: "mobile_money" | "cash" | "bank_transfer" | "card";
       payment_status:
         | "pending"
         | "processing"
@@ -1595,7 +1576,7 @@ export type Database = {
         | "failed"
         | "cancelled"
         | "refunded"
-        | "partially_refunded"
+        | "partially_refunded";
       room_status:
         | "available"
         | "reserved"
@@ -1604,7 +1585,7 @@ export type Database = {
         | "dirty"
         | "inspected"
         | "maintenance"
-        | "out_of_service"
+        | "out_of_service";
       staff_role:
         | "manager"
         | "receptionist"
@@ -1613,160 +1594,134 @@ export type Database = {
         | "housekeeping"
         | "restaurant"
         | "other"
-        | "hotel_admin"
-    }
+        | "hotel_admin";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
     Enums: {
-      app_role: [
-        "platform_admin",
-        "hotel_owner",
-        "hotel_staff",
-        "customer",
-        "platform_support",
-      ],
+      app_role: ["platform_admin", "hotel_owner", "hotel_staff", "customer", "platform_support"],
       booking_source: ["staff", "hotel_website", "discovery", "external"],
-      booking_status: [
-        "pending",
-        "confirmed",
-        "checked_in",
-        "checked_out",
-        "cancelled",
-        "no_show",
-      ],
+      booking_status: ["pending", "confirmed", "checked_in", "checked_out", "cancelled", "no_show"],
       cash_session_status: ["open", "closed"],
       channel_mode: ["ical", "api"],
-      channel_provider: [
-        "booking_com",
-        "expedia",
-        "airbnb",
-        "agoda",
-        "vrbo",
-        "other",
-      ],
+      channel_provider: ["booking_com", "expedia", "airbnb", "agoda", "vrbo", "other"],
       channel_status: ["active", "paused", "error", "awaiting_credentials"],
       expense_category: [
         "utilities",
@@ -1813,4 +1768,4 @@ export const Constants = {
       ],
     },
   },
-} as const
+} as const;

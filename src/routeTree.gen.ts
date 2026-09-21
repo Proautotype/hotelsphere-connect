@@ -31,6 +31,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as BookingReferenceRouteImport } from './routes/booking.$reference'
 import { Route as HotelsSlugRouteImport } from './routes/hotels.$slug'
+import { Route as InvitesIdRouteImport } from './routes/invites.$id'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
 import { Route as AdminAdminDiscoveryRouteImport } from './routes/_admin/admin.discovery'
 import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
@@ -153,6 +154,11 @@ const HotelsSlugRoute = HotelsSlugRouteImport.update({
   path: '/hotels/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvitesIdRoute = InvitesIdRouteImport.update({
+  id: '/invites/$id',
+  path: '/invites/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AuthenticatedStaffRoute
   '/booking/$reference': typeof BookingReferenceRoute
   '/hotels/$slug': typeof HotelsSlugRoute
+  '/invites/$id': typeof InvitesIdRoute
   '/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/plans': typeof AdminAdminPlansRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/staff': typeof AuthenticatedStaffRoute
   '/booking/$reference': typeof BookingReferenceRoute
   '/hotels/$slug': typeof HotelsSlugRoute
+  '/invites/$id': typeof InvitesIdRoute
   '/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/plans': typeof AdminAdminPlansRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/booking/$reference': typeof BookingReferenceRoute
   '/hotels/$slug': typeof HotelsSlugRoute
+  '/invites/$id': typeof InvitesIdRoute
   '/_admin/admin/discovery': typeof AdminAdminDiscoveryRoute
   '/_admin/admin/hotels': typeof AdminAdminHotelsRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/booking/$reference'
     | '/hotels/$slug'
+    | '/invites/$id'
     | '/admin/discovery'
     | '/admin/hotels'
     | '/admin/plans'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/booking/$reference'
     | '/hotels/$slug'
+    | '/invites/$id'
     | '/admin/discovery'
     | '/admin/hotels'
     | '/admin/plans'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/_authenticated/staff'
     | '/booking/$reference'
     | '/hotels/$slug'
+    | '/invites/$id'
     | '/_admin/admin/discovery'
     | '/_admin/admin/hotels'
     | '/_admin/admin/plans'
@@ -438,6 +450,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   BookingReferenceRoute: typeof BookingReferenceRoute
   HotelsSlugRoute: typeof HotelsSlugRoute
+  InvitesIdRoute: typeof InvitesIdRoute
   ApiPublicPaystackWebhookRoute: typeof ApiPublicPaystackWebhookRoute
   ApiPublicIcalTokenRoute: typeof ApiPublicIcalTokenRoute
 }
@@ -596,6 +609,13 @@ declare module '@tanstack/react-router' {
       path: '/hotels/$slug'
       fullPath: '/hotels/$slug'
       preLoaderRoute: typeof HotelsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invites/$id': {
+      id: '/invites/$id'
+      path: '/invites/$id'
+      fullPath: '/invites/$id'
+      preLoaderRoute: typeof InvitesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin/admin/': {
@@ -759,6 +779,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   BookingReferenceRoute: BookingReferenceRoute,
   HotelsSlugRoute: HotelsSlugRoute,
+  InvitesIdRoute: InvitesIdRoute,
   ApiPublicPaystackWebhookRoute: ApiPublicPaystackWebhookRoute,
   ApiPublicIcalTokenRoute: ApiPublicIcalTokenRoute,
 }
