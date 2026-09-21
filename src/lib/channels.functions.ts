@@ -424,13 +424,17 @@ export const syncChannel = createServerFn({ method: "POST" })
         })
         .select("id")
         .single();
+      if (!guest?.id) {
+        skipped += 1;
+        continue;
+      }
 
       const reference = `CH-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
       const { data: booking, error: bookingError } = await supabase
         .from("bookings")
         .insert({
           hotel_id: conn.hotel_id,
-          guest_id: guest?.id ?? null,
+          guest_id: guest.id,
           room_type_id: conn.room_type_id,
           room_id: freeRoom.id,
           check_in: event.start,
