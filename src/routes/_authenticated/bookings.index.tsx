@@ -123,6 +123,7 @@ function BookingsPage() {
         b.rooms?.room_number ?? "",
         b.room_types?.name ?? "",
         b.status.replace(/_/g, " "),
+        channelName(b) ?? "",
       ]
         .join(" ")
         .toLowerCase()
