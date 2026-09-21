@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, CalendarDays, Plus, Search } from "lucide-react";
-import { money, shortDate, today } from "@/lib/format";
+import { money, shortDate, titleCase, today } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/bookings/")({
   head: () => ({
