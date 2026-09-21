@@ -242,6 +242,14 @@ function BookingsPage() {
                           </span>
                         )}
                       </div>
+                      {channelName(b) ? (
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest">
+                          {channelName(b)} ·{" "}
+                          {b.channel_connections?.status === "active"
+                            ? "synced"
+                            : titleCase(b.channel_connections?.status ?? "linked")}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-sm opacity-80">
                         {b.guests?.full_name} · {b.room_types?.name}{" "}
                         {b.rooms?.room_number ? `· Room ${b.rooms.room_number}` : ""}
