@@ -30,22 +30,22 @@ export const Route = createFileRoute("/")({
       };
     }
     return {
-    meta: [
-      { title: "Custard Hotels — Run Your Hotel Without The Chaos" },
-      {
-        name: "description",
-        content:
-          "Custard Hotels is the all-in-one management platform for Ghana's hotels: rooms, bookings, reception, mobile money payments, housekeeping and revenue in one place.",
-      },
-      { property: "og:title", content: "Custard Hotels — Run Your Hotel Without The Chaos" },
-      {
-        property: "og:description",
-        content:
-          "One platform for hotel operations, bookings, reception, payments and housekeeping. Built for hotels in Accra, Kumasi and Cape Coast.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
+      meta: [
+        { title: "Custard Hotels — Run Your Hotel Without The Chaos" },
+        {
+          name: "description",
+          content:
+            "Custard Hotels is the all-in-one management platform for Ghana's hotels: rooms, bookings, reception, mobile money payments, housekeeping and revenue in one place.",
+        },
+        { property: "og:title", content: "Custard Hotels — Run Your Hotel Without The Chaos" },
+        {
+          property: "og:description",
+          content:
+            "One platform for hotel operations, bookings, reception, payments and housekeeping. Built for hotels in Accra, Kumasi and Cape Coast.",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
     };
   },
   component: HomeOrHotelPage,
@@ -58,12 +58,13 @@ function HomeOrHotelPage() {
 }
 
 const TICKER = [
-  "ROOM 204 CHECKED IN",
-  "MOMO PAYMENT GHS 480 CONFIRMED",
-  "HOUSEKEEPING CLEARED FLOOR 3",
-  "BOOKING #CH-2914 CONFIRMED",
-  "CASH SESSION BALANCED",
-  "ROOM 118 INSPECTED",
+  "Discover 5 star hotels in Ghana".toUpperCase(),
+  "Book direct and pay with mobile money".toUpperCase(),
+  "Manage your hotels in one place".toUpperCase(),
+  "SYNCHRONIZED WITH BOOKINGS.COM, AIRBNB, EXPEDIA".toUpperCase(),
+  "Manage your hotel finance in one place".toUpperCase(),
+  "Custard Hotels is the all-in-one management platform for Ghana's hotels".toUpperCase(),
+  "VERY AFFORDABLE SUBSCRIPTION PLANS".toUpperCase(),
 ];
 
 function HomePage() {
@@ -71,24 +72,38 @@ function HomePage() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-7xl px-5 pt-6 sm:px-8 lg:px-12">
         {/* Nav */}
-        <nav className="flex items-center justify-between">
-          <Link to="/" className="font-display text-2xl font-extrabold tracking-tighter italic sm:text-3xl">
+        <nav className="flex flex-col items-start justify-between sm:flex-row sm:items-center">
+          <Link
+            to="/"
+            className="font-display text-2xl font-extrabold tracking-tighter italic sm:text-3xl"
+          >
             CUSTARD<span className="text-primary">.</span>
           </Link>
+
           <div className="flex items-center gap-4 sm:gap-8">
-            <Link to="/discover" className="text-sm font-medium transition-colors hover:text-primary sm:text-base">
+            <Link
+              to="/discover"
+              className="text-sm font-medium transition-colors hover:text-primary sm:text-base"
+            >
               Find a hotel
             </Link>
-            <Link to="/auth" className="text-sm font-medium transition-colors hover:text-primary sm:text-base">
+            <Link
+              to="/auth"
+              className="text-sm font-medium transition-colors hover:text-primary sm:text-base"
+            >
               Sign in
             </Link>
             <Link
               to="/register"
-              className="ink kinetic-press shadow-hard bg-amber px-4 py-2 text-sm font-bold text-amber-foreground sm:px-6 sm:text-base"
+              className="
+              ink kinetic-press shadow-hard bg-amber px-4 py-2 text-sm font-bold text-amber-foreground sm:px-6 sm:text-base
+              
+              "
             >
               Register your hotel
             </Link>
           </div>
+
         </nav>
 
         {/* Hero */}
@@ -128,7 +143,9 @@ function HomePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-5">
             <div className="ink kinetic-tilt shadow-hard animate-rise bg-card p-6 [animation-delay:120ms]">
               <div className="ink mb-4 size-12 bg-amber" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">Hotel operations</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">
+                Hotel operations
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Room inventory, room types, availability and pricing in one dashboard.
               </p>
@@ -136,7 +153,9 @@ function HomePage() {
 
             <div className="ink kinetic-tilt-right shadow-hard-teal animate-rise bg-card p-6 sm:translate-y-8 [animation-delay:200ms]">
               <div className="ink mb-4 size-12 bg-primary" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">Bookings &amp; reception</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">
+                Bookings &amp; reception
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Check in, check out and settle folios for walk-ins and online stays.
               </p>
@@ -144,7 +163,9 @@ function HomePage() {
 
             <div className="ink kinetic-tilt-right shadow-hard-amber animate-rise bg-card p-6 [animation-delay:280ms]">
               <div className="ink mb-4 size-12 bg-ink" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">Payments &amp; cash</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal">
+                Payments &amp; cash
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Mobile money, card and cash with audited cashier sessions.
               </p>
@@ -152,7 +173,9 @@ function HomePage() {
 
             <div className="ink kinetic-tilt shadow-hard animate-rise bg-ink p-6 sm:translate-y-8 [animation-delay:360ms]">
               <div className="mb-4 size-12 border-[3px] border-background bg-background" />
-              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal text-background">Tenant isolation</h3>
+              <h3 className="mb-2 text-lg font-bold uppercase leading-tight tracking-normal text-background">
+                Tenant isolation
+              </h3>
               <p className="text-sm text-background/70">
                 Every hotel's data stays private. Platform admins handle approvals.
               </p>
