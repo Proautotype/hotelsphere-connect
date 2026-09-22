@@ -41,7 +41,7 @@ export const createRoomType = createServerFn({ method: "POST" })
         bed_count: data.bedCount,
         bed_type: data.bedType,
         pricing_model: data.pricingModel,
-        per_stay_price: data.pricingModel === "per_stay" ? data.perStayPrice : null,
+        per_stay_price: data.pricingModel === "per_stay" ? (data.perStayPrice ?? null) : null,
         description: data.description,
         is_active: true,
       })

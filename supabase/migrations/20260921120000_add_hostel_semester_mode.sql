@@ -55,6 +55,7 @@ CREATE INDEX occupancies_booking_idx ON public.occupancies(booking_id);
 CREATE INDEX occupancies_room_status_idx ON public.occupancies(room_id, status);
 
 ALTER TABLE public.occupancies ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.occupancies TO authenticated;
 GRANT ALL ON public.occupancies TO service_role;
 
 CREATE POLICY "Hotel people manage occupancies" ON public.occupancies
@@ -65,7 +66,37 @@ CREATE POLICY "Hotel people manage occupancies" ON public.occupancies
 CREATE TRIGGER occupancies_updated BEFORE UPDATE ON public.occupancies
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 5. Backfill one occupancy per existing booking so guest lists stay consistent.
+-- 5. A dorm room holds several stays at once. The no-overlap rule still guards
+-- per-night rooms exactly as before, but per-stay rooms are exempt: their
+-- capacity is the bed count, which createBooking enforces against the number of
+-- live occupancies. Exempting them both ways also stops an open-ended stay
+-- (check_out IS NULL, an unbounded daterange) from locking a room forever.
+CREATE OR REPLACE FUNCTION public.prevent_double_booking() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF NEW.room_id IS NULL
+     OR NEW.status IN ('cancelled','no_show','checked_out')
+     OR NEW.pricing_model = 'per_stay' THEN
+    RETURN NEW;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.bookings b
+    WHERE b.room_id = NEW.room_id
+      AND b.id <> NEW.id
+      AND b.status NOT IN ('cancelled','no_show','checked_out')
+      AND b.pricing_model <> 'per_stay'
+      AND daterange(b.check_in, b.check_out, '[)') && daterange(NEW.check_in, NEW.check_out, '[)')
+  ) THEN
+    RAISE EXCEPTION 'This room is already booked for the selected dates';
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- 6. Backfill one occupancy per existing booking so guest lists stay consistent.
+-- The occupancy mirrors the stay it came from, so a cancelled booking does not
+-- suddenly read as someone living in the room.
 INSERT INTO public.occupancies (hotel_id, booking_id, guest_id, room_id, bed_number, price, status, checked_in_at, checked_out_at)
 SELECT
   b.hotel_id,
@@ -75,8 +106,13 @@ SELECT
   NULL,
   CASE WHEN b.pricing_model = 'per_stay' THEN b.room_rate
        ELSE round((b.room_rate * GREATEST((b.check_out - b.check_in), 1))::numeric, 2) END,
-  'checked_in',
+  CASE b.status::text
+    WHEN 'checked_in' THEN 'checked_in'
+    WHEN 'checked_out' THEN 'checked_out'
+    WHEN 'cancelled' THEN 'cancelled'
+    WHEN 'no_show' THEN 'cancelled'
+    ELSE 'reserved'
+  END,
   b.checked_in_at,
   b.checked_out_at
-FROM public.bookings b
-ON CONFLICT DO NOTHING;
+FROM public.bookings b;

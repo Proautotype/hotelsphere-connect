@@ -98,6 +98,18 @@ function compact(date: string) {
   return date.replace(/-/g, "");
 }
 
+/**
+ * A long-term stay has no agreed departure date, but an iCal event must end
+ * somewhere. Block a year out from arrival so travel sites keep the room off
+ * sale; the feed is rebuilt on every fetch, and the booking drops out of it
+ * once the guest is checked out.
+ */
+function openEndedUntil(checkIn: string) {
+  const end = new Date(`${checkIn}T00:00:00Z`);
+  end.setUTCFullYear(end.getUTCFullYear() + 1);
+  return end.toISOString().slice(0, 10);
+}
+
 /* ------------------------------------------------------------------ */
 /* Reading channels                                                    */
 /* ------------------------------------------------------------------ */
@@ -535,7 +547,7 @@ export const getChannelIcal = createServerFn({ method: "GET" })
         `UID:${b.id}@custardhotels`,
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${compact(b.check_in)}`,
-        `DTEND;VALUE=DATE:${compact(b.check_out)}`,
+        `DTEND;VALUE=DATE:${compact(b.check_out ?? openEndedUntil(b.check_in))}`,
         `SUMMARY:${icsEscape(`Not available (${b.reference})`)}`,
         "TRANSP:OPAQUE",
         "END:VEVENT",

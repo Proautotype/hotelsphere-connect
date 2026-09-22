@@ -405,7 +405,7 @@ export const createPublicBooking = createServerFn({ method: "POST" })
       description: isPerStay
         ? `${roomType.name} · ${data.guestsCount} per-stay fee${data.guestsCount === 1 ? "" : "s"}`
         : `${roomType.name} · ${nights} night${nights === 1 ? "" : "s"}`,
-      quantity: isPerStay ? data.guestsCount : nights,
+      quantity: isPerStay ? data.guestsCount : (nights ?? 1),
       unit_price: rate,
       amount: subtotal,
     });

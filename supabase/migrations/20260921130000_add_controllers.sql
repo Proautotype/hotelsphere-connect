@@ -3,24 +3,13 @@
 -- user accounts; those staff post accommodation requests and assign students;
 -- hostel owners respond with offers and check students in as occupancies.
 
--- 1. New app role for school staff accounts
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'controller';
+-- The 'controller' app role is added in 20260921125900_add_controller_role.sql,
+-- one migration earlier — a new enum value is not usable in its own transaction.
 
--- 2. Access helper (mirrors has_hotel_access)
-CREATE OR REPLACE FUNCTION public.has_controller_access(_controller_id uuid) RETURNS boolean
-    LANGUAGE sql STABLE SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-  SELECT auth.uid() IS NOT NULL AND (
-    public.is_platform_admin()
-    OR EXISTS (SELECT 1 FROM public.controller_members cm
-               WHERE cm.controller_id = _controller_id
-                 AND cm.user_id = auth.uid()
-                 AND cm.is_active)
-  );
-$$;
+-- The has_controller_access() helper reads controller_members, so it is defined
+-- in section 3 once that table exists; the policies that call it follow it.
 
--- 3. controllers (the school itself)
+-- 1. controllers (the school itself)
 CREATE TABLE public.controllers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -43,20 +32,18 @@ CREATE TABLE public.controllers (
 CREATE INDEX controllers_status_idx ON public.controllers(status);
 
 ALTER TABLE public.controllers ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.controllers TO authenticated;
 GRANT ALL ON public.controllers TO service_role;
 
 CREATE POLICY "Platform team manages controllers" ON public.controllers
   FOR ALL TO authenticated
   USING (public.is_platform_team())
   WITH CHECK (public.is_platform_team());
-CREATE POLICY "Controller members view their school" ON public.controllers
-  FOR SELECT TO authenticated
-  USING (public.has_controller_access(id));
 
 CREATE TRIGGER controllers_updated BEFORE UPDATE ON public.controllers
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 4. controller_members (school staff accounts)
+-- 2. controller_members (school staff accounts)
 CREATE TABLE public.controller_members (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   controller_id uuid NOT NULL REFERENCES public.controllers(id) ON DELETE CASCADE,
@@ -72,19 +59,39 @@ CREATE TABLE public.controller_members (
 CREATE INDEX controller_members_user_idx ON public.controller_members(user_id);
 
 ALTER TABLE public.controller_members ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.controller_members TO authenticated;
 GRANT ALL ON public.controller_members TO service_role;
 
 CREATE POLICY "Platform team manages controller members" ON public.controller_members
   FOR ALL TO authenticated
   USING (public.is_platform_team())
   WITH CHECK (public.is_platform_team());
+
+CREATE TRIGGER controller_members_updated BEFORE UPDATE ON public.controller_members
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- 3. Access helper (mirrors has_hotel_access), plus the two policies that need it
+CREATE OR REPLACE FUNCTION public.has_controller_access(_controller_id uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  SELECT auth.uid() IS NOT NULL AND (
+    public.is_platform_admin()
+    OR EXISTS (SELECT 1 FROM public.controller_members cm
+               WHERE cm.controller_id = _controller_id
+                 AND cm.user_id = auth.uid()
+                 AND cm.is_active)
+  );
+$$;
+
+CREATE POLICY "Controller members view their school" ON public.controllers
+  FOR SELECT TO authenticated
+  USING (public.has_controller_access(id));
 CREATE POLICY "Controller members view their team" ON public.controller_members
   FOR SELECT TO authenticated
   USING (public.has_controller_access(controller_id));
 
-CREATE TRIGGER controller_members_updated BEFORE UPDATE ON public.controller_members
-  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
--- 5. hotel_controller_affiliations (which hostels a school works with)
+-- 4. hotel_controller_affiliations (which hostels a school works with)
 CREATE TABLE public.hotel_controller_affiliations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   controller_id uuid NOT NULL REFERENCES public.controllers(id) ON DELETE CASCADE,
@@ -93,6 +100,7 @@ CREATE TABLE public.hotel_controller_affiliations (
     CHECK (status IN ('pending', 'active', 'suspended')),
   created_by uuid,
   created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL,
   CONSTRAINT hotel_controller_affiliations_pair_key UNIQUE (controller_id, hotel_id)
 );
 
@@ -100,6 +108,7 @@ CREATE INDEX hotel_controller_affiliations_hotel_idx ON public.hotel_controller_
 CREATE INDEX hotel_controller_affiliations_controller_idx ON public.hotel_controller_affiliations(controller_id);
 
 ALTER TABLE public.hotel_controller_affiliations ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.hotel_controller_affiliations TO authenticated;
 GRANT ALL ON public.hotel_controller_affiliations TO service_role;
 
 CREATE POLICY "Platform team manages affiliations" ON public.hotel_controller_affiliations
@@ -117,7 +126,7 @@ CREATE POLICY "Hotel team view affiliations" ON public.hotel_controller_affiliat
 CREATE TRIGGER hotel_controller_affiliations_updated BEFORE UPDATE ON public.hotel_controller_affiliations
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 6. accommodation_requests (a school's demand post)
+-- 5. accommodation_requests (a school's demand post)
 CREATE TABLE public.accommodation_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   controller_id uuid NOT NULL REFERENCES public.controllers(id) ON DELETE CASCADE,
@@ -143,8 +152,8 @@ CREATE INDEX accommodation_requests_controller_idx ON public.accommodation_reque
 CREATE INDEX accommodation_requests_status_idx ON public.accommodation_requests(status);
 
 ALTER TABLE public.accommodation_requests ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.accommodation_requests TO authenticated;
 GRANT ALL ON public.accommodation_requests TO service_role;
-GRANT SELECT ON public.accommodation_requests TO authenticated;
 
 CREATE POLICY "Platform team manages accommodation requests" ON public.accommodation_requests
   FOR ALL TO authenticated
@@ -154,11 +163,19 @@ CREATE POLICY "Controller members manage their requests" ON public.accommodation
   FOR ALL TO authenticated
   USING (public.has_controller_access(controller_id))
   WITH CHECK (public.has_controller_access(controller_id));
+-- A published request is an open call: any hostel person may read it so they can
+-- offer beds. Drafts and cancelled requests stay private to the school.
+CREATE POLICY "Hotel people view published requests" ON public.accommodation_requests
+  FOR SELECT TO authenticated
+  USING (
+    status IN ('published', 'allocating', 'confirmed')
+    AND public.user_is_hotel_person(auth.uid())
+  );
 
 CREATE TRIGGER accommodation_requests_updated BEFORE UPDATE ON public.accommodation_requests
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 7. allocation_offers (a hostel's response to a request)
+-- 6. allocation_offers (a hostel's response to a request)
 CREATE TABLE public.allocation_offers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id uuid NOT NULL REFERENCES public.accommodation_requests(id) ON DELETE CASCADE,
@@ -178,6 +195,7 @@ CREATE INDEX allocation_offers_request_idx ON public.allocation_offers(request_i
 CREATE INDEX allocation_offers_hotel_idx ON public.allocation_offers(hotel_id);
 
 ALTER TABLE public.allocation_offers ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.allocation_offers TO authenticated;
 GRANT ALL ON public.allocation_offers TO service_role;
 
 CREATE POLICY "Platform team manages offers" ON public.allocation_offers
@@ -200,7 +218,7 @@ CREATE POLICY "Controller members view offers" ON public.allocation_offers
 
 CREATE TRIGGER allocation_offers_updated BEFORE UPDATE ON public.allocation_offers
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
--- 8. students (a school's student registry)
+-- 7. students (a school's student registry)
 CREATE TABLE public.students (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   controller_id uuid NOT NULL REFERENCES public.controllers(id) ON DELETE CASCADE,
@@ -221,6 +239,7 @@ CREATE TABLE public.students (
 CREATE INDEX students_controller_idx ON public.students(controller_id);
 
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.students TO authenticated;
 GRANT ALL ON public.students TO service_role;
 
 CREATE POLICY "Platform team manages students" ON public.students
@@ -231,11 +250,13 @@ CREATE POLICY "Controller members manage their students" ON public.students
   FOR ALL TO authenticated
   USING (public.has_controller_access(controller_id))
   WITH CHECK (public.has_controller_access(controller_id));
+-- Hostels also read the students allocated to them; that policy is at the foot
+-- of this file because it depends on student_allocations.
 
 CREATE TRIGGER students_updated BEFORE UPDATE ON public.students
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- 9. student_allocations (student -> hostel/room/year, linked to occupancy on check-in)
+-- 8. student_allocations (student -> hostel/room/year, linked to occupancy on check-in)
 CREATE TABLE public.student_allocations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id uuid REFERENCES public.accommodation_requests(id) ON DELETE SET NULL,
@@ -259,6 +280,7 @@ CREATE INDEX student_allocations_hotel_idx ON public.student_allocations(hotel_i
 CREATE INDEX student_allocations_status_idx ON public.student_allocations(status);
 
 ALTER TABLE public.student_allocations ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.student_allocations TO authenticated;
 GRANT ALL ON public.student_allocations TO service_role;
 
 CREATE POLICY "Platform team manages allocations" ON public.student_allocations
@@ -276,3 +298,29 @@ CREATE POLICY "Hotel team manage their allocations" ON public.student_allocation
 
 CREATE TRIGGER student_allocations_updated BEFORE UPDATE ON public.student_allocations
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- 9. Cross-table reads that need every table above to exist first.
+
+-- A hostel sees only the students actually allocated to it — never the school's
+-- whole register.
+CREATE POLICY "Hotel team view their allocated students" ON public.students
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.student_allocations sa
+      WHERE sa.student_id = students.id
+        AND public.has_hotel_access(sa.hotel_id)
+    )
+  );
+
+-- A school needs the name and town of the hostels it works with, including ones
+-- that are not listed publicly on Custard.
+CREATE POLICY "Controller members view affiliated hotels" ON public.hotels
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.hotel_controller_affiliations a
+      WHERE a.hotel_id = hotels.id
+        AND public.has_controller_access(a.controller_id)
+    )
+  );
