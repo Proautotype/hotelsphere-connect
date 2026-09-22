@@ -1850,6 +1850,14 @@ Implement these rules carefully:
 
 18. All invoices and receipts must have unique numbers.
 
+19. A hostel bed cannot be allocated to two students for overlapping periods.
+
+20. Per-stay prices are fixed per occupant at booking or allocation time, and the maths stays server-side.
+
+21. Student check-in creates a long-term occupancy and marks the room occupied; occupants can check out independently of each other.
+
+22. A school's data is visible only to that school, the hostels it is affiliated with, and the platform team.
+
 ---
 
 38. Seed/Demo Data
