@@ -2062,6 +2062,7 @@ export type Database = {
       hotel_commission_percent: { Args: { _hotel_id: string }; Returns: number };
       hotel_is_public: { Args: { _hotel_id: string }; Returns: boolean };
       is_demo_hotel: { Args: { _hotel_id: string }; Returns: boolean };
+      is_hotel_person: { Args: never; Returns: boolean };
       is_platform_admin: { Args: never; Returns: boolean };
       is_platform_team: { Args: never; Returns: boolean };
       owns_hotel: { Args: { _hotel_id: string }; Returns: boolean };
