@@ -44,6 +44,21 @@ function slugify(value: string) {
     .slice(0, 80);
 }
 
+/**
+ * Supabase reports no error when RLS filters every row out of an UPDATE — the
+ * call just affects nothing. Asking for the changed rows back turns that
+ * silence into a real failure instead of a success message over a no-op.
+ */
+async function updatedRows(
+  query: PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>,
+  whenNothingChanged: string,
+) {
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error(whenNothingChanged);
+  return data;
+}
+
 function generateRef(prefix: string) {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -383,12 +398,15 @@ export const publishAccommodationRequest = createServerFn({ method: "POST" })
     await assertControllerAccess(supabase, request.controller_id);
     if (request.status !== "draft") throw new Error("Only a draft request can be published");
 
-    const { error } = await supabase
-      .from("accommodation_requests")
-      .update({ status: "published" })
-      .eq("id", data.requestId)
-      .eq("status", "draft");
-    if (error) throw new Error(error.message);
+    await updatedRows(
+      supabase
+        .from("accommodation_requests")
+        .update({ status: "published" })
+        .eq("id", data.requestId)
+        .eq("status", "draft")
+        .select("id"),
+      "This request is no longer a draft — refresh to see the latest.",
+    );
 
     const { data: school } = await supabaseAdmin
       .from("controllers")
@@ -448,7 +466,8 @@ export const cancelAccommodationRequest = createServerFn({ method: "POST" })
       .eq("id", data.requestId);
     if (error) throw new Error(error.message);
 
-    await supabase
+    // Hostel-owned rows again: the school cannot write them directly.
+    await supabaseAdmin
       .from("allocation_offers")
       .update({ status: "withdrawn" })
       .eq("request_id", data.requestId)
@@ -550,14 +569,20 @@ export const acceptAllocationOffer = createServerFn({ method: "POST" })
     if (!["published", "allocating"].includes(request.status))
       throw new Error("This request is not open for allocation");
 
-    const { error } = await supabase
-      .from("allocation_offers")
-      .update({ status: "accepted" })
-      .eq("id", data.offerId)
-      .eq("status", "offered");
-    if (error) throw new Error(error.message);
+    // A school can read a hostel's offer but not write to it, so the answer
+    // goes through the service-role client — after the access check above.
+    await updatedRows(
+      supabaseAdmin
+        .from("allocation_offers")
+        .update({ status: "accepted" })
+        .eq("id", data.offerId)
+        .eq("status", "offered")
+        .select("id"),
+      "This offer is no longer open — refresh to see the latest.",
+    );
 
-    await supabase
+    // One request, one hostel: accepting settles it, so the rest lapse.
+    await supabaseAdmin
       .from("allocation_offers")
       .update({ status: "declined" })
       .eq("request_id", offer.request_id)
@@ -785,12 +810,15 @@ export const withdrawAllocationOffer = createServerFn({ method: "POST" })
     await assertHotelAccess(supabase, offer.hotel_id);
     if (offer.status !== "offered") throw new Error("Only an open offer can be withdrawn");
 
-    const { error } = await supabase
-      .from("allocation_offers")
-      .update({ status: "withdrawn" })
-      .eq("id", data.offerId)
-      .eq("status", "offered");
-    if (error) throw new Error(error.message);
+    await updatedRows(
+      supabase
+        .from("allocation_offers")
+        .update({ status: "withdrawn" })
+        .eq("id", data.offerId)
+        .eq("status", "offered")
+        .select("id"),
+      "This offer is no longer open — the school may have just answered it.",
+    );
 
     return { ok: true };
   });
@@ -1411,11 +1439,15 @@ export const unplaceStudent = createServerFn({ method: "POST" })
     if (allocation.status === "checked_out" || allocation.status === "cancelled")
       throw new Error("This placement is already closed");
 
-    const { error } = await supabase
-      .from("student_allocations")
-      .update({ status: "cancelled" })
-      .eq("id", data.allocationId);
-    if (error) throw new Error(error.message);
+    await updatedRows(
+      supabase
+        .from("student_allocations")
+        .update({ status: "cancelled" })
+        .eq("id", data.allocationId)
+        .in("status", ["proposed", "confirmed"])
+        .select("id"),
+      "This placement has already moved on — refresh to see the latest.",
+    );
 
     return { ok: true };
   });
