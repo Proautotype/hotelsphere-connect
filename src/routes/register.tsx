@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { slugify } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { registerHotelSchema } from "@/lib/hotels.functions";
+import { HOTEL_TYPE_OPTIONS } from "@/lib/permissions";
 import { zodFieldErrors } from "@/lib/validation";
 
 export const Route = createFileRoute("/register")({
@@ -39,19 +40,6 @@ export const Route = createFileRoute("/register")({
   }),
   component: RegisterPage,
 });
-
-const HOTEL_TYPES = [
-  "Hotel",
-  "Guest House",
-  "Boutique Hotel",
-  "Resort",
-  "Serviced Apartment",
-  "Motel",
-  "Hostel",
-  "Lodge",
-  "Airbnb / Vacation Rental",
-  "Conference Hotel",
-];
 
 const REGISTER_STEPS = [
   { label: "Register", desc: "Submit your property details." },
@@ -85,7 +73,7 @@ function RegisterPage() {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    hotel_type: "Hotel",
+    hotel_type: "hotel",
     address: "",
     city: "",
     region: "",
@@ -303,9 +291,9 @@ function RegisterPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-[3px] border-ink shadow-hard">
-                    {HOTEL_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
+                    {HOTEL_TYPE_OPTIONS.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

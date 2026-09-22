@@ -277,7 +277,9 @@ export const createPublicBooking = createServerFn({ method: "POST" })
 
     const { data: roomType } = await supabaseAdmin
       .from("room_types")
-      .select("id, hotel_id, name, base_price, per_stay_price, pricing_model, max_guests, is_active")
+      .select(
+        "id, hotel_id, name, base_price, per_stay_price, pricing_model, max_guests, is_active",
+      )
       .eq("id", data.roomTypeId)
       .maybeSingle();
     if (!roomType || roomType.hotel_id !== hotel.id || !roomType.is_active)

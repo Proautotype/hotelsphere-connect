@@ -112,7 +112,10 @@ export const updateRoomType = createServerFn({ method: "POST" })
     if (update["pricing_model"] === "per_stay" && !(update["per_stay_price"] ?? data.perStayPrice))
       throw new Error("Set a per-stay price for semester stays");
 
-    const { error } = await supabase.from("room_types").update(update as never).eq("id", data.roomTypeId);
+    const { error } = await supabase
+      .from("room_types")
+      .update(update as never)
+      .eq("id", data.roomTypeId);
     if (error) throw new Error(error.message);
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -207,11 +210,18 @@ export const updateRoomStatus = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => updateRoomStatusSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: room } = await supabase.from("rooms").select("id, hotel_id").eq("id", data.roomId).single();
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("id, hotel_id")
+      .eq("id", data.roomId)
+      .single();
     if (!room) throw new Error("Room not found");
     await assertHotelAccess(supabase, room.hotel_id);
 
-    const { error } = await supabase.from("rooms").update({ status: data.status }).eq("id", data.roomId);
+    const { error } = await supabase
+      .from("rooms")
+      .update({ status: data.status })
+      .eq("id", data.roomId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

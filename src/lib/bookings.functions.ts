@@ -123,11 +123,7 @@ export const createBooking = createServerFn({ method: "POST" })
     // One or more occupants per stay. Backwards compatible: a single `guest`
     // without `occupants` behaves exactly like a one-person booking.
     const occupants =
-      data.occupants && data.occupants.length > 0
-        ? data.occupants
-        : data.guest
-          ? [data.guest]
-          : [];
+      data.occupants && data.occupants.length > 0 ? data.occupants : data.guest ? [data.guest] : [];
     if (occupants.length === 0) throw new Error("Add at least one guest to this booking");
     const people = occupants.length;
 
@@ -158,18 +154,23 @@ export const createBooking = createServerFn({ method: "POST" })
         .single();
       pricingModel = rt?.pricing_model ?? "per_night";
       bedCapacity = Number(rt?.max_guests ?? 20);
-      roomRate = pricingModel === "per_stay"
-        ? Number(rt?.per_stay_price ?? rt?.base_price ?? 0)
-        : Number(rt?.base_price ?? 0);
+      roomRate =
+        pricingModel === "per_stay"
+          ? Number(rt?.per_stay_price ?? rt?.base_price ?? 0)
+          : Number(rt?.base_price ?? 0);
     }
 
     // Hostel beds cannot be double-booked: enforce room capacity server-side.
     if (roomId) {
       const used = await countActiveOccupancies(supabase, roomId, checkIn, checkOut);
-      if (bedCapacity > 0 && used + people > bedCapacity)
+      if (bedCapacity > 0 && used + people > bedCapacity) {
+        const free = Math.max(0, bedCapacity - used);
         throw new Error(
-          `This room sleeps ${bedCapacity} and already has ${Math.max(0, bedCapacity - (bedCapacity - used))} occupant${used === 1 ? "" : "s"} — only ${Math.max(0, bedCapacity - used)} more can be added for these dates`,
+          free === 0
+            ? `This room sleeps ${bedCapacity} and is already full for these dates`
+            : `This room sleeps ${bedCapacity} and already has ${used} occupant${used === 1 ? "" : "s"} for these dates — room for ${free} more`,
         );
+      }
     }
 
     let subtotal = 0;
@@ -280,9 +281,7 @@ export const createBooking = createServerFn({ method: "POST" })
       status: "reserved",
       created_by: userId,
     }));
-    const { error: occupancyError } = await supabase
-      .from("occupancies")
-      .insert(occupancyRows);
+    const { error: occupancyError } = await supabase.from("occupancies").insert(occupancyRows);
     if (occupancyError) throw new Error(occupancyError.message);
 
     await supabase.from("folio_items").insert({
@@ -315,7 +314,13 @@ export const createBooking = createServerFn({ method: "POST" })
 const changeBookingSchema = z.object({
   bookingId: z.string().uuid(),
   checkIn: z.string().date().optional(),
-  checkOut: z.string().date().optional(),
+  // null clears the departure date, turning the stay open-ended.
+  checkOut: z
+    .preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? null : v),
+      z.string().date().nullable(),
+    )
+    .optional(),
   roomId: z.string().uuid().optional(),
   roomTypeId: z.string().uuid().optional(),
   notes: z.string().max(2000).optional(),
@@ -339,10 +344,16 @@ export const changeBooking = createServerFn({ method: "POST" })
 
     const update: Record<string, unknown> = {};
     if (data.checkIn) update["check_in"] = data.checkIn;
-    if (data.checkOut) update["check_out"] = data.checkOut;
+    if (data.checkOut !== undefined) update["check_out"] = data.checkOut;
     if (data.roomId) update["room_id"] = data.roomId;
     if (data.roomTypeId) update["room_type_id"] = data.roomTypeId;
     if (data.notes !== undefined) update["notes"] = data.notes;
+
+    const nextCheckIn = (update["check_in"] as string | undefined) ?? booking.check_in;
+    const nextCheckOut =
+      data.checkOut !== undefined ? data.checkOut : (booking.check_out as string | null);
+    if (nextCheckOut && nextCheckOut <= nextCheckIn)
+      throw new Error("Check-out must be after check-in");
 
     const { error } = await supabase
       .from("bookings")
@@ -633,6 +644,7 @@ interface CheckOutMath {
 function checkOutMath(
   booking: {
     check_out: string | null;
+    pricing_model?: string | null;
     room_rate: number | string;
     total: number | string;
     amount_paid: number | string;
@@ -643,9 +655,13 @@ function checkOutMath(
   },
   todayIso: string,
 ): CheckOutMath {
-  // Long-term / per-stay stays have no fixed end date, so there are no
-  // "unused nights" to refund on early leave.
-  const unusedNights = booking.check_out ? nightsBetween(todayIso, booking.check_out) : 0;
+  // A per-stay fee buys the whole stay, not a set of nights, so leaving early
+  // refunds nothing — and room_rate is a flat per-person price, so multiplying
+  // it by "unused nights" would invent money. Open-ended stays have no end date
+  // to count back from either.
+  const perStay = booking.pricing_model === "per_stay";
+  const unusedNights =
+    booking.check_out && !perStay ? nightsBetween(todayIso, booking.check_out) : 0;
   const unusedValue = round2(Number(booking.room_rate) * unusedNights);
   const adjustedTotal = Math.max(0, round2(Number(booking.total) - unusedValue));
   const paid = Number(booking.amount_paid);
@@ -679,7 +695,9 @@ export const previewCheckOut = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: booking } = await supabase
       .from("bookings")
-      .select("id, hotel_id, status, check_in, check_out, room_rate, total, amount_paid")
+      .select(
+        "id, hotel_id, status, check_in, check_out, pricing_model, room_rate, total, amount_paid",
+      )
       .eq("id", data.bookingId)
       .single();
     if (!booking) throw new Error("Booking not found");
@@ -716,7 +734,7 @@ export const checkOutBooking = createServerFn({ method: "POST" })
     const { data: booking } = await supabase
       .from("bookings")
       .select(
-        "id, hotel_id, status, room_id, guest_id, reference, check_in, check_out, room_rate, total, amount_paid, services_total",
+        "id, hotel_id, status, room_id, guest_id, reference, check_in, check_out, pricing_model, room_rate, total, amount_paid, services_total",
       )
       .eq("id", data.bookingId)
       .single();
@@ -979,7 +997,6 @@ export const refundBooking = createServerFn({ method: "POST" })
 
     return { ok: true, amount: result.amount, note: result.note };
   });
-
 
 const folioChargeItemSchema = z.object({
   description: z.string().min(2).max(200),

@@ -132,6 +132,22 @@ export const HOTEL_TYPES = [
   "other",
 ];
 
+/**
+ * What a property calls itself, and what we store. The stored value is always
+ * the slug — filters and hostel features compare against it, so a label must
+ * never reach the database.
+ */
+export const HOTEL_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "hotel", label: "Hotel" },
+  { value: "guesthouse", label: "Guest house" },
+  { value: "bnb", label: "Bed & breakfast" },
+  { value: "apartment", label: "Serviced apartment" },
+  { value: "hostel", label: "Hostel" },
+  { value: "resort", label: "Resort" },
+  { value: "boutique", label: "Boutique hotel" },
+  { value: "other", label: "Other" },
+];
+
 export const ROOM_STATUSES = [
   "available",
   "reserved",

@@ -72,7 +72,8 @@ interface StayRow {
   reference: string;
   status: string;
   check_in: string;
-  check_out: string;
+  /** null on a long-term stay: the guest has not agreed a departure date. */
+  check_out: string | null;
   room_id: string | null;
   room_type_id: string | null;
   guests: { full_name: string } | null;
@@ -91,13 +92,12 @@ async function fetchRooms(hotelId: string) {
 async function fetchStays(hotelId: string, from: string, to: string) {
   const { data, error } = await supabase
     .from("bookings")
-    .select(
-      "id, reference, status, check_in, check_out, room_id, room_type_id, guests(full_name)",
-    )
+    .select("id, reference, status, check_in, check_out, room_id, room_type_id, guests(full_name)")
     .eq("hotel_id", hotelId)
     .not("status", "in", "(cancelled,no_show)")
     .lt("check_in", to)
-    .gt("check_out", from)
+    // An open-ended stay has no departure date, so it always overlaps.
+    .or(`check_out.is.null,check_out.gt.${from}`)
     .limit(800);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as StayRow[];
@@ -178,7 +178,6 @@ function CalendarPage() {
   const moveStay = async (stayId: string, roomId: string, newCheckIn: string) => {
     const stay = stays.find((s) => s.id === stayId);
     if (!stay || busy) return;
-    const stayNights = Math.max(1, diffDays(stay.check_in, stay.check_out));
     setBusy(true);
     try {
       await changeFn({
@@ -186,7 +185,9 @@ function CalendarPage() {
           bookingId: stayId,
           roomId,
           checkIn: newCheckIn,
-          checkOut: addDays(newCheckIn, stayNights),
+          checkOut: stay.check_out
+            ? addDays(newCheckIn, Math.max(1, diffDays(stay.check_in, stay.check_out)))
+            : null,
         },
       });
       toast.success("Booking moved");
@@ -250,7 +251,9 @@ function CalendarPage() {
   const dayStats = (date: string) => {
     const arrivals = stays.filter((s) => s.check_in === date).length;
     const departures = stays.filter((s) => s.check_out === date).length;
-    const inHouse = stays.filter((s) => s.check_in <= date && s.check_out > date).length;
+    const inHouse = stays.filter(
+      (s) => s.check_in <= date && (s.check_out === null || s.check_out > date),
+    ).length;
     return { arrivals, departures, inHouse };
   };
 
@@ -385,7 +388,9 @@ function CalendarPage() {
                   {(staysByRoom.get(room.id) ?? []).map((stay) => {
                     const offset = Math.max(0, diffDays(start, stay.check_in));
                     if (offset >= WINDOW_DAYS) return null;
-                    const endOffset = Math.min(WINDOW_DAYS, diffDays(start, stay.check_out));
+                    const endOffset = stay.check_out
+                      ? Math.min(WINDOW_DAYS, diffDays(start, stay.check_out))
+                      : WINDOW_DAYS;
                     const span = Math.max(1, endOffset - offset);
                     return (
                       <div
@@ -558,7 +563,6 @@ function CalendarPage() {
               {busy ? "Saving…" : "Create booking"}
             </Button>
           </DialogFooter>
-
         </DialogContent>
       </Dialog>
 

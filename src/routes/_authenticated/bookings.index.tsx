@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, CalendarDays, Plus, Search } from "lucide-react";
-import { money, shortDate, titleCase, today } from "@/lib/format";
+import { money, stayRange, titleCase, today } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/bookings/")({
   head: () => ({
@@ -32,7 +32,7 @@ interface BookingRow {
   reference: string;
   status: string;
   check_in: string;
-  check_out: string;
+  check_out: string | null;
   total: number;
   amount_paid: number;
   refunded_amount: number | null;
@@ -113,7 +113,7 @@ function BookingsPage() {
     const q = query.trim().toLowerCase();
     return bookings.filter((b) => {
       if (tab !== "all" && bucketOf(b) !== tab) return false;
-      if (from && b.check_out < from) return false;
+      if (from && b.check_out !== null && b.check_out < from) return false;
       if (to && b.check_in > to) return false;
       if (!q) return true;
       return [
@@ -254,9 +254,7 @@ function BookingsPage() {
                         {b.guests?.full_name} · {b.room_types?.name}{" "}
                         {b.rooms?.room_number ? `· Room ${b.rooms.room_number}` : ""}
                       </p>
-                      <p className="text-xs opacity-70">
-                        {shortDate(b.check_in)} → {shortDate(b.check_out)}
-                      </p>
+                      <p className="text-xs opacity-70">{stayRange(b.check_in, b.check_out)}</p>
                     </div>
                     <div className="flex items-center gap-3 sm:text-right">
                       <div>

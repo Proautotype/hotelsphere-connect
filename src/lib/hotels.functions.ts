@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { friendlyValidationMessage } from "@/lib/validation";
+import { HOTEL_TYPES } from "@/lib/permissions";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Hotel name must be at least 2 characters").max(120),
@@ -247,6 +248,7 @@ const hotelSettingsSchema = z.object({
   earlyCheckoutWithholdPercent: z.number().min(0).max(100).optional(),
   earlyCheckoutWithholdFlat: z.number().min(0).max(1_000_000).optional(),
   operatingMode: z.enum(["short_term", "long_term", "flexible"]).optional(),
+  hotelType: z.enum(HOTEL_TYPES as [string, ...string[]]).optional(),
 });
 
 export const updateHotelSettings = createServerFn({ method: "POST" })
@@ -279,6 +281,7 @@ export const updateHotelSettings = createServerFn({ method: "POST" })
       earlyCheckoutWithholdPercent: "early_checkout_withhold_percent",
       earlyCheckoutWithholdFlat: "early_checkout_withhold_flat",
       operatingMode: "operating_mode",
+      hotelType: "hotel_type",
     };
 
     const update: Record<string, unknown> = {};
