@@ -13,9 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as HotelSlugRouteImport } from './routes/$hotelSlug'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as SchoolRouteImport } from './routes/_school'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as AuthenticatedAllocationsRouteImport } from './routes/_authenticated/allocations'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated/channels'
@@ -37,12 +39,20 @@ import { Route as AdminAdminDiscoveryRouteImport } from './routes/_admin/admin.d
 import { Route as AdminAdminHotelsRouteImport } from './routes/_admin/admin.hotels'
 import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
 import { Route as AdminAdminRequestsRouteImport } from './routes/_admin/admin.requests'
+import { Route as AdminAdminSchoolsRouteImport } from './routes/_admin/admin.schools'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
 import { Route as AdminAdminTeamRouteImport } from './routes/_admin/admin.team'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AuthenticatedBookingsIndexRouteImport } from './routes/_authenticated/bookings.index'
 import { Route as AuthenticatedBookingsIdRouteImport } from './routes/_authenticated/bookings.$id'
+import { Route as SchoolSchoolIndexRouteImport } from './routes/_school/school.index'
+import { Route as SchoolSchoolAllocationsRouteImport } from './routes/_school/school.allocations'
+import { Route as SchoolSchoolHostelsRouteImport } from './routes/_school/school.hostels'
+import { Route as SchoolSchoolSettingsRouteImport } from './routes/_school/school.settings'
+import { Route as SchoolSchoolStudentsRouteImport } from './routes/_school/school.students'
 import { Route as ApiPublicPaystackWebhookRouteImport } from './routes/api/public/paystack-webhook'
+import { Route as SchoolSchoolRequestsIndexRouteImport } from './routes/_school/school.requests.index'
+import { Route as SchoolSchoolRequestsIdRouteImport } from './routes/_school/school.requests.$id'
 import { Route as ApiPublicIcalTokenRouteImport } from './routes/api/public/ical.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -63,6 +73,10 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SchoolRoute = SchoolRouteImport.update({
+  id: '/_school',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -78,6 +92,12 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAllocationsRoute =
+  AuthenticatedAllocationsRouteImport.update({
+    id: '/allocations',
+    path: '/allocations',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -184,6 +204,11 @@ const AdminAdminRequestsRoute = AdminAdminRequestsRouteImport.update({
   path: '/admin/requests',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminSchoolsRoute = AdminAdminSchoolsRouteImport.update({
+  id: '/admin/schools',
+  path: '/admin/schools',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -210,12 +235,48 @@ const AuthenticatedBookingsIdRoute = AuthenticatedBookingsIdRouteImport.update({
   path: '/bookings/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const SchoolSchoolIndexRoute = SchoolSchoolIndexRouteImport.update({
+  id: '/school/',
+  path: '/school/',
+  getParentRoute: () => SchoolRoute,
+} as any)
+const SchoolSchoolAllocationsRoute = SchoolSchoolAllocationsRouteImport.update({
+  id: '/school/allocations',
+  path: '/school/allocations',
+  getParentRoute: () => SchoolRoute,
+} as any)
+const SchoolSchoolHostelsRoute = SchoolSchoolHostelsRouteImport.update({
+  id: '/school/hostels',
+  path: '/school/hostels',
+  getParentRoute: () => SchoolRoute,
+} as any)
+const SchoolSchoolSettingsRoute = SchoolSchoolSettingsRouteImport.update({
+  id: '/school/settings',
+  path: '/school/settings',
+  getParentRoute: () => SchoolRoute,
+} as any)
+const SchoolSchoolStudentsRoute = SchoolSchoolStudentsRouteImport.update({
+  id: '/school/students',
+  path: '/school/students',
+  getParentRoute: () => SchoolRoute,
+} as any)
 const ApiPublicPaystackWebhookRoute =
   ApiPublicPaystackWebhookRouteImport.update({
     id: '/api/public/paystack-webhook',
     path: '/api/public/paystack-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SchoolSchoolRequestsIndexRoute =
+  SchoolSchoolRequestsIndexRouteImport.update({
+    id: '/school/requests/',
+    path: '/school/requests/',
+    getParentRoute: () => SchoolRoute,
+  } as any)
+const SchoolSchoolRequestsIdRoute = SchoolSchoolRequestsIdRouteImport.update({
+  id: '/school/requests/$id',
+  path: '/school/requests/$id',
+  getParentRoute: () => SchoolRoute,
+} as any)
 const ApiPublicIcalTokenRoute = ApiPublicIcalTokenRouteImport.update({
   id: '/api/public/ical/$token',
   path: '/api/public/ical/$token',
@@ -228,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
+  '/allocations': typeof AuthenticatedAllocationsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/channels': typeof AuthenticatedChannelsRoute
@@ -248,14 +310,22 @@ export interface FileRoutesByFullPath {
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/requests': typeof AdminAdminRequestsRoute
+  '/admin/schools': typeof AdminAdminSchoolsRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/school/allocations': typeof SchoolSchoolAllocationsRoute
+  '/school/hostels': typeof SchoolSchoolHostelsRoute
+  '/school/settings': typeof SchoolSchoolSettingsRoute
+  '/school/students': typeof SchoolSchoolStudentsRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/bookings/': typeof AuthenticatedBookingsIndexRoute
+  '/school/': typeof SchoolSchoolIndexRoute
+  '/school/requests/$id': typeof SchoolSchoolRequestsIdRoute
   '/api/public/ical/$token': typeof ApiPublicIcalTokenRoute
+  '/school/requests/': typeof SchoolSchoolRequestsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -263,6 +333,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
+  '/allocations': typeof AuthenticatedAllocationsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/channels': typeof AuthenticatedChannelsRoute
@@ -283,14 +354,22 @@ export interface FileRoutesByTo {
   '/admin/hotels': typeof AdminAdminHotelsRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/requests': typeof AdminAdminRequestsRoute
+  '/admin/schools': typeof AdminAdminSchoolsRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/school/allocations': typeof SchoolSchoolAllocationsRoute
+  '/school/hostels': typeof SchoolSchoolHostelsRoute
+  '/school/settings': typeof SchoolSchoolSettingsRoute
+  '/school/students': typeof SchoolSchoolStudentsRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/admin': typeof AdminAdminIndexRoute
   '/bookings': typeof AuthenticatedBookingsIndexRoute
+  '/school': typeof SchoolSchoolIndexRoute
+  '/school/requests/$id': typeof SchoolSchoolRequestsIdRoute
   '/api/public/ical/$token': typeof ApiPublicIcalTokenRoute
+  '/school/requests': typeof SchoolSchoolRequestsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -298,9 +377,11 @@ export interface FileRoutesById {
   '/$hotelSlug': typeof HotelSlugRoute
   '/_admin': typeof AdminRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_school': typeof SchoolRouteWithChildren
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
   '/register': typeof RegisterRoute
+  '/_authenticated/allocations': typeof AuthenticatedAllocationsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/channels': typeof AuthenticatedChannelsRoute
@@ -321,14 +402,22 @@ export interface FileRoutesById {
   '/_admin/admin/hotels': typeof AdminAdminHotelsRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
   '/_admin/admin/requests': typeof AdminAdminRequestsRoute
+  '/_admin/admin/schools': typeof AdminAdminSchoolsRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
   '/_admin/admin/team': typeof AdminAdminTeamRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/_school/school/allocations': typeof SchoolSchoolAllocationsRoute
+  '/_school/school/hostels': typeof SchoolSchoolHostelsRoute
+  '/_school/school/settings': typeof SchoolSchoolSettingsRoute
+  '/_school/school/students': typeof SchoolSchoolStudentsRoute
   '/api/public/paystack-webhook': typeof ApiPublicPaystackWebhookRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_authenticated/bookings/': typeof AuthenticatedBookingsIndexRoute
+  '/_school/school/': typeof SchoolSchoolIndexRoute
+  '/_school/school/requests/$id': typeof SchoolSchoolRequestsIdRoute
   '/api/public/ical/$token': typeof ApiPublicIcalTokenRoute
+  '/_school/school/requests/': typeof SchoolSchoolRequestsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -338,6 +427,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
+    | '/allocations'
     | '/billing'
     | '/calendar'
     | '/channels'
@@ -358,14 +448,22 @@ export interface FileRouteTypes {
     | '/admin/hotels'
     | '/admin/plans'
     | '/admin/requests'
+    | '/admin/schools'
     | '/admin/settings'
     | '/admin/team'
     | '/admin/users'
     | '/bookings/$id'
+    | '/school/allocations'
+    | '/school/hostels'
+    | '/school/settings'
+    | '/school/students'
     | '/api/public/paystack-webhook'
     | '/admin/'
     | '/bookings/'
+    | '/school/'
+    | '/school/requests/$id'
     | '/api/public/ical/$token'
+    | '/school/requests/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -373,6 +471,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/discover'
     | '/register'
+    | '/allocations'
     | '/billing'
     | '/calendar'
     | '/channels'
@@ -393,23 +492,33 @@ export interface FileRouteTypes {
     | '/admin/hotels'
     | '/admin/plans'
     | '/admin/requests'
+    | '/admin/schools'
     | '/admin/settings'
     | '/admin/team'
     | '/admin/users'
     | '/bookings/$id'
+    | '/school/allocations'
+    | '/school/hostels'
+    | '/school/settings'
+    | '/school/students'
     | '/api/public/paystack-webhook'
     | '/admin'
     | '/bookings'
+    | '/school'
+    | '/school/requests/$id'
     | '/api/public/ical/$token'
+    | '/school/requests'
   id:
     | '__root__'
     | '/'
     | '/$hotelSlug'
     | '/_admin'
     | '/_authenticated'
+    | '/_school'
     | '/auth'
     | '/discover'
     | '/register'
+    | '/_authenticated/allocations'
     | '/_authenticated/billing'
     | '/_authenticated/calendar'
     | '/_authenticated/channels'
@@ -430,14 +539,22 @@ export interface FileRouteTypes {
     | '/_admin/admin/hotels'
     | '/_admin/admin/plans'
     | '/_admin/admin/requests'
+    | '/_admin/admin/schools'
     | '/_admin/admin/settings'
     | '/_admin/admin/team'
     | '/_admin/admin/users'
     | '/_authenticated/bookings/$id'
+    | '/_school/school/allocations'
+    | '/_school/school/hostels'
+    | '/_school/school/settings'
+    | '/_school/school/students'
     | '/api/public/paystack-webhook'
     | '/_admin/admin/'
     | '/_authenticated/bookings/'
+    | '/_school/school/'
+    | '/_school/school/requests/$id'
     | '/api/public/ical/$token'
+    | '/_school/school/requests/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -445,6 +562,7 @@ export interface RootRouteChildren {
   HotelSlugRoute: typeof HotelSlugRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  SchoolRoute: typeof SchoolRouteWithChildren
   AuthRoute: typeof AuthRoute
   DiscoverRoute: typeof DiscoverRoute
   RegisterRoute: typeof RegisterRoute
@@ -485,6 +603,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_school': {
+      id: '/_school'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof SchoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -505,6 +630,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/allocations': {
+      id: '/_authenticated/allocations'
+      path: '/allocations'
+      fullPath: '/allocations'
+      preLoaderRoute: typeof AuthenticatedAllocationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/billing': {
       id: '/_authenticated/billing'
@@ -653,6 +785,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminRequestsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/schools': {
+      id: '/_admin/admin/schools'
+      path: '/admin/schools'
+      fullPath: '/admin/schools'
+      preLoaderRoute: typeof AdminAdminSchoolsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/settings': {
       id: '/_admin/admin/settings'
       path: '/admin/settings'
@@ -688,12 +827,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBookingsIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_school/school/': {
+      id: '/_school/school/'
+      path: '/school'
+      fullPath: '/school/'
+      preLoaderRoute: typeof SchoolSchoolIndexRouteImport
+      parentRoute: typeof SchoolRoute
+    }
+    '/_school/school/allocations': {
+      id: '/_school/school/allocations'
+      path: '/school/allocations'
+      fullPath: '/school/allocations'
+      preLoaderRoute: typeof SchoolSchoolAllocationsRouteImport
+      parentRoute: typeof SchoolRoute
+    }
+    '/_school/school/hostels': {
+      id: '/_school/school/hostels'
+      path: '/school/hostels'
+      fullPath: '/school/hostels'
+      preLoaderRoute: typeof SchoolSchoolHostelsRouteImport
+      parentRoute: typeof SchoolRoute
+    }
+    '/_school/school/settings': {
+      id: '/_school/school/settings'
+      path: '/school/settings'
+      fullPath: '/school/settings'
+      preLoaderRoute: typeof SchoolSchoolSettingsRouteImport
+      parentRoute: typeof SchoolRoute
+    }
+    '/_school/school/students': {
+      id: '/_school/school/students'
+      path: '/school/students'
+      fullPath: '/school/students'
+      preLoaderRoute: typeof SchoolSchoolStudentsRouteImport
+      parentRoute: typeof SchoolRoute
+    }
     '/api/public/paystack-webhook': {
       id: '/api/public/paystack-webhook'
       path: '/api/public/paystack-webhook'
       fullPath: '/api/public/paystack-webhook'
       preLoaderRoute: typeof ApiPublicPaystackWebhookRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_school/school/requests/': {
+      id: '/_school/school/requests/'
+      path: '/school/requests'
+      fullPath: '/school/requests/'
+      preLoaderRoute: typeof SchoolSchoolRequestsIndexRouteImport
+      parentRoute: typeof SchoolRoute
+    }
+    '/_school/school/requests/$id': {
+      id: '/_school/school/requests/$id'
+      path: '/school/requests/$id'
+      fullPath: '/school/requests/$id'
+      preLoaderRoute: typeof SchoolSchoolRequestsIdRouteImport
+      parentRoute: typeof SchoolRoute
     }
     '/api/public/ical/$token': {
       id: '/api/public/ical/$token'
@@ -710,6 +898,7 @@ interface AdminRouteChildren {
   AdminAdminHotelsRoute: typeof AdminAdminHotelsRoute
   AdminAdminPlansRoute: typeof AdminAdminPlansRoute
   AdminAdminRequestsRoute: typeof AdminAdminRequestsRoute
+  AdminAdminSchoolsRoute: typeof AdminAdminSchoolsRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
   AdminAdminTeamRoute: typeof AdminAdminTeamRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
@@ -721,6 +910,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminHotelsRoute: AdminAdminHotelsRoute,
   AdminAdminPlansRoute: AdminAdminPlansRoute,
   AdminAdminRequestsRoute: AdminAdminRequestsRoute,
+  AdminAdminSchoolsRoute: AdminAdminSchoolsRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
   AdminAdminTeamRoute: AdminAdminTeamRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
@@ -730,6 +920,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAllocationsRoute: typeof AuthenticatedAllocationsRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedChannelsRoute: typeof AuthenticatedChannelsRoute
@@ -748,6 +939,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAllocationsRoute: AuthenticatedAllocationsRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedChannelsRoute: AuthenticatedChannelsRoute,
@@ -769,11 +961,35 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface SchoolRouteChildren {
+  SchoolSchoolAllocationsRoute: typeof SchoolSchoolAllocationsRoute
+  SchoolSchoolHostelsRoute: typeof SchoolSchoolHostelsRoute
+  SchoolSchoolSettingsRoute: typeof SchoolSchoolSettingsRoute
+  SchoolSchoolStudentsRoute: typeof SchoolSchoolStudentsRoute
+  SchoolSchoolIndexRoute: typeof SchoolSchoolIndexRoute
+  SchoolSchoolRequestsIdRoute: typeof SchoolSchoolRequestsIdRoute
+  SchoolSchoolRequestsIndexRoute: typeof SchoolSchoolRequestsIndexRoute
+}
+
+const SchoolRouteChildren: SchoolRouteChildren = {
+  SchoolSchoolAllocationsRoute: SchoolSchoolAllocationsRoute,
+  SchoolSchoolHostelsRoute: SchoolSchoolHostelsRoute,
+  SchoolSchoolSettingsRoute: SchoolSchoolSettingsRoute,
+  SchoolSchoolStudentsRoute: SchoolSchoolStudentsRoute,
+  SchoolSchoolIndexRoute: SchoolSchoolIndexRoute,
+  SchoolSchoolRequestsIdRoute: SchoolSchoolRequestsIdRoute,
+  SchoolSchoolRequestsIndexRoute: SchoolSchoolRequestsIndexRoute,
+}
+
+const SchoolRouteWithChildren =
+  SchoolRoute._addFileChildren(SchoolRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HotelSlugRoute: HotelSlugRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  SchoolRoute: SchoolRouteWithChildren,
   AuthRoute: AuthRoute,
   DiscoverRoute: DiscoverRoute,
   RegisterRoute: RegisterRoute,

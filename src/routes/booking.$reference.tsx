@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DiscoveryLayout } from "@/components/discovery/DiscoveryLayout";
 import { getPublicBooking, startPublicPayment } from "@/lib/discovery.functions";
 import { Button } from "@/components/ui/button";
-import { money, shortDate, dateTime, titleCase } from "@/lib/format";
+import { money, stayRange, dateTime, titleCase } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/booking/$reference")({
@@ -15,9 +15,15 @@ export const Route = createFileRoute("/booking/$reference")({
   head: ({ params }) => ({
     meta: [
       { title: `Booking ${params.reference} — Custard Hotels` },
-      { name: "description", content: "Your Custard Hotels booking summary, balance and payment status." },
+      {
+        name: "description",
+        content: "Your Custard Hotels booking summary, balance and payment status.",
+      },
       { property: "og:title", content: `Booking ${params.reference} — Custard Hotels` },
-      { property: "og:description", content: "Your Custard Hotels booking summary, balance and payment status." },
+      {
+        property: "og:description",
+        content: "Your Custard Hotels booking summary, balance and payment status.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -58,13 +64,17 @@ function BookingPage() {
   const pay = async () => {
     setBusy(true);
     try {
-      const result = await startPublicPayment({ data: { reference, origin: window.location.origin } });
+      const result = await startPublicPayment({
+        data: { reference, origin: window.location.origin },
+      });
       if (result.authorizationUrl) {
         window.location.href = result.authorizationUrl;
         return;
       }
       toast.info(
-        result.reason === "paid" ? "This booking is fully paid." : "Online payment isn't available for this hotel yet — pay at the front desk.",
+        result.reason === "paid"
+          ? "This booking is fully paid."
+          : "Online payment isn't available for this hotel yet — pay at the front desk.",
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment failed to start");
@@ -79,39 +89,58 @@ function BookingPage() {
         <p className="ink inline-block -rotate-1 bg-primary px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary-foreground">
           Booking {booking.reference}
         </p>
-        <h1 className="mt-4 font-display text-3xl font-extrabold uppercase tracking-tighter sm:text-4xl">{hotel.name}</h1>
+        <h1 className="mt-4 font-display text-3xl font-extrabold uppercase tracking-tighter sm:text-4xl">
+          {hotel.name}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {hotel.city} · {titleCase(String(booking.status).replace(/_/g, " "))}
         </p>
 
         <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="border-[2px] border-ink p-3">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Guest</dt>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Guest
+            </dt>
             <dd className="mt-1 font-medium">{guest?.full_name}</dd>
           </div>
           <div className="border-[2px] border-ink p-3">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Room</dt>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Room
+            </dt>
             <dd className="mt-1 font-medium">{roomType?.name}</dd>
           </div>
           <div className="border-[2px] border-ink p-3">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Stay</dt>
-            <dd className="mt-1 font-medium">
-              {shortDate(booking.check_in)} → {shortDate(booking.check_out)}
-            </dd>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Stay
+            </dt>
+            <dd className="mt-1 font-medium">{stayRange(booking.check_in, booking.check_out)}</dd>
           </div>
           <div className="border-[2px] border-ink p-3">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Guests</dt>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Guests
+            </dt>
             <dd className="mt-1 font-medium">{booking.guests_count}</dd>
           </div>
         </dl>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="border-[2px] border-ink p-4">
-            <h2 className="font-display text-lg font-extrabold uppercase tracking-tight">Charges</h2>
+            <h2 className="font-display text-lg font-extrabold uppercase tracking-tight">
+              Charges
+            </h2>
             <dl className="mt-3 space-y-1 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Rooms ({booking.nights} nights)</dt>
-                <dd>{money(Number(booking.room_rate) * Number(booking.nights), hotel.currency)}</dd>
+                <dt className="text-muted-foreground">
+                  {booking.nights === null
+                    ? `Accommodation (${booking.guests_count} × stay fee)`
+                    : `Rooms (${booking.nights} nights)`}
+                </dt>
+                <dd>
+                  {money(
+                    Number(booking.room_rate) * Number(booking.nights ?? booking.guests_count),
+                    hotel.currency,
+                  )}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Tax</dt>
@@ -142,15 +171,21 @@ function BookingPage() {
           </div>
 
           <div className="border-[2px] border-ink p-4">
-            <h2 className="font-display text-lg font-extrabold uppercase tracking-tight">Payments</h2>
+            <h2 className="font-display text-lg font-extrabold uppercase tracking-tight">
+              Payments
+            </h2>
             {payments.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">No payments recorded yet.</p>
             ) : (
               <ul className="mt-3 space-y-2 text-sm">
                 {payments.map((p, i) => (
-                  <li key={`${p.receipt_number ?? "pay"}-${i}`} className="flex items-center justify-between border-b border-border pb-2">
+                  <li
+                    key={`${p.receipt_number ?? "pay"}-${i}`}
+                    className="flex items-center justify-between border-b border-border pb-2"
+                  >
                     <span>
-                      {money(p.amount, hotel.currency)} · {titleCase(String(p.method).replace(/_/g, " "))}
+                      {money(p.amount, hotel.currency)} ·{" "}
+                      {titleCase(String(p.method).replace(/_/g, " "))}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {titleCase(String(p.status))} {p.paid_at ? `· ${dateTime(p.paid_at)}` : ""}
@@ -160,17 +195,25 @@ function BookingPage() {
               </ul>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
-              Check-in from {String(hotel.check_in_time).slice(0, 5)}, check-out by {String(hotel.check_out_time).slice(0, 5)}. Questions?
+              Check-in from {String(hotel.check_in_time).slice(0, 5)}, check-out by{" "}
+              {String(hotel.check_out_time).slice(0, 5)}. Questions?
               {hotel.phone ? ` Call ${hotel.phone}.` : hotel.email ? ` Email ${hotel.email}.` : ""}
             </p>
           </div>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link to="/$hotelSlug" params={{ hotelSlug: hotel.slug }} className="ink kinetic-press shadow-hard bg-card px-4 py-2 text-sm font-bold">
+          <Link
+            to="/$hotelSlug"
+            params={{ hotelSlug: hotel.slug }}
+            className="ink kinetic-press shadow-hard bg-card px-4 py-2 text-sm font-bold"
+          >
             Back to hotel
           </Link>
-          <Link to="/discover" className="ink kinetic-press shadow-hard bg-amber px-4 py-2 text-sm font-bold text-amber-foreground">
+          <Link
+            to="/discover"
+            className="ink kinetic-press shadow-hard bg-amber px-4 py-2 text-sm font-bold text-amber-foreground"
+          >
             Find another stay
           </Link>
         </div>

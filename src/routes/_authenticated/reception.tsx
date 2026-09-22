@@ -8,11 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { confirmBooking, checkInBooking } from "@/lib/bookings.functions";
+import {
+  confirmBooking,
+  checkInBooking,
+  checkInOccupancy,
+  checkOutOccupancy,
+} from "@/lib/bookings.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowRight, DoorOpen, Search } from "lucide-react";
-import { money, shortDate, today } from "@/lib/format";
+import { ArrowRight, DoorOpen, LogOut, Search, Users } from "lucide-react";
+import { money, stayRange, today } from "@/lib/format";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/reception")({
@@ -29,12 +34,33 @@ export const Route = createFileRoute("/_authenticated/reception")({
   component: ReceptionPage,
 });
 
+interface OccupantRow {
+  id: string;
+  status: string;
+  bed_number: string | null;
+  guests: { full_name: string } | null;
+}
+
+interface ReceptionRow {
+  id: string;
+  reference: string;
+  status: string;
+  total: number;
+  amount_paid: number;
+  check_in: string;
+  /** null on a long-term stay: no agreed departure date. */
+  check_out: string | null;
+  guests: { full_name: string } | null;
+  rooms: { room_number: string } | null;
+  occupancies: OccupantRow[];
+}
+
 async function fetchTodayBookings(hotelId: string) {
   const todayStr = today();
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, reference, status, check_in, check_out, total, amount_paid, guests(full_name), rooms(room_number)",
+      "id, reference, status, check_in, check_out, total, amount_paid, guests(full_name), rooms(room_number), occupancies(id, status, bed_number, guests(full_name))",
     )
     .eq("hotel_id", hotelId)
     .or(`check_in.eq.${todayStr},check_out.eq.${todayStr},status.eq.checked_in`)
@@ -42,7 +68,7 @@ async function fetchTodayBookings(hotelId: string) {
     .order("check_in", { ascending: true })
     .limit(100);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as ReceptionRow[];
 }
 
 function ReceptionPage() {
@@ -57,27 +83,17 @@ function ReceptionPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const confirm = useServerFn(confirmBooking);
   const checkIn = useServerFn(checkInBooking);
-  
+  const occCheckIn = useServerFn(checkInOccupancy);
+  const occCheckOut = useServerFn(checkOutOccupancy);
 
-  const filtered = (
-    bookings as Array<{
-      id: string;
-      reference: string;
-      status: string;
-      total: number;
-      amount_paid: number;
-      check_in: string;
-      check_out: string;
-      guests: unknown;
-      rooms: unknown;
-    }>
-  ).filter((b) => {
-    const q = query.toLowerCase();
-    const guest = b.guests as unknown as { full_name: string } | null;
+  const filtered = bookings.filter((b) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
     return (
       b.reference.toLowerCase().includes(q) ||
-      guest?.full_name.toLowerCase().includes(q) ||
-      String(b.rooms).includes(q)
+      (b.guests?.full_name.toLowerCase().includes(q) ?? false) ||
+      (b.rooms?.room_number.toLowerCase().includes(q) ?? false) ||
+      b.occupancies.some((o) => o.guests?.full_name.toLowerCase().includes(q))
     );
   });
 
@@ -109,6 +125,21 @@ function ReceptionPage() {
     }
   };
 
+  /** Dorm beds come and go one at a time, so each occupant moves on their own. */
+  const runOccupant = async (occupancyId: string, direction: "in" | "out") => {
+    if (busyId) return;
+    setBusyId(occupancyId);
+    try {
+      if (direction === "in") await occCheckIn({ data: { occupancyId } });
+      else await occCheckOut({ data: { occupancyId } });
+      toast.success(direction === "in" ? "Occupant checked in" : "Occupant checked out");
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update this occupant");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <DashboardShell title="Reception">
@@ -132,22 +163,12 @@ function ReceptionPage() {
             </CardContent>
           </Card>
         ) : (
-          (
-            filtered as Array<{
-              id: string;
-              reference: string;
-              status: string;
-              total: number;
-              amount_paid: number;
-              check_in: string;
-              check_out: string;
-              guests: unknown;
-              rooms: unknown;
-            }>
-          ).map((b) => {
-            const guest = b.guests as unknown as { full_name: string } | null;
-            const room = b.rooms as unknown as { room_number: string } | null;
+          filtered.map((b) => {
+            const guest = b.guests;
+            const room = b.rooms;
             const balance = Number(b.total) - Number(b.amount_paid);
+            // A single occupant is already named above; a dorm needs the list.
+            const occupants = b.occupancies.length > 1 ? b.occupancies : [];
             return (
               <Card key={b.id}>
                 <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -176,8 +197,49 @@ function ReceptionPage() {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {shortDate(b.check_in)} → {shortDate(b.check_out)}
+                      {stayRange(b.check_in, b.check_out)}
                     </p>
+                    {occupants.length > 0 ? (
+                      <div className="mt-3 space-y-1">
+                        <p className="flex items-center gap-1 text-xs font-semibold text-foreground">
+                          <Users className="size-3.5" /> {occupants.length} occupants
+                        </p>
+                        {occupants.map((o) => (
+                          <div
+                            key={o.id}
+                            className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
+                          >
+                            <span className="text-foreground">
+                              {o.guests?.full_name ?? "Occupant"}
+                            </span>
+                            {o.bed_number ? <span>Bed {o.bed_number}</span> : null}
+                            <StatusBadge status={o.status} />
+                            {o.status === "reserved" ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-[11px]"
+                                disabled={busyId !== null}
+                                onClick={() => runOccupant(o.id, "in")}
+                              >
+                                <DoorOpen className="mr-1 size-3" /> Check in
+                              </Button>
+                            ) : null}
+                            {o.status === "checked_in" ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-[11px]"
+                                disabled={busyId !== null}
+                                onClick={() => runOccupant(o.id, "out")}
+                              >
+                                <LogOut className="mr-1 size-3" /> Check out
+                              </Button>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <p className="font-medium text-foreground">

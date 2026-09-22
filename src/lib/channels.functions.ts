@@ -91,11 +91,27 @@ export function parseIcal(raw: string): IcalEvent[] {
 }
 
 function icsEscape(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
 }
 
 function compact(date: string) {
   return date.replace(/-/g, "");
+}
+
+/**
+ * A long-term stay has no agreed departure date, but an iCal event must end
+ * somewhere. Block a year out from arrival so travel sites keep the room off
+ * sale; the feed is rebuilt on every fetch, and the booking drops out of it
+ * once the guest is checked out.
+ */
+function openEndedUntil(checkIn: string) {
+  const end = new Date(`${checkIn}T00:00:00Z`);
+  end.setUTCFullYear(end.getUTCFullYear() + 1);
+  return end.toISOString().slice(0, 10);
 }
 
 /* ------------------------------------------------------------------ */
@@ -183,8 +199,7 @@ export const saveChannel = createServerFn({ method: "POST" })
       import_url: data.mode === "ical" ? (data.importUrl ?? null) : null,
       auto_sync: data.autoSync,
       status: (data.mode === "api" ? "awaiting_credentials" : "active") as
-        | "awaiting_credentials"
-        | "active",
+        "awaiting_credentials" | "active",
       api_config: { property_id: data.propertyId, account_ref: data.accountRef },
       created_by: userId,
     };
@@ -257,10 +272,7 @@ export const deleteChannel = createServerFn({ method: "POST" })
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 function nightsBetween(from: string, to: string) {
-  return Math.max(
-    1,
-    Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000),
-  );
+  return Math.max(1, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000));
 }
 
 function guestNameFrom(summary: string) {
@@ -286,7 +298,11 @@ export const syncChannel = createServerFn({ method: "POST" })
     if (!conn) throw new Error("Channel not found");
     await assertHotelAccess(supabase, conn.hotel_id);
 
-    const finish = async (ok: boolean, message: string, counts = { imported: 0, updated: 0, skipped: 0 }) => {
+    const finish = async (
+      ok: boolean,
+      message: string,
+      counts = { imported: 0, updated: 0, skipped: 0 },
+    ) => {
       await supabase
         .from("channel_connections")
         .update({
@@ -325,7 +341,10 @@ export const syncChannel = createServerFn({ method: "POST" })
         headers: { Accept: "text/calendar, text/plain, */*" },
       });
       if (!response.ok) {
-        return finish(false, `The travel site refused the calendar link (error ${response.status}).`);
+        return finish(
+          false,
+          `The travel site refused the calendar link (error ${response.status}).`,
+        );
       }
       raw = await response.text();
     } catch {
@@ -535,7 +554,7 @@ export const getChannelIcal = createServerFn({ method: "GET" })
         `UID:${b.id}@custardhotels`,
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${compact(b.check_in)}`,
-        `DTEND;VALUE=DATE:${compact(b.check_out)}`,
+        `DTEND;VALUE=DATE:${compact(b.check_out ?? openEndedUntil(b.check_in))}`,
         `SUMMARY:${icsEscape(`Not available (${b.reference})`)}`,
         "TRANSP:OPAQUE",
         "END:VEVENT",

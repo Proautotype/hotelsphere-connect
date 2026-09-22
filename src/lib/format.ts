@@ -21,7 +21,9 @@ export function toDate(value: string | Date | null | undefined): Date | null {
 
 export function shortDate(value: string | Date | null | undefined): string {
   const d = toDate(value);
-  return d ? d.toLocaleDateString("en-GH", { year: "numeric", month: "short", day: "numeric" }) : "—";
+  return d
+    ? d.toLocaleDateString("en-GH", { year: "numeric", month: "short", day: "numeric" })
+    : "—";
 }
 
 export function dayMonth(value: string | Date | null | undefined): string {
@@ -32,8 +34,25 @@ export function dayMonth(value: string | Date | null | undefined): string {
 export function dateTime(value: string | Date | null | undefined): string {
   const d = toDate(value);
   return d
-    ? d.toLocaleDateString("en-GH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    ? d.toLocaleDateString("en-GH", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "—";
+}
+
+/**
+ * The dates of a stay. A long-term stay has no agreed departure date, so it
+ * reads as open-ended rather than showing an em dash where a date should be.
+ */
+export function stayRange(
+  checkIn: string | Date | null | undefined,
+  checkOut: string | Date | null | undefined,
+): string {
+  return `${shortDate(checkIn)} → ${checkOut ? shortDate(checkOut) : "open-ended"}`;
 }
 
 export function today(): string {
@@ -43,11 +62,13 @@ export function today(): string {
 
 export function initials(name: string | null | undefined): string {
   if (!name) return "?";
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("") || "?";
+  return (
+    name
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "?"
+  );
 }
 
 export function titleCase(str: string | null | undefined): string {

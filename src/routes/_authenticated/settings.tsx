@@ -16,6 +16,7 @@ import { updateHotelSettings } from "@/lib/hotels.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { titleCase } from "@/lib/format";
+import { HOTEL_TYPE_OPTIONS } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -48,6 +49,8 @@ interface HotelRow {
   city: string;
   region: string;
   currency: string;
+  hotel_type: string;
+  operating_mode: string;
   check_in_time: string;
   check_out_time: string;
   tax_percent: number;
@@ -114,6 +117,8 @@ function SettingsPage() {
           acceptOnlineBookings: form.accept_online_bookings,
           showPrices: form.show_prices,
           showAvailability: form.show_availability,
+          hotelType: form.hotel_type,
+          operatingMode: form.operating_mode as "short_term" | "long_term" | "flexible",
           earlyCheckoutWithholdPercent: Number(form.early_checkout_withhold_percent ?? 0),
           earlyCheckoutWithholdFlat: Number(form.early_checkout_withhold_flat ?? 0),
         },
@@ -164,6 +169,25 @@ function SettingsPage() {
                   disabled={!allowed}
                   onChange={(e) => set("description", e.target.value)}
                 />
+              </div>
+              <div>
+                <Label htmlFor="hotelType">Property type</Label>
+                <select
+                  id="hotelType"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.hotel_type}
+                  disabled={!allowed}
+                  onChange={(e) => set("hotel_type", e.target.value)}
+                >
+                  {HOTEL_TYPE_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Hostels get semester pricing and dorm beds.
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -274,6 +298,63 @@ function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+
+          {form.hotel_type === "hostel" ? (
+            <Card>
+              <CardContent className="space-y-4 p-6">
+                <h3 className="kinetic-label text-xs text-foreground">Accommodation mode</h3>
+                <p className="text-sm text-muted-foreground">
+                  Hostels sell rooms per night (short stays) or as a flat fee per person for a whole
+                  semester. This sets the default; each room type can override it.
+                </p>
+                <div className="space-y-2">
+                  {(
+                    [
+                      [
+                        "short_term",
+                        "Short-term stays",
+                        "Fixed check-in and check-out dates, priced per night.",
+                      ],
+                      [
+                        "long_term",
+                        "Long-term / semester stays",
+                        "Open-ended or term-based stays priced as a flat fee per person.",
+                      ],
+                      ["flexible", "Both", "Dorm beds sold per stay, private rooms per night."],
+                    ] as const
+                  ).map(([value, label, blurb]) => (
+                    <label
+                      key={value}
+                      className={`ink flex cursor-${
+                        allowed ? "pointer" : "default"
+                      } items-start gap-3 border-[3px] p-4 transition-colors ${
+                        form.operating_mode === value
+                          ? "bg-amber text-amber-foreground"
+                          : "bg-background hover:bg-amber"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="operating_mode"
+                        disabled={!allowed}
+                        checked={form.operating_mode === value}
+                        onChange={(e) => {
+                          if (e.target.checked) set("operating_mode", value);
+                        }}
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="block font-display text-sm font-extrabold tracking-tight">
+                          {label}
+                        </span>
+                        <span className="block text-xs opacity-80">{blurb}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardContent className="space-y-4 p-6">

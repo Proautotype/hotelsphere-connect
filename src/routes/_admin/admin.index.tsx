@@ -84,6 +84,10 @@ function AdminOverviewPage() {
               <p className="font-medium text-foreground">Manage users</p>
               <p className="text-sm text-muted-foreground">View user accounts and platform roles.</p>
             </Link>
+            <Link to="/admin/schools" className="block rounded-lg border border-border p-4 hover:bg-muted">
+              <p className="font-medium text-foreground">Set up a school</p>
+              <p className="text-sm text-muted-foreground">Create a university or college and link its staff accounts.</p>
+            </Link>
           </CardContent>
         </Card>
       </div>

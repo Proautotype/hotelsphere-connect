@@ -1,83 +1,45 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
-  CalendarDays,
-  CalendarRange,
-  Globe,
   BedDouble,
-  DoorOpen,
-  Sparkles,
-  Users,
-  CreditCard,
-  ChartPie,
-  Settings,
-  UserCog,
+  Building2,
   GraduationCap,
+  LayoutDashboard,
   Menu,
+  Settings,
+  Users,
   X,
-  type LucideIcon,
 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SignOutButton } from "./SignOutButton";
-import { Receipt } from "lucide-react";
-import { HotelSwitcher } from "./HotelSwitcher";
-import { HotelGate } from "./HotelGate";
-import { NotificationBell } from "./NotificationBell";
+import { ControllerGate } from "./ControllerGate";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  /** Used instead of `label` when the property is a hostel. */
-  hostelLabel?: string;
-  /** Left out means everyone sees it. */
-  show?: "hostel";
-}
-
-const NAV: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/bookings", label: "Bookings", icon: CalendarDays, hostelLabel: "Stays" },
-  { to: "/calendar", label: "Calendar", icon: CalendarRange },
-  { to: "/channels", label: "Travel sites", icon: Globe },
-  { to: "/rooms", label: "Rooms", icon: BedDouble, hostelLabel: "Rooms & beds" },
-  {
-    to: "/allocations",
-    label: "Schools & allocations",
-    icon: GraduationCap,
-    show: "hostel",
-  },
-  { to: "/reception", label: "Reception", icon: DoorOpen, hostelLabel: "Move-ins" },
-  { to: "/housekeeping", label: "Housekeeping", icon: Sparkles },
-  { to: "/guests", label: "Guests", icon: Users, hostelLabel: "Residents" },
-  { to: "/payments", label: "Payments", icon: CreditCard },
-  { to: "/finance", label: "Finance", icon: ChartPie },
-  { to: "/staff", label: "Staff", icon: UserCog },
-  { to: "/billing", label: "Plan & billing", icon: Receipt },
-  { to: "/settings", label: "Settings", icon: Settings },
+const NAV = [
+  { to: "/school", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/school/requests", label: "Accommodation", icon: GraduationCap },
+  { to: "/school/students", label: "Students", icon: Users },
+  { to: "/school/allocations", label: "Placements", icon: BedDouble },
+  { to: "/school/hostels", label: "Hostels", icon: Building2 },
+  { to: "/school/settings", label: "Settings", icon: Settings },
 ];
 
-export function DashboardShell({ children, title }: { children: ReactNode; title?: string }) {
-  const { profile, isPlatformAdmin, activeHotel } = useAuth();
+export function ControllerShell({ children, title }: { children: ReactNode; title?: string }) {
+  const { profile, activeController, controllers, selectController, isPlatformAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  // A hostel runs on beds and semesters, so it gets its own wording — and only
-  // a hostel takes student placements from schools.
-  const isHostel = activeHotel?.hotel_type === "hostel";
-  const navItems = NAV.filter((item) => !item.show || isHostel).map((item) =>
-    isHostel && item.hostelLabel ? { ...item, label: item.hostelLabel } : item,
-  );
-
   const NavList = (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-      {navItems.map((item) => {
+      {NAV.map((item) => {
         const Icon = item.icon;
-        const active = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+        const active =
+          item.to === "/school"
+            ? location.pathname === "/school"
+            : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
         return (
           <Link
             key={item.to}
@@ -86,8 +48,8 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
             className={cn(
               "kinetic-label flex items-center gap-3 px-3 py-2.5 text-xs transition-all",
               active
-                ? "ink bg-primary text-primary-foreground shadow-hard"
-                : "border-[3px] border-transparent text-muted-foreground hover:border-ink hover:bg-amber hover:text-amber-foreground",
+                ? "ink bg-amber text-amber-foreground shadow-hard"
+                : "border-[3px] border-transparent text-muted-foreground hover:border-ink hover:bg-muted hover:text-foreground",
             )}
           >
             <Icon className="size-5" />
@@ -97,7 +59,7 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
       })}
       {isPlatformAdmin ? (
         <Link
-          to="/admin"
+          to="/admin/schools"
           className="kinetic-label mt-2 flex items-center gap-3 border-[3px] border-dashed border-ink px-3 py-2.5 text-xs text-foreground transition-colors hover:bg-amber"
         >
           <LayoutDashboard className="size-5" />
@@ -110,18 +72,16 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r-[3px] border-ink bg-card lg:flex">
-        <div className="flex h-16 items-center border-b-[3px] border-ink px-4">
+        <div className="flex h-16 items-center gap-2 border-b-[3px] border-ink px-4">
           <span className="font-display text-2xl font-extrabold italic tracking-tighter text-foreground">
-            CUSTARD<span className="text-primary">.</span>
+            SCHOOL<span className="text-amber">.</span>
           </span>
         </div>
         {NavList}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* header */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b-[3px] border-ink bg-card px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <Sheet open={open} onOpenChange={setOpen}>
@@ -134,7 +94,7 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
               <SheetContent side="left" className="w-64 border-r-[3px] border-ink p-0">
                 <div className="flex h-16 items-center justify-between border-b-[3px] border-ink px-4">
                   <span className="font-display text-xl font-extrabold italic tracking-tighter text-foreground">
-                    CUSTARD<span className="text-primary">.</span>
+                    SCHOOL<span className="text-amber">.</span>
                   </span>
                   <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
                     <X className="size-5" />
@@ -149,11 +109,21 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
               </h1>
             ) : null}
           </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <HotelSwitcher />
-            <NotificationBell />
-            <div className="flex items-center gap-2 border-l-[3px] border-ink pl-2 sm:pl-4">
+          <div className="flex items-center gap-3">
+            {controllers.length > 1 ? (
+              <select
+                className="ink hidden bg-background px-2 py-1.5 text-xs font-semibold sm:block"
+                value={activeController?.id ?? ""}
+                onChange={(e) => selectController(e.target.value || null)}
+              >
+                {controllers.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <div className="flex items-center gap-3 border-l-[3px] border-ink pl-4">
               <span className="ink flex size-8 items-center justify-center bg-amber text-[11px] font-extrabold text-amber-foreground">
                 {initials(profile?.full_name ?? "")}
               </span>
@@ -165,11 +135,7 @@ export function DashboardShell({ children, title }: { children: ReactNode; title
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <HotelGate
-            allow={location.pathname === "/settings" || location.pathname === "/onboarding"}
-          >
-            {children}
-          </HotelGate>
+          <ControllerGate>{children}</ControllerGate>
         </main>
       </div>
     </div>

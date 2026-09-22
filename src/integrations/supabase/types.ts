@@ -6,8 +6,95 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5";
   };
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
+      accommodation_requests: {
+        Row: {
+          budget_per_student: number | null;
+          controller_id: string;
+          created_at: string;
+          created_by: string | null;
+          gender_mix: string;
+          id: string;
+          notes: string;
+          period_end: string | null;
+          period_start: string | null;
+          preferred_city: string;
+          semester: string;
+          status: string;
+          students_count: number;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          budget_per_student?: number | null;
+          controller_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          gender_mix?: string;
+          id?: string;
+          notes?: string;
+          period_end?: string | null;
+          period_start?: string | null;
+          preferred_city?: string;
+          semester?: string;
+          status?: string;
+          students_count?: number;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          budget_per_student?: number | null;
+          controller_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          gender_mix?: string;
+          id?: string;
+          notes?: string;
+          period_end?: string | null;
+          period_start?: string | null;
+          preferred_city?: string;
+          semester?: string;
+          status?: string;
+          students_count?: number;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "accommodation_requests_controller_id_fkey";
+            columns: ["controller_id"];
+            isOneToOne: false;
+            referencedRelation: "controllers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ad_requests: {
         Row: {
           created_at: string;
@@ -70,6 +157,60 @@ export type Database = {
           },
         ];
       };
+      allocation_offers: {
+        Row: {
+          beds_available: number;
+          created_at: string;
+          created_by: string | null;
+          hotel_id: string;
+          id: string;
+          notes: string;
+          price_per_student: number;
+          request_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          beds_available?: number;
+          created_at?: string;
+          created_by?: string | null;
+          hotel_id: string;
+          id?: string;
+          notes?: string;
+          price_per_student?: number;
+          request_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          beds_available?: number;
+          created_at?: string;
+          created_by?: string | null;
+          hotel_id?: string;
+          id?: string;
+          notes?: string;
+          price_per_student?: number;
+          request_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "allocation_offers_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "allocation_offers_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "accommodation_requests";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_logs: {
         Row: {
           action: string;
@@ -123,7 +264,7 @@ export type Database = {
           cancelled_at: string | null;
           channel_connection_id: string | null;
           check_in: string;
-          check_out: string;
+          check_out: string | null;
           checked_in_at: string | null;
           checked_out_at: string | null;
           commission_amount: number;
@@ -139,6 +280,7 @@ export type Database = {
           id: string;
           nights: number | null;
           notes: string;
+          pricing_model: string;
           reference: string;
           refunded_amount: number;
           room_id: string | null;
@@ -158,7 +300,7 @@ export type Database = {
           cancelled_at?: string | null;
           channel_connection_id?: string | null;
           check_in: string;
-          check_out: string;
+          check_out?: string | null;
           checked_in_at?: string | null;
           checked_out_at?: string | null;
           commission_amount?: number;
@@ -174,6 +316,7 @@ export type Database = {
           id?: string;
           nights?: number | null;
           notes?: string;
+          pricing_model?: string;
           reference?: string;
           refunded_amount?: number;
           room_id?: string | null;
@@ -193,7 +336,7 @@ export type Database = {
           cancelled_at?: string | null;
           channel_connection_id?: string | null;
           check_in?: string;
-          check_out?: string;
+          check_out?: string | null;
           checked_in_at?: string | null;
           checked_out_at?: string | null;
           commission_amount?: number;
@@ -209,6 +352,7 @@ export type Database = {
           id?: string;
           nights?: number | null;
           notes?: string;
+          pricing_model?: string;
           reference?: string;
           refunded_amount?: number;
           room_id?: string | null;
@@ -510,6 +654,95 @@ export type Database = {
           },
         ];
       };
+      controller_members: {
+        Row: {
+          controller_id: string;
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          role: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          controller_id: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          role?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          controller_id?: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          role?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "controller_members_controller_id_fkey";
+            columns: ["controller_id"];
+            isOneToOne: false;
+            referencedRelation: "controllers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      controllers: {
+        Row: {
+          address: string;
+          city: string;
+          country: string;
+          created_at: string;
+          created_by: string | null;
+          email: string | null;
+          id: string;
+          kind: string;
+          name: string;
+          phone: string | null;
+          slug: string;
+          status: string;
+          updated_at: string;
+          website: string | null;
+        };
+        Insert: {
+          address?: string;
+          city?: string;
+          country?: string;
+          created_at?: string;
+          created_by?: string | null;
+          email?: string | null;
+          id?: string;
+          kind?: string;
+          name: string;
+          phone?: string | null;
+          slug: string;
+          status?: string;
+          updated_at?: string;
+          website?: string | null;
+        };
+        Update: {
+          address?: string;
+          city?: string;
+          country?: string;
+          created_at?: string;
+          created_by?: string | null;
+          email?: string | null;
+          id?: string;
+          kind?: string;
+          name?: string;
+          phone?: string | null;
+          slug?: string;
+          status?: string;
+          updated_at?: string;
+          website?: string | null;
+        };
+        Relationships: [];
+      };
       data_requests: {
         Row: {
           created_at: string;
@@ -745,6 +978,51 @@ export type Database = {
           },
         ];
       };
+      hotel_controller_affiliations: {
+        Row: {
+          controller_id: string;
+          created_at: string;
+          created_by: string | null;
+          hotel_id: string;
+          id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          controller_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          hotel_id: string;
+          id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          controller_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          hotel_id?: string;
+          id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hotel_controller_affiliations_controller_id_fkey";
+            columns: ["controller_id"];
+            isOneToOne: false;
+            referencedRelation: "controllers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hotel_controller_affiliations_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       hotel_members: {
         Row: {
           created_at: string;
@@ -915,6 +1193,7 @@ export type Database = {
           name: string;
           onboarding_completed: boolean;
           onboarding_step: number;
+          operating_mode: string;
           owner_id: string | null;
           phone: string | null;
           photos: string[];
@@ -961,6 +1240,7 @@ export type Database = {
           name: string;
           onboarding_completed?: boolean;
           onboarding_step?: number;
+          operating_mode?: string;
           owner_id?: string | null;
           phone?: string | null;
           photos?: string[];
@@ -1007,6 +1287,7 @@ export type Database = {
           name?: string;
           onboarding_completed?: boolean;
           onboarding_step?: number;
+          operating_mode?: string;
           owner_id?: string | null;
           phone?: string | null;
           photos?: string[];
@@ -1127,6 +1408,83 @@ export type Database = {
             columns: ["hotel_id"];
             isOneToOne: false;
             referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      occupancies: {
+        Row: {
+          bed_number: string | null;
+          booking_id: string;
+          checked_in_at: string | null;
+          checked_out_at: string | null;
+          created_at: string;
+          created_by: string | null;
+          guest_id: string;
+          hotel_id: string;
+          id: string;
+          price: number;
+          room_id: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          bed_number?: string | null;
+          booking_id: string;
+          checked_in_at?: string | null;
+          checked_out_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          guest_id: string;
+          hotel_id: string;
+          id?: string;
+          price?: number;
+          room_id?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          bed_number?: string | null;
+          booking_id?: string;
+          checked_in_at?: string | null;
+          checked_out_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          guest_id?: string;
+          hotel_id?: string;
+          id?: string;
+          price?: number;
+          room_id?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "occupancies_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "occupancies_guest_id_fkey";
+            columns: ["guest_id"];
+            isOneToOne: false;
+            referencedRelation: "guests";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "occupancies_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "occupancies_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
             referencedColumns: ["id"];
           },
         ];
@@ -1363,6 +1721,8 @@ export type Database = {
           is_active: boolean;
           max_guests: number;
           name: string;
+          per_stay_price: number | null;
+          pricing_model: string;
           updated_at: string;
         };
         Insert: {
@@ -1378,6 +1738,8 @@ export type Database = {
           is_active?: boolean;
           max_guests?: number;
           name: string;
+          per_stay_price?: number | null;
+          pricing_model?: string;
           updated_at?: string;
         };
         Update: {
@@ -1393,6 +1755,8 @@ export type Database = {
           is_active?: boolean;
           max_guests?: number;
           name?: string;
+          per_stay_price?: number | null;
+          pricing_model?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -1500,6 +1864,163 @@ export type Database = {
           },
         ];
       };
+      student_allocations: {
+        Row: {
+          bed_number: string | null;
+          controller_id: string;
+          created_at: string;
+          hotel_id: string;
+          id: string;
+          occupancy_id: string | null;
+          offer_id: string | null;
+          price: number | null;
+          request_id: string | null;
+          room_id: string | null;
+          status: string;
+          student_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          bed_number?: string | null;
+          controller_id: string;
+          created_at?: string;
+          hotel_id: string;
+          id?: string;
+          occupancy_id?: string | null;
+          offer_id?: string | null;
+          price?: number | null;
+          request_id?: string | null;
+          room_id?: string | null;
+          status?: string;
+          student_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          bed_number?: string | null;
+          controller_id?: string;
+          created_at?: string;
+          hotel_id?: string;
+          id?: string;
+          occupancy_id?: string | null;
+          offer_id?: string | null;
+          price?: number | null;
+          request_id?: string | null;
+          room_id?: string | null;
+          status?: string;
+          student_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_allocations_controller_id_fkey";
+            columns: ["controller_id"];
+            isOneToOne: false;
+            referencedRelation: "controllers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_allocations_hotel_id_fkey";
+            columns: ["hotel_id"];
+            isOneToOne: false;
+            referencedRelation: "hotels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_allocations_occupancy_id_fkey";
+            columns: ["occupancy_id"];
+            isOneToOne: false;
+            referencedRelation: "occupancies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_allocations_offer_id_fkey";
+            columns: ["offer_id"];
+            isOneToOne: false;
+            referencedRelation: "allocation_offers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_allocations_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "accommodation_requests";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_allocations_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_allocations_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      students: {
+        Row: {
+          controller_id: string;
+          created_at: string;
+          email: string | null;
+          full_name: string;
+          gender: string;
+          guardian_name: string;
+          guardian_phone: string;
+          id: string;
+          level_year: string;
+          notes: string;
+          phone: string | null;
+          program: string;
+          student_ref: string;
+          updated_at: string;
+        };
+        Insert: {
+          controller_id: string;
+          created_at?: string;
+          email?: string | null;
+          full_name: string;
+          gender?: string;
+          guardian_name?: string;
+          guardian_phone?: string;
+          id?: string;
+          level_year?: string;
+          notes?: string;
+          phone?: string | null;
+          program?: string;
+          student_ref?: string;
+          updated_at?: string;
+        };
+        Update: {
+          controller_id?: string;
+          created_at?: string;
+          email?: string | null;
+          full_name?: string;
+          gender?: string;
+          guardian_name?: string;
+          guardian_phone?: string;
+          id?: string;
+          level_year?: string;
+          notes?: string;
+          phone?: string | null;
+          program?: string;
+          student_ref?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "students_controller_id_fkey";
+            columns: ["controller_id"];
+            isOneToOne: false;
+            referencedRelation: "controllers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       user_roles: {
         Row: {
           created_at: string;
@@ -1526,6 +2047,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      has_controller_access: {
+        Args: { _controller_id: string };
+        Returns: boolean;
+      };
       has_hotel_access: { Args: { _hotel_id: string }; Returns: boolean };
       has_role: {
         Args: {
@@ -1537,6 +2062,7 @@ export type Database = {
       hotel_commission_percent: { Args: { _hotel_id: string }; Returns: number };
       hotel_is_public: { Args: { _hotel_id: string }; Returns: boolean };
       is_demo_hotel: { Args: { _hotel_id: string }; Returns: boolean };
+      is_hotel_person: { Args: never; Returns: boolean };
       is_platform_admin: { Args: never; Returns: boolean };
       is_platform_team: { Args: never; Returns: boolean };
       owns_hotel: { Args: { _hotel_id: string }; Returns: boolean };
@@ -1548,7 +2074,13 @@ export type Database = {
       user_is_platform_team: { Args: { _user_id: string }; Returns: boolean };
     };
     Enums: {
-      app_role: "platform_admin" | "hotel_owner" | "hotel_staff" | "customer" | "platform_support";
+      app_role:
+        | "platform_admin"
+        | "hotel_owner"
+        | "hotel_staff"
+        | "customer"
+        | "platform_support"
+        | "controller";
       booking_source: "staff" | "hotel_website" | "discovery" | "external";
       booking_status:
         "pending" | "confirmed" | "checked_in" | "checked_out" | "cancelled" | "no_show";
@@ -1714,9 +2246,19 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
-      app_role: ["platform_admin", "hotel_owner", "hotel_staff", "customer", "platform_support"],
+      app_role: [
+        "platform_admin",
+        "hotel_owner",
+        "hotel_staff",
+        "customer",
+        "platform_support",
+        "controller",
+      ],
       booking_source: ["staff", "hotel_website", "discovery", "external"],
       booking_status: ["pending", "confirmed", "checked_in", "checked_out", "cancelled", "no_show"],
       cash_session_status: ["open", "closed"],

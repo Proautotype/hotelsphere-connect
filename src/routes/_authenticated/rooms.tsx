@@ -43,6 +43,8 @@ interface RoomTypeRow {
   id: string;
   name: string;
   base_price: number;
+  per_stay_price: number | null;
+  pricing_model: string;
   max_guests: number;
 }
 
@@ -51,13 +53,19 @@ interface RoomRow {
   room_number: string;
   status: string;
   floor: string;
-  room_types: { name: string; base_price: number; max_guests: number } | null;
+  room_types: {
+    name: string;
+    base_price: number;
+    per_stay_price: number | null;
+    pricing_model: string;
+    max_guests: number;
+  } | null;
 }
 
 async function fetchRooms(hotelId: string): Promise<RoomRow[]> {
   const { data, error } = await supabase
     .from("rooms")
-    .select("id, room_number, status, floor, room_types(name, base_price, max_guests)")
+    .select("id, room_number, status, floor, room_types(name, base_price, per_stay_price, pricing_model, max_guests)")
     .eq("hotel_id", hotelId)
     .order("room_number", { ascending: true })
     .limit(300);
@@ -68,7 +76,7 @@ async function fetchRooms(hotelId: string): Promise<RoomRow[]> {
 async function fetchRoomTypes(hotelId: string): Promise<RoomTypeRow[]> {
   const { data, error } = await supabase
     .from("room_types")
-    .select("id, name, base_price, max_guests")
+    .select("id, name, base_price, per_stay_price, pricing_model, max_guests")
     .eq("hotel_id", hotelId)
     .order("name", { ascending: true });
   if (error) throw new Error(error.message);
@@ -109,7 +117,15 @@ function RoomsPage() {
   const [typeOpen, setTypeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [roomForm, setRoomForm] = useState({ roomNumber: "", floor: "", roomTypeId: "" });
-  const [typeForm, setTypeForm] = useState({ name: "", basePrice: "", maxGuests: 2, bedCount: 1, bedType: "Double" });
+  const [typeForm, setTypeForm] = useState({
+    name: "",
+    basePrice: "",
+    perStayPrice: "",
+    pricingModel: "per_night",
+    maxGuests: 2,
+    bedCount: 1,
+    bedType: "Double",
+  });
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["rooms"] });
@@ -150,13 +166,15 @@ function RoomsPage() {
           hotelId,
           name: typeForm.name.trim(),
           basePrice: parseFloat(typeForm.basePrice || "0"),
+          pricingModel: typeForm.pricingModel as "per_night" | "per_stay",
+          perStayPrice: typeForm.pricingModel === "per_stay" ? parseFloat(typeForm.perStayPrice || "0") : undefined,
           maxGuests: typeForm.maxGuests,
           bedCount: typeForm.bedCount,
           bedType: typeForm.bedType,
         },
       });
       toast.success(`${res.name} room type created`);
-      setTypeForm({ name: "", basePrice: "", maxGuests: 2, bedCount: 1, bedType: "Double" });
+      setTypeForm({ name: "", basePrice: "", perStayPrice: "", pricingModel: "per_night", maxGuests: 2, bedCount: 1, bedType: "Double" });
       setTypeOpen(false);
       await refresh();
     } catch (err) {
@@ -191,7 +209,7 @@ function RoomsPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>New room type</DialogTitle>
-                    <DialogDescription>Room types carry the nightly rate and occupancy.</DialogDescription>
+                    <DialogDescription>Priced per night (standard stays) or as a flat fee per person for the whole stay (hostel semester dorms).</DialogDescription>
                   </DialogHeader>
                   <form onSubmit={submitType} className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
@@ -204,25 +222,53 @@ function RoomsPage() {
                         onChange={(e) => setTypeForm((p) => ({ ...p, name: e.target.value }))}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="rt-price">Nightly rate</Label>
-                      <Input
-                        id="rt-price"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        required
-                        value={typeForm.basePrice}
-                        onChange={(e) => setTypeForm((p) => ({ ...p, basePrice: e.target.value }))}
-                      />
+                    <div className="sm:col-span-2">
+                      <Label htmlFor="rt-pricing">Pricing</Label>
+                      <select
+                        id="rt-pricing"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={typeForm.pricingModel}
+                        onChange={(e) => setTypeForm((p) => ({ ...p, pricingModel: e.target.value }))}
+                      >
+                        <option value="per_night">Per night</option>
+                        <option value="per_stay">Flat fee per person, per stay</option>
+                      </select>
                     </div>
+                    {typeForm.pricingModel === "per_night" ? (
+                      <div>
+                        <Label htmlFor="rt-price">Nightly rate</Label>
+                        <Input
+                          id="rt-price"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          required
+                          value={typeForm.basePrice}
+                          onChange={(e) => setTypeForm((p) => ({ ...p, basePrice: e.target.value }))}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <Label htmlFor="rt-perstay">Per-stay price (each occupant)</Label>
+                        <Input
+                          id="rt-perstay"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          required
+                          placeholder="e.g. 1800 per student"
+                          value={typeForm.perStayPrice}
+                          onChange={(e) => setTypeForm((p) => ({ ...p, perStayPrice: e.target.value }))}
+                        />
+                      </div>
+                    )}
                     <div>
                       <Label htmlFor="rt-guests">Max guests</Label>
                       <Input
                         id="rt-guests"
                         type="number"
                         min={1}
-                        max={20}
+                        max={40}
                         value={typeForm.maxGuests}
                         onChange={(e) => setTypeForm((p) => ({ ...p, maxGuests: parseInt(e.target.value || "1", 10) }))}
                       />
@@ -233,7 +279,7 @@ function RoomsPage() {
                         id="rt-beds"
                         type="number"
                         min={1}
-                        max={10}
+                        max={40}
                         value={typeForm.bedCount}
                         onChange={(e) => setTypeForm((p) => ({ ...p, bedCount: parseInt(e.target.value || "1", 10) }))}
                       />
@@ -299,7 +345,11 @@ function RoomsPage() {
                           <option value="">Select a room type</option>
                           {roomTypes.map((rt) => (
                             <option key={rt.id} value={rt.id}>
-                              {rt.name} · {money(rt.base_price, activeHotel?.currency)}
+                              {rt.name}{" "}
+                              ·{" "}
+                              {rt.pricing_model === "per_stay"
+                                ? `${money(rt.per_stay_price ?? 0, activeHotel?.currency)} per stay`
+                                : `${money(rt.base_price, activeHotel?.currency)} / night`}
                             </option>
                           ))}
                         </select>
@@ -348,7 +398,13 @@ function RoomsPage() {
                           </p>
                         </div>
                         <p className="text-xs font-medium text-foreground">
-                          {money(room.room_types?.base_price ?? 0, activeHotel?.currency)}
+                          {room.room_types?.pricing_model === "per_stay"
+                            ? money(room.room_types?.per_stay_price ?? 0, activeHotel?.currency)
+                            : money(room.room_types?.base_price ?? 0, activeHotel?.currency)}
+                          <span className="text-muted-foreground">
+                            {" "}
+                            {room.room_types?.pricing_model === "per_stay" ? "/ stay" : "/ night"}
+                          </span>
                         </p>
                       </div>
                     ))

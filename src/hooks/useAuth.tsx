@@ -1,10 +1,21 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import type { PermissionKey, StaffRole } from "@/lib/permissions";
 import { DEFAULT_ROLE_PERMISSIONS } from "@/lib/permissions";
 
-export type AppRole = "platform_admin" | "platform_support" | "hotel_owner" | "hotel_staff" | "customer";
+export type AppRole =
+  "platform_admin" | "platform_support" | "hotel_owner" | "hotel_staff" | "controller" | "customer";
+
+export type ControllerRole = "admin" | "admissions" | "finance";
 
 export interface HotelSummary {
   id: string;
@@ -12,6 +23,9 @@ export interface HotelSummary {
   slug: string;
   status: string;
   currency: string;
+  /** One of the slugs in HOTEL_TYPES. A hostel gets a different workspace. */
+  hotel_type: string;
+  operating_mode: string;
   logo_url: string | null;
   cover_url: string | null;
   onboarding_completed: boolean;
@@ -21,6 +35,18 @@ export interface HotelSummary {
   relation: "owner" | "staff" | "demo";
   staff_role: StaffRole | null;
   permissions: PermissionKey[];
+}
+
+/** A school the signed-in person works for. */
+export interface ControllerSummary {
+  id: string;
+  name: string;
+  slug: string;
+  kind: string;
+  status: string;
+  city: string;
+  country: string;
+  role: ControllerRole;
 }
 
 export interface Profile {
@@ -40,6 +66,10 @@ interface AuthContextValue {
   hotels: HotelSummary[];
   activeHotel: HotelSummary | null;
   selectHotel: (id: string | null) => void;
+  controllers: ControllerSummary[];
+  activeController: ControllerSummary | null;
+  selectController: (id: string | null) => void;
+  isController: boolean;
   isPlatformAdmin: boolean;
   isPlatformSupport: boolean;
   isPlatformTeam: boolean;
@@ -51,6 +81,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const ACTIVE_HOTEL_KEY = "custard.activeHotel";
+const ACTIVE_CONTROLLER_KEY = "custard.activeController";
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
@@ -67,7 +98,11 @@ async function fetchRoles(userId: string): Promise<AppRole[]> {
 async function fetchHotels(userId: string): Promise<HotelSummary[]> {
   const [owned, memberships] = await Promise.all([
     supabase.from("hotels").select("*").eq("owner_id", userId),
-    supabase.from("hotel_members").select("*, hotels(*)").eq("user_id", userId).eq("is_active", true),
+    supabase
+      .from("hotel_members")
+      .select("*, hotels(*)")
+      .eq("user_id", userId)
+      .eq("is_active", true),
   ]);
 
   const map: Record<string, HotelSummary> = {};
@@ -83,7 +118,11 @@ async function fetchHotels(userId: string): Promise<HotelSummary[]> {
   });
 
   (memberships.data ?? []).forEach((m: Record<string, unknown>) => {
-    const member = m as unknown as { staff_role: StaffRole; permissions: PermissionKey[]; hotels: HotelSummaryRaw };
+    const member = m as unknown as {
+      staff_role: StaffRole;
+      permissions: PermissionKey[];
+      hotels: HotelSummaryRaw;
+    };
     const hotel = member.hotels;
     map[hotel.id] = {
       ...mapHotel(hotel),
@@ -99,12 +138,34 @@ async function fetchHotels(userId: string): Promise<HotelSummary[]> {
   });
 }
 
+/** Mirrors fetchHotels: the schools this person is an active member of. */
+async function fetchControllers(userId: string): Promise<ControllerSummary[]> {
+  const { data, error } = await supabase
+    .from("controller_members")
+    .select("role, controllers(id, name, slug, kind, status, city, country)")
+    .eq("user_id", userId)
+    .eq("is_active", true);
+  if (error || !data) return [];
+
+  return (data as unknown as ControllerMemberRaw[])
+    .filter((m) => m.controllers)
+    .map((m) => ({ ...m.controllers!, role: m.role }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+interface ControllerMemberRaw {
+  role: ControllerRole;
+  controllers: Omit<ControllerSummary, "role"> | null;
+}
+
 interface HotelSummaryRaw {
   id: string;
   name: string;
   slug: string;
   status: string;
   currency: string;
+  hotel_type: string;
+  operating_mode: string;
   logo_url: string | null;
   cover_url: string | null;
   onboarding_completed: boolean;
@@ -113,13 +174,17 @@ interface HotelSummaryRaw {
   owner_id: string | null;
 }
 
-function mapHotel(h: HotelSummaryRaw): Omit<HotelSummary, "relation" | "staff_role" | "permissions"> {
+function mapHotel(
+  h: HotelSummaryRaw,
+): Omit<HotelSummary, "relation" | "staff_role" | "permissions"> {
   return {
     id: h.id,
     name: h.name,
     slug: h.slug,
     status: h.status,
     currency: h.currency,
+    hotel_type: h.hotel_type,
+    operating_mode: h.operating_mode,
     logo_url: h.logo_url,
     cover_url: h.cover_url,
     onboarding_completed: h.onboarding_completed,
@@ -137,6 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [activeHotelId, setActiveHotelId] = useState<string | null>(null);
+  const [controllers, setControllers] = useState<ControllerSummary[]>([]);
+  const [activeControllerId, setActiveControllerId] = useState<string | null>(null);
 
   const isPlatformAdmin = roles.includes("platform_admin");
   const isPlatformSupport = roles.includes("platform_support");
@@ -151,44 +218,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(s?.user ?? null);
 
     if (s?.user) {
-      const [p, r, h] = await Promise.all([
+      const [p, r, h, c] = await Promise.all([
         fetchProfile(s.user.id),
         fetchRoles(s.user.id),
         fetchHotels(s.user.id),
+        fetchControllers(s.user.id),
       ]);
       setProfile(p);
       setRoles(r);
       setHotels(h);
+      setControllers(c);
 
-      const saved = typeof window !== "undefined" ? window.localStorage.getItem(ACTIVE_HOTEL_KEY) : null;
+      const saved =
+        typeof window !== "undefined" ? window.localStorage.getItem(ACTIVE_HOTEL_KEY) : null;
       const hotelIds = new Set(h.map((hotel) => hotel.id));
       // With several workplaces we ask the person to choose instead of guessing.
       const selected = saved && hotelIds.has(saved) ? saved : h.length === 1 ? h[0]!.id : null;
       setActiveHotelId(selected);
+
+      const savedController =
+        typeof window !== "undefined" ? window.localStorage.getItem(ACTIVE_CONTROLLER_KEY) : null;
+      const controllerIds = new Set(c.map((school) => school.id));
+      setActiveControllerId(
+        savedController && controllerIds.has(savedController)
+          ? savedController
+          : c.length === 1
+            ? c[0]!.id
+            : null,
+      );
     } else {
       setProfile(null);
       setRoles([]);
       setHotels([]);
       setActiveHotelId(null);
+      setControllers([]);
+      setActiveControllerId(null);
     }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, s: Session | null) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        load();
-      } else {
-        setProfile(null);
-        setRoles([]);
-        setHotels([]);
-        setActiveHotelId(null);
-        setLoading(false);
-      }
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event: string, s: Session | null) => {
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) {
+          load();
+        } else {
+          setProfile(null);
+          setRoles([]);
+          setHotels([]);
+          setActiveHotelId(null);
+          setControllers([]);
+          setActiveControllerId(null);
+          setLoading(false);
+        }
+      },
+    );
     return () => listener.subscription.unsubscribe();
   }, [load]);
 
@@ -196,6 +283,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => hotels.find((h) => h.id === activeHotelId) ?? (hotels.length === 1 ? hotels[0]! : null),
     [hotels, activeHotelId],
   );
+
+  const activeController = useMemo(
+    () =>
+      controllers.find((c) => c.id === activeControllerId) ??
+      (controllers.length === 1 ? controllers[0]! : null),
+    [controllers, activeControllerId],
+  );
+
+  const selectController = useCallback((id: string | null) => {
+    setActiveControllerId(id);
+    if (typeof window === "undefined") return;
+    if (id) window.localStorage.setItem(ACTIVE_CONTROLLER_KEY, id);
+    else window.localStorage.removeItem(ACTIVE_CONTROLLER_KEY);
+  }, []);
 
   const selectHotel = useCallback((id: string | null) => {
     setActiveHotelId(id);
@@ -225,8 +326,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles([]);
     setHotels([]);
     setActiveHotelId(null);
+    setControllers([]);
+    setActiveControllerId(null);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(ACTIVE_HOTEL_KEY);
+      window.localStorage.removeItem(ACTIVE_CONTROLLER_KEY);
     }
   }, []);
 
@@ -241,6 +345,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hotels,
         activeHotel,
         selectHotel,
+        controllers,
+        activeController,
+        selectController,
+        isController: controllers.length > 0,
         isPlatformAdmin,
         isPlatformSupport,
         isPlatformTeam,
