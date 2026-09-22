@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Menu,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,16 +29,31 @@ import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
-const NAV = [
+interface NavItem {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  /** Used instead of `label` when the property is a hostel. */
+  hostelLabel?: string;
+  /** Left out means everyone sees it. */
+  show?: "hostel";
+}
+
+const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/bookings", label: "Bookings", icon: CalendarDays },
+  { to: "/bookings", label: "Bookings", icon: CalendarDays, hostelLabel: "Stays" },
   { to: "/calendar", label: "Calendar", icon: CalendarRange },
   { to: "/channels", label: "Travel sites", icon: Globe },
-  { to: "/rooms", label: "Rooms", icon: BedDouble },
-  { to: "/allocations", label: "Schools & allocations", icon: GraduationCap },
-  { to: "/reception", label: "Reception", icon: DoorOpen },
+  { to: "/rooms", label: "Rooms", icon: BedDouble, hostelLabel: "Rooms & beds" },
+  {
+    to: "/allocations",
+    label: "Schools & allocations",
+    icon: GraduationCap,
+    show: "hostel",
+  },
+  { to: "/reception", label: "Reception", icon: DoorOpen, hostelLabel: "Move-ins" },
   { to: "/housekeeping", label: "Housekeeping", icon: Sparkles },
-  { to: "/guests", label: "Guests", icon: Users },
+  { to: "/guests", label: "Guests", icon: Users, hostelLabel: "Residents" },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/finance", label: "Finance", icon: ChartPie },
   { to: "/staff", label: "Staff", icon: UserCog },
@@ -46,13 +62,20 @@ const NAV = [
 ];
 
 export function DashboardShell({ children, title }: { children: ReactNode; title?: string }) {
-  const { profile, isPlatformAdmin } = useAuth();
+  const { profile, isPlatformAdmin, activeHotel } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
+  // A hostel runs on beds and semesters, so it gets its own wording — and only
+  // a hostel takes student placements from schools.
+  const isHostel = activeHotel?.hotel_type === "hostel";
+  const navItems = NAV.filter((item) => !item.show || isHostel).map((item) =>
+    isHostel && item.hostelLabel ? { ...item, label: item.hostelLabel } : item,
+  );
+
   const NavList = (
     <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-      {NAV.map((item) => {
+      {navItems.map((item) => {
         const Icon = item.icon;
         const active = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
         return (

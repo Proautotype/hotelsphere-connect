@@ -46,6 +46,7 @@ import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users
 import { Route as AuthenticatedBookingsIndexRouteImport } from './routes/_authenticated/bookings.index'
 import { Route as AuthenticatedBookingsIdRouteImport } from './routes/_authenticated/bookings.$id'
 import { Route as SchoolSchoolIndexRouteImport } from './routes/_school/school.index'
+import { Route as SchoolSchoolAllocationsRouteImport } from './routes/_school/school.allocations'
 import { Route as SchoolSchoolHostelsRouteImport } from './routes/_school/school.hostels'
 import { Route as SchoolSchoolSettingsRouteImport } from './routes/_school/school.settings'
 import { Route as SchoolSchoolStudentsRouteImport } from './routes/_school/school.students'
@@ -239,6 +240,11 @@ const SchoolSchoolIndexRoute = SchoolSchoolIndexRouteImport.update({
   path: '/school/',
   getParentRoute: () => SchoolRoute,
 } as any)
+const SchoolSchoolAllocationsRoute = SchoolSchoolAllocationsRouteImport.update({
+  id: '/school/allocations',
+  path: '/school/allocations',
+  getParentRoute: () => SchoolRoute,
+} as any)
 const SchoolSchoolHostelsRoute = SchoolSchoolHostelsRouteImport.update({
   id: '/school/hostels',
   path: '/school/hostels',
@@ -309,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/school/allocations': typeof SchoolSchoolAllocationsRoute
   '/school/hostels': typeof SchoolSchoolHostelsRoute
   '/school/settings': typeof SchoolSchoolSettingsRoute
   '/school/students': typeof SchoolSchoolStudentsRoute
@@ -352,6 +359,7 @@ export interface FileRoutesByTo {
   '/admin/team': typeof AdminAdminTeamRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/school/allocations': typeof SchoolSchoolAllocationsRoute
   '/school/hostels': typeof SchoolSchoolHostelsRoute
   '/school/settings': typeof SchoolSchoolSettingsRoute
   '/school/students': typeof SchoolSchoolStudentsRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/_admin/admin/team': typeof AdminAdminTeamRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/bookings/$id': typeof AuthenticatedBookingsIdRoute
+  '/_school/school/allocations': typeof SchoolSchoolAllocationsRoute
   '/_school/school/hostels': typeof SchoolSchoolHostelsRoute
   '/_school/school/settings': typeof SchoolSchoolSettingsRoute
   '/_school/school/students': typeof SchoolSchoolStudentsRoute
@@ -444,6 +453,7 @@ export interface FileRouteTypes {
     | '/admin/team'
     | '/admin/users'
     | '/bookings/$id'
+    | '/school/allocations'
     | '/school/hostels'
     | '/school/settings'
     | '/school/students'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/admin/team'
     | '/admin/users'
     | '/bookings/$id'
+    | '/school/allocations'
     | '/school/hostels'
     | '/school/settings'
     | '/school/students'
@@ -533,6 +544,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/team'
     | '/_admin/admin/users'
     | '/_authenticated/bookings/$id'
+    | '/_school/school/allocations'
     | '/_school/school/hostels'
     | '/_school/school/settings'
     | '/_school/school/students'
@@ -822,6 +834,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SchoolSchoolIndexRouteImport
       parentRoute: typeof SchoolRoute
     }
+    '/_school/school/allocations': {
+      id: '/_school/school/allocations'
+      path: '/school/allocations'
+      fullPath: '/school/allocations'
+      preLoaderRoute: typeof SchoolSchoolAllocationsRouteImport
+      parentRoute: typeof SchoolRoute
+    }
     '/_school/school/hostels': {
       id: '/_school/school/hostels'
       path: '/school/hostels'
@@ -943,6 +962,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 )
 
 interface SchoolRouteChildren {
+  SchoolSchoolAllocationsRoute: typeof SchoolSchoolAllocationsRoute
   SchoolSchoolHostelsRoute: typeof SchoolSchoolHostelsRoute
   SchoolSchoolSettingsRoute: typeof SchoolSchoolSettingsRoute
   SchoolSchoolStudentsRoute: typeof SchoolSchoolStudentsRoute
@@ -952,6 +972,7 @@ interface SchoolRouteChildren {
 }
 
 const SchoolRouteChildren: SchoolRouteChildren = {
+  SchoolSchoolAllocationsRoute: SchoolSchoolAllocationsRoute,
   SchoolSchoolHostelsRoute: SchoolSchoolHostelsRoute,
   SchoolSchoolSettingsRoute: SchoolSchoolSettingsRoute,
   SchoolSchoolStudentsRoute: SchoolSchoolStudentsRoute,

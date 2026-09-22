@@ -39,15 +39,25 @@ function SchoolDashboard() {
         title={activeController?.name ?? "School"}
         description="Accommodation for your students, at a glance."
         actions={
-          <Button asChild>
-            <Link to="/school/requests">Accommodation requests</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/school/students">Add student</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/school/allocations">Place students</Link>
+            </Button>
+          </div>
         }
       />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Students" value={String(data?.studentCount ?? 0)} icon={Users} />
-        <StatCard label="Placed" value={String(data?.placedCount ?? 0)} icon={GraduationCap} />
+        <StatCard
+          label="Placed"
+          value={String(data?.placedCount ?? 0)}
+          hint={`${Math.max(0, (data?.studentCount ?? 0) - (data?.placedCount ?? 0))} still to place`}
+          icon={GraduationCap}
+        />
         <StatCard label="Checked in" value={String(data?.checkedInCount ?? 0)} icon={DoorOpen} />
         <StatCard label="Hostels" value={String(data?.hostelCount ?? 0)} icon={Building2} />
       </div>

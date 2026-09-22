@@ -1231,3 +1231,220 @@ export const getSchoolOverview = createServerFn({ method: "POST" })
       checkedInCount: rows.filter((r) => r.status === "checked_in").length,
     };
   });
+
+/* ------------------------------------------------------------------ */
+/* School side: placing students directly                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The hostels a school can place students into. Read through the service-role
+ * client because a school can only see hotels it is already affiliated with,
+ * and it has to be able to find new ones. Not filtered on is_public_listed: a
+ * hostel that works with schools may have no reason to advertise publicly.
+ */
+export const listPlaceableHostels = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => controllerScopeSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertControllerAccess(supabase, data.controllerId);
+
+    const { data: hotels } = await supabaseAdmin
+      .from("hotels")
+      .select("id, name, city, address, phone, email, currency")
+      .eq("hotel_type", "hostel")
+      .eq("status", "active")
+      .order("name", { ascending: true })
+      .limit(200);
+
+    const ids = (hotels ?? []).map((h) => h.id);
+    const { data: types } = ids.length
+      ? await supabaseAdmin
+          .from("room_types")
+          .select("hotel_id, base_price, per_stay_price, pricing_model, max_guests")
+          .in("hotel_id", ids)
+          .eq("is_active", true)
+      : { data: [] };
+
+    // Cheapest per-stay fee and total beds, the two numbers a school compares on.
+    const summary: Record<string, { from: number | null; beds: number }> = {};
+    (types ?? []).forEach((t) => {
+      const entry = (summary[t.hotel_id] ??= { from: null, beds: 0 });
+      entry.beds += Number(t.max_guests ?? 0);
+      if (t.pricing_model !== "per_stay") return;
+      const price = Number(t.per_stay_price ?? t.base_price ?? 0);
+      if (price > 0 && (entry.from === null || price < entry.from)) entry.from = price;
+    });
+
+    const { data: affiliations } = await supabase
+      .from("hotel_controller_affiliations")
+      .select("hotel_id, status")
+      .eq("controller_id", data.controllerId);
+    const affiliated = new Set((affiliations ?? []).map((a) => a.hotel_id));
+
+    return (hotels ?? []).map((h) => ({
+      ...h,
+      from_price: summary[h.id]?.from ?? null,
+      beds: summary[h.id]?.beds ?? 0,
+      affiliated: affiliated.has(h.id),
+    }));
+  });
+
+const placeStudentsSchema = z.object({
+  controllerId: z.string().uuid(),
+  hotelId: z.string().uuid(),
+  studentIds: z.array(z.string().uuid()).min(1).max(500),
+  price: z.number().nonnegative().nullable().optional(),
+});
+
+/**
+ * Place students straight into a hostel, with no request or offer behind it —
+ * for a school that already knows where its students are going. The rows land
+ * as `confirmed`, which is exactly the state checkInStudentAllocation expects,
+ * so the hostel side needs no special case. Leaving `price` empty lets the
+ * hostel's own per-stay price apply at check-in.
+ */
+export const placeStudents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => placeStudentsSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertControllerAccess(supabase, data.controllerId);
+
+    const { data: hostel } = await supabaseAdmin
+      .from("hotels")
+      .select("id, name, hotel_type, status")
+      .eq("id", data.hotelId)
+      .maybeSingle();
+    if (!hostel) throw new Error("Hostel not found");
+    if (hostel.hotel_type !== "hostel" || hostel.status !== "active")
+      throw new Error("That property is not taking student placements");
+
+    // Only this school's students.
+    const { data: students } = await supabase
+      .from("students")
+      .select("id, full_name")
+      .eq("controller_id", data.controllerId)
+      .in("id", data.studentIds);
+    const valid = students ?? [];
+    if (valid.length === 0) throw new Error("None of those students belong to this school");
+
+    // A student lives in one place at a time. The partial unique index enforces
+    // this too, but checking first gives a message that names the student.
+    const { data: live } = await supabase
+      .from("student_allocations")
+      .select("student_id")
+      .in(
+        "student_id",
+        valid.map((s) => s.id),
+      )
+      .in("status", ["proposed", "confirmed", "checked_in"]);
+    const placed = new Set((live ?? []).map((a) => a.student_id));
+    const fresh = valid.filter((s) => !placed.has(s.id));
+    if (fresh.length === 0)
+      throw new Error(
+        valid.length === 1
+          ? `${valid[0]!.full_name} is already placed — remove that placement first`
+          : "Every one of those students is already placed",
+      );
+
+    // Placing students is what makes the two organisations partners: the hostel
+    // now shows under Hostels and receives this school's future requests.
+    await supabaseAdmin.from("hotel_controller_affiliations").upsert(
+      {
+        controller_id: data.controllerId,
+        hotel_id: data.hotelId,
+        status: "active",
+        created_by: userId,
+      },
+      { onConflict: "controller_id,hotel_id" },
+    );
+
+    const { error } = await supabase.from("student_allocations").insert(
+      fresh.map((student) => ({
+        student_id: student.id,
+        controller_id: data.controllerId,
+        hotel_id: data.hotelId,
+        price: data.price ?? null,
+        status: "confirmed",
+      })),
+    );
+    if (error) throw new Error(error.message);
+
+    const { data: school } = await supabaseAdmin
+      .from("controllers")
+      .select("name")
+      .eq("id", data.controllerId)
+      .maybeSingle();
+
+    await supabaseAdmin.from("notifications").insert({
+      hotel_id: data.hotelId,
+      title: "Students placed with you",
+      body: `${school?.name ?? "A school"} placed ${fresh.length} student${fresh.length === 1 ? "" : "s"} with you. Check them in when they arrive.`,
+      type: "allocation",
+      link: "/allocations",
+    });
+
+    return { placed: fresh.length, skipped: valid.length - fresh.length };
+  });
+
+const unplaceSchema = z.object({ allocationId: z.string().uuid() });
+
+/** Undo a placement that has not been checked in, freeing the student. */
+export const unplaceStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => unplaceSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    const { data: allocation } = await supabase
+      .from("student_allocations")
+      .select("id, controller_id, status")
+      .eq("id", data.allocationId)
+      .single();
+    if (!allocation) throw new Error("Placement not found");
+    await assertControllerAccess(supabase, allocation.controller_id);
+    if (allocation.status === "checked_in")
+      throw new Error("This student has already moved in — the hostel checks them out");
+    if (allocation.status === "checked_out" || allocation.status === "cancelled")
+      throw new Error("This placement is already closed");
+
+    const { error } = await supabase
+      .from("student_allocations")
+      .update({ status: "cancelled" })
+      .eq("id", data.allocationId);
+    if (error) throw new Error(error.message);
+
+    return { ok: true };
+  });
+
+/** Every placement this school has made, with where the student ended up. */
+export const listSchoolAllocations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => controllerScopeSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertControllerAccess(supabase, data.controllerId);
+
+    const { data: allocations } = await supabase
+      .from("student_allocations")
+      .select("*, students(full_name, student_ref, program, level_year), rooms(room_number)")
+      .eq("controller_id", data.controllerId)
+      .not("status", "eq", "cancelled")
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    const hotelIds = Array.from(new Set((allocations ?? []).map((a) => a.hotel_id)));
+    const { data: hotels } = hotelIds.length
+      ? await supabaseAdmin.from("hotels").select("id, name, city").in("id", hotelIds)
+      : { data: [] };
+    const hotelById = new Map((hotels ?? []).map((h) => [h.id, h]));
+
+    return (allocations ?? []).map((a) => ({
+      ...a,
+      hotel: hotelById.get(a.hotel_id) ?? null,
+    }));
+  });

@@ -1,5 +1,14 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Building2, GraduationCap, LayoutDashboard, Menu, Settings, Users, X } from "lucide-react";
+import {
+  BedDouble,
+  Building2,
+  GraduationCap,
+  LayoutDashboard,
+  Menu,
+  Settings,
+  Users,
+  X,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -13,6 +22,7 @@ const NAV = [
   { to: "/school", label: "Dashboard", icon: LayoutDashboard },
   { to: "/school/requests", label: "Accommodation", icon: GraduationCap },
   { to: "/school/students", label: "Students", icon: Users },
+  { to: "/school/allocations", label: "Placements", icon: BedDouble },
   { to: "/school/hostels", label: "Hostels", icon: Building2 },
   { to: "/school/settings", label: "Settings", icon: Settings },
 ];

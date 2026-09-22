@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -18,8 +17,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { listStudents, saveStudent } from "@/lib/controller.functions";
+import { listSchoolAllocations, listStudents, saveStudent } from "@/lib/controller.functions";
 import { Plus, Search, Users } from "lucide-react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 export const Route = createFileRoute("/_school/school/students")({
   head: () => ({
@@ -49,6 +50,7 @@ function StudentsPage() {
   const queryClient = useQueryClient();
   const list = useServerFn(listStudents);
   const save = useServerFn(saveStudent);
+  const getAllocations = useServerFn(listSchoolAllocations);
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -60,6 +62,14 @@ function StudentsPage() {
     queryFn: () => list({ data: { controllerId } }),
     enabled: Boolean(controllerId),
   });
+  const { data: allocations = [] } = useQuery({
+    queryKey: ["school", "allocations", controllerId],
+    queryFn: () => getAllocations({ data: { controllerId } }),
+    enabled: Boolean(controllerId),
+  });
+
+  // Where each student is staying, so the register answers "is this one sorted?".
+  const placementByStudent = new Map(allocations.map((a) => [a.student_id, a]));
 
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -107,99 +117,104 @@ function StudentsPage() {
         title="Students"
         description="The register you place into hostel accommodation."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-1 size-4" /> Add student
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Add a student</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={submit} className="space-y-4">
-                <div>
-                  <Label htmlFor="st-name">Full name</Label>
-                  <Input
-                    id="st-name"
-                    required
-                    value={form.fullName}
-                    onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="st-ref">Student ID</Label>
-                    <Input
-                      id="st-ref"
-                      value={form.studentRef}
-                      onChange={(e) => setForm((p) => ({ ...p, studentRef: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-gender">Gender</Label>
-                    <Input
-                      id="st-gender"
-                      value={form.gender}
-                      onChange={(e) => setForm((p) => ({ ...p, gender: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-program">Programme</Label>
-                    <Input
-                      id="st-program"
-                      value={form.program}
-                      onChange={(e) => setForm((p) => ({ ...p, program: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-level">Level / year</Label>
-                    <Input
-                      id="st-level"
-                      value={form.levelYear}
-                      onChange={(e) => setForm((p) => ({ ...p, levelYear: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-phone">Phone</Label>
-                    <Input
-                      id="st-phone"
-                      value={form.phone}
-                      onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-email">Email</Label>
-                    <Input
-                      id="st-email"
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-guardian">Guardian</Label>
-                    <Input
-                      id="st-guardian"
-                      value={form.guardianName}
-                      onChange={(e) => setForm((p) => ({ ...p, guardianName: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="st-guardian-phone">Guardian phone</Label>
-                    <Input
-                      id="st-guardian-phone"
-                      value={form.guardianPhone}
-                      onChange={(e) => setForm((p) => ({ ...p, guardianPhone: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <Button type="submit" disabled={busy || form.fullName.trim().length < 2}>
-                  {busy ? "Saving…" : "Add student"}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline" disabled={students.length === 0}>
+              <Link to="/school/allocations">Place students</Link>
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-1 size-4" /> Add student
                 </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Add a student</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={submit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="st-name">Full name</Label>
+                    <Input
+                      id="st-name"
+                      required
+                      value={form.fullName}
+                      onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="st-ref">Student ID</Label>
+                      <Input
+                        id="st-ref"
+                        value={form.studentRef}
+                        onChange={(e) => setForm((p) => ({ ...p, studentRef: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-gender">Gender</Label>
+                      <Input
+                        id="st-gender"
+                        value={form.gender}
+                        onChange={(e) => setForm((p) => ({ ...p, gender: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-program">Programme</Label>
+                      <Input
+                        id="st-program"
+                        value={form.program}
+                        onChange={(e) => setForm((p) => ({ ...p, program: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-level">Level / year</Label>
+                      <Input
+                        id="st-level"
+                        value={form.levelYear}
+                        onChange={(e) => setForm((p) => ({ ...p, levelYear: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-phone">Phone</Label>
+                      <Input
+                        id="st-phone"
+                        value={form.phone}
+                        onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-email">Email</Label>
+                      <Input
+                        id="st-email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-guardian">Guardian</Label>
+                      <Input
+                        id="st-guardian"
+                        value={form.guardianName}
+                        onChange={(e) => setForm((p) => ({ ...p, guardianName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="st-guardian-phone">Guardian phone</Label>
+                      <Input
+                        id="st-guardian-phone"
+                        value={form.guardianPhone}
+                        onChange={(e) => setForm((p) => ({ ...p, guardianPhone: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={busy || form.fullName.trim().length < 2}>
+                    {busy ? "Saving…" : "Add student"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         }
       />
 
@@ -240,7 +255,19 @@ function StudentsPage() {
                         .join(" · ") || "No details"}
                     </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{s.phone ?? s.email ?? ""}</p>
+                  <div className="flex items-center gap-3">
+                    {placementByStudent.has(s.id) ? (
+                      <div className="text-right">
+                        <p className="text-xs font-medium text-foreground">
+                          {placementByStudent.get(s.id)!.hotel?.name ?? "Placed"}
+                        </p>
+                        <StatusBadge status={placementByStudent.get(s.id)!.status} />
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not placed yet</span>
+                    )}
+                    <p className="text-xs text-muted-foreground">{s.phone ?? s.email ?? ""}</p>
+                  </div>
                 </div>
               ))}
             </CardContent>

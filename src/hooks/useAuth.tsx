@@ -23,6 +23,9 @@ export interface HotelSummary {
   slug: string;
   status: string;
   currency: string;
+  /** One of the slugs in HOTEL_TYPES. A hostel gets a different workspace. */
+  hotel_type: string;
+  operating_mode: string;
   logo_url: string | null;
   cover_url: string | null;
   onboarding_completed: boolean;
@@ -161,6 +164,8 @@ interface HotelSummaryRaw {
   slug: string;
   status: string;
   currency: string;
+  hotel_type: string;
+  operating_mode: string;
   logo_url: string | null;
   cover_url: string | null;
   onboarding_completed: boolean;
@@ -178,6 +183,8 @@ function mapHotel(
     slug: h.slug,
     status: h.status,
     currency: h.currency,
+    hotel_type: h.hotel_type,
+    operating_mode: h.operating_mode,
     logo_url: h.logo_url,
     cover_url: h.cover_url,
     onboarding_completed: h.onboarding_completed,
